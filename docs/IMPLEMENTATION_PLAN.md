@@ -8,8 +8,8 @@
 
 ## 1. Projektüberblick
 
-Selbst-gehostete Workout-PWA für genau 2 Nutzer (Tuncay + Partnerin). Kein öffentlicher Dienst,
-keine Registrierung. Nutzer werden geseedet.
+Selbst-gehostete Workout-PWA für eine feste, kleine Zahl geseedeter Nutzer (aktuell 3: Tuncay,
+Kim, Noam). Kein öffentlicher Dienst, keine Registrierung. Nutzer werden geseedet.
 
 ```
 iPhone PWA (React + Vite, "Add to Home Screen")
@@ -37,7 +37,7 @@ Node/Express API  ──  SQLite (Datei, Docker Volume)
 
 ### Explizit NICHT im Scope
 
-App Store / Capacitor · Push Notifications · mehr als 2 Nutzer · Passwort-Reset ·
+App Store / Capacitor · Push Notifications · Passwort-Reset ·
 Registrierung · Session-Start offline · Editieren abgeschlossener Sessions ·
 Multi-Device-Sync über die Offline-Queue hinaus · Auto-Retry der LLM-Auswertung.
 
@@ -149,9 +149,11 @@ CREATE TABLE evaluations (
 );
 ```
 
-Seed (`backend/seed.js`, idempotent — überspringt existierende Nutzer): legt die 2 Nutzer an.
-Namen und Passwörter kommen aus ENV: `SEED_USER1_NAME`, `SEED_USER1_PASSWORD`,
-`SEED_USER2_NAME`, `SEED_USER2_PASSWORD`. bcrypt cost 12.
+Seed (`backend/seed.js`, idempotent — überspringt existierende Nutzer): legt beliebig viele
+Nutzer an. Namen und Passwörter kommen aus ENV: `SEED_USER1_NAME`, `SEED_USER1_PASSWORD`,
+`SEED_USER2_NAME`, `SEED_USER2_PASSWORD`, `SEED_USER3_NAME`, `SEED_USER3_PASSWORD`, usw. —
+das Skript liest fortlaufend `SEED_USER{n}_*`, bis eine Nummer keinen Namen mehr hat.
+bcrypt cost 12.
 
 ## 3. Contracts
 
@@ -245,7 +247,9 @@ Regeln:
 
 Basis: alle unter `/api`, JSON in/out. Alle Endpoints außer `POST /api/login` antworten
 `401 {error:"unauthorized"}` ohne gültiges Session-Cookie. Alle Daten sind strikt auf den
-eingeloggten Nutzer gescoped — einzige Ausnahme: `GET /api/partner/progress`.
+eingeloggten Nutzer gescoped — einzige Ausnahme: `GET /api/users` (Namen anderer Nutzer,
+für die Partner-Auswahl) und `GET /api/partner/progress` (read-only Max-Tests eines
+anderen Nutzers).
 
 **Auth-Middleware:** liest Cookie `session`, sucht `auth_sessions.token`, prüft `expires_at`.
 Bei Treffer: `expires_at` auf `now + 90 Tage` verlängern und Cookie mit neuem `Max-Age`
@@ -347,10 +351,16 @@ Default heute) → 201 `{ "id": 12 }`. `kind` ∈ pushups|pullup_stage|bodyweigh
 `GET /api/max-tests?kind=pushups` → 200 `[ { "id": 12, "kind": "pushups", "value": 25,
 "date": "2026-07-04" }, ... ]` aufsteigend nach `date`. Ohne `kind`-Param: alle Kinds.
 
-`GET /api/partner/progress`
-→ 200 `{ "name": "partnerin", "max_tests": [ ...alle max_tests des anderen Nutzers... ] }`.
-Bei 2 geseedeten Nutzern ist „der andere" eindeutig (der eine User, der nicht der eingeloggte
-ist). Read-only, keine Session-/Set-Daten.
+`GET /api/users`
+→ 200 `[ { "id": 2, "name": "Kim" }, { "id": 3, "name": "Noam" }, ... ]` — alle Nutzer außer
+dem eingeloggten, sortiert nach Name. Basis für die Partner-Auswahl im Frontend.
+
+`GET /api/partner/progress?user_id=2`
+→ 200 `{ "name": "Kim", "max_tests": [ ...alle max_tests dieses Nutzers... ] }`.
+`user_id` Pflicht-Query-Param → ohne 422, unbekannte/eigene `user_id` → 404 bzw. liefert
+die eigenen Daten (kein Sicherheitsproblem, aber im Frontend nicht vorgesehen). Read-only,
+keine Session-/Set-Daten. Skaliert auf beliebig viele Nutzer — „der Partner" ist keine
+feste Beziehung mehr, sondern eine Auswahl.
 
 ## 4. LLM-Auswertung
 
@@ -459,8 +469,9 @@ Erfolg → neuen Plan anzeigen.
   `ux-reference.html` eine Skala definiert, diese übernehmen; sonst Default:
   1 Dead Hang · 2 Scapula Pulls · 3 Negative · 4 Band-assistiert · 5 halber ROM ·
   6 voller Klimmzug · 7 Klimmzug mit Zusatzgewicht.
-- **Partner-Toggle** (Segmented Control „Ich / <Partnername>"): bei Partner →
-  `GET /api/partner/progress`, gleiche Charts read-only ohne Eintrag-Formular.
+- **Partner-Auswahl** (horizontale Pill-Liste „Ich" + ein Pill pro anderem Nutzer aus
+  `GET /api/users`): bei Auswahl eines anderen Nutzers → `GET /api/partner/progress?user_id=…`,
+  gleiche Charts read-only ohne Eintrag-Formular.
 
 ### PWA & Offline-Queue
 
@@ -577,16 +588,18 @@ Markdown-Auswertung · Key entfernen → failed-Zustand + Retry-Button funktioni
 ### M5 — Fortschritt
 
 **Tasks**
-1. `POST/GET /api/max-tests`, `GET /api/partner/progress`.
+1. `POST/GET /api/max-tests`, `GET /api/users`, `GET /api/partner/progress`.
 2. Fortschritt-Screen (§5): Formular, zwei Recharts-Liniencharts, Klimmzug-Stufen-Anzeige,
-   Partner-Toggle.
+   Partner-Auswahl.
 
 **Pflicht-Tests**
 - max-tests: POST gültig → 201 · ungültiger kind → 422 · Default-Datum heute ·
   GET gefiltert + sortiert · Nutzer sieht nur eigene Einträge.
-- partner/progress: liefert exakt die max_tests des jeweils anderen Nutzers + dessen Name.
+- users: liefert alle Nutzer außer dem eingeloggten.
+- partner/progress: liefert max_tests + Name des per `user_id` ausgewählten Nutzers ·
+  ohne `user_id` → 422 · unbekannte `user_id` → 404.
 
-**DoD:** Tests grün · Einträge erfassen → Charts aktualisieren sich · Partner-Toggle
+**DoD:** Tests grün · Einträge erfassen → Charts aktualisieren sich · Partner-Auswahl
 zeigt dessen Daten read-only.
 
 ---
@@ -643,5 +656,4 @@ workout.example.com {
 | `DATABASE_PATH` | Pfad zur SQLite-Datei, z.B. `/data/app.db` |
 | `SESSION_SECRET` | reserviert (Cookie-Signierung), `openssl rand -hex 32` |
 | `GEMINI_API_KEY` | nur Backend |
-| `SEED_USER1_NAME` / `SEED_USER1_PASSWORD` | Nutzer 1 |
-| `SEED_USER2_NAME` / `SEED_USER2_PASSWORD` | Nutzer 2 |
+| `SEED_USER{n}_NAME` / `SEED_USER{n}_PASSWORD` | Nutzer `n` (1, 2, 3, …) — Seed-Skript liest fortlaufend, bis eine Nummer fehlt |

@@ -19,5 +19,6 @@ function seedUser(db, name, password) {
 const db = getDb();
 runMigrations(db);
 
-seedUser(db, process.env.SEED_USER1_NAME, process.env.SEED_USER1_PASSWORD);
-seedUser(db, process.env.SEED_USER2_NAME, process.env.SEED_USER2_PASSWORD);
+for (let i = 1; process.env[`SEED_USER${i}_NAME`]; i++) {
+  seedUser(db, process.env[`SEED_USER${i}_NAME`], process.env[`SEED_USER${i}_PASSWORD`]);
+}

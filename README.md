@@ -1,8 +1,8 @@
 # Workout App
 
-Selbst-gehostete Workout-PWA für 2 Nutzer. React/Vite-Frontend, Node/Express-Backend mit
-SQLite, LLM-Auswertung nach jedem Workout (Anthropic Haiku). Deployment per Docker Compose +
-Caddy auf einem Contabo VPS.
+Selbst-gehostete Workout-PWA für eine kleine, geseedete Nutzergruppe. React/Vite-Frontend,
+Node/Express-Backend mit SQLite, LLM-Auswertung nach jedem Workout (Google Gemini). Deployment
+per Docker Compose + Caddy auf einem Contabo VPS.
 
 ## Dokumente
 

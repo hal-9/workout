@@ -30,8 +30,9 @@ function Chart({ data, dataLabel }) {
 
 export default function Fortschritt() {
   const queryClient = useQueryClient();
-  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => api.get('/me') });
-  const [viewPartner, setViewPartner] = useState(false);
+  const { data: others } = useQuery({ queryKey: ['users'], queryFn: () => api.get('/users') });
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const viewPartner = selectedUserId !== null;
 
   const { data: ownEntries } = useQuery({
     queryKey: ['max-tests'],
@@ -39,8 +40,8 @@ export default function Fortschritt() {
     enabled: !viewPartner,
   });
   const { data: partnerData } = useQuery({
-    queryKey: ['partner-progress'],
-    queryFn: () => api.get('/partner/progress'),
+    queryKey: ['partner-progress', selectedUserId],
+    queryFn: () => api.get(`/partner/progress?user_id=${selectedUserId}`),
     enabled: viewPartner,
   });
 
@@ -69,37 +70,44 @@ export default function Fortschritt() {
     <div className="wrap">
       <h2>Fortschritt</h2>
 
-      <div style={{ display: 'flex', gap: 4, background: 'var(--surface2)', borderRadius: 11, padding: 4, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', margin: '0 0 16px' }}>
         <button
-          onClick={() => setViewPartner(false)}
+          onClick={() => setSelectedUserId(null)}
           style={{
-            flex: 1,
-            background: !viewPartner ? 'var(--surface)' : 'transparent',
-            border: 'none',
-            borderRadius: 9,
-            padding: '8px 0',
-            color: !viewPartner ? 'var(--text)' : 'var(--muted)',
+            flex: '0 0 auto',
+            background: !viewPartner ? 'var(--ember-dim)' : 'var(--surface)',
+            border: `1px solid ${!viewPartner ? 'var(--ember)' : 'var(--line)'}`,
+            color: !viewPartner ? 'var(--ember)' : 'var(--muted)',
+            borderRadius: 11,
+            padding: '9px 13px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
             cursor: 'pointer',
-            fontFamily: 'var(--font-display)',
+            whiteSpace: 'nowrap',
           }}
         >
           Ich
         </button>
-        <button
-          onClick={() => setViewPartner(true)}
-          style={{
-            flex: 1,
-            background: viewPartner ? 'var(--surface)' : 'transparent',
-            border: 'none',
-            borderRadius: 9,
-            padding: '8px 0',
-            color: viewPartner ? 'var(--text)' : 'var(--muted)',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-display)',
-          }}
-        >
-          {viewPartner ? partnerData?.name ?? '…' : 'Partner'}
-        </button>
+        {(others ?? []).map((u) => (
+          <button
+            key={u.id}
+            onClick={() => setSelectedUserId(u.id)}
+            style={{
+              flex: '0 0 auto',
+              background: selectedUserId === u.id ? 'var(--ember-dim)' : 'var(--surface)',
+              border: `1px solid ${selectedUserId === u.id ? 'var(--ember)' : 'var(--line)'}`,
+              color: selectedUserId === u.id ? 'var(--ember)' : 'var(--muted)',
+              borderRadius: 11,
+              padding: '9px 13px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {u.name}
+          </button>
+        ))}
       </div>
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 16, marginBottom: 12 }}>

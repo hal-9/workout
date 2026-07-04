@@ -128,12 +128,17 @@ Dann `.env` befüllen:
 NODE_ENV=production
 DATABASE_PATH=/data/app.db
 SESSION_SECRET=<openssl rand -hex 32>
-ANTHROPIC_API_KEY=<dein Key>
+GEMINI_API_KEY=<dein Key>
 SEED_USER1_NAME=tuncay
 SEED_USER1_PASSWORD=<Passwort 1>
-SEED_USER2_NAME=<Name Partnerin>
+SEED_USER2_NAME=Kim
 SEED_USER2_PASSWORD=<Passwort 2>
+SEED_USER3_NAME=Noam
+SEED_USER3_PASSWORD=<Passwort 3>
 ```
+
+Weitere Nutzer: `SEED_USER4_NAME`/`SEED_USER4_PASSWORD` usw. anhängen — das Seed-Skript
+liest fortlaufend, bis eine Nummer fehlt.
 
 **Check:** `ls -la /opt/workout` zeigt compose.yml, Caddyfile, .env (Rechte `-rw-------`),
 data/, backups/, frontend-dist/, app/.
@@ -145,7 +150,7 @@ cd /opt/workout
 ./app/deploy/deploy.sh          # baut Frontend, startet Container
 docker compose ps               # beide Container "running"
 docker compose logs caddy       # "certificate obtained" für die Domain
-docker compose exec api node seed.js    # 2 Nutzer anlegen (einmalig)
+docker compose exec api node seed.js    # Nutzer anlegen (einmalig)
 ```
 
 **Check (vom Mac):**
@@ -195,6 +200,6 @@ Sessions bleiben erhalten (auth_sessions in SQLite), niemand wird ausgeloggt.
 | Caddy-Log: TLS/ACME-Fehler | DNS zeigt nicht auf `<IP>` (`dig` prüfen) oder Port 80/443 zu (`sudo ufw status`). Nach Fix: `docker compose restart caddy`. |
 | 502 auf `/api/*` | API-Container down: `docker compose logs api`. Meist ENV-Fehler in `.env`. |
 | Login geht nicht | Seed gelaufen? `docker compose exec api node seed.js`. |
-| Auswertung immer „failed" | `ANTHROPIC_API_KEY` in `.env` prüfen, dann `docker compose up -d api` (ENV neu laden). |
+| Auswertung immer „failed" | `GEMINI_API_KEY` in `.env` prüfen, dann `docker compose up -d api` (ENV neu laden). |
 | Platte voll | alte Backups/Docker-Images: `docker system prune -a`, `du -sh /opt/workout/backups`. |
 | Ausgesperrt (SSH) | Contabo-Panel → VNC-Konsole, dort `99-hardening.conf` prüfen/entschärfen. |

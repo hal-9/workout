@@ -67,17 +67,40 @@ describe('max-tests', () => {
     });
   });
 
+  describe('GET /api/users', () => {
+    it('liefert alle anderen Nutzer, nicht sich selbst', async () => {
+      const res = await request(app).get('/api/users').set('Cookie', cookie);
+      expect(res.status).toBe(200);
+      expect(res.body.map((u) => u.name)).toEqual(['partnerin']);
+    });
+  });
+
   describe('GET /api/partner/progress', () => {
-    it('liefert max_tests + Name des anderen Nutzers', async () => {
+    it('liefert max_tests + Name des ausgewählten anderen Nutzers', async () => {
       await request(app).post('/api/max-tests').set('Cookie', cookie).send({ kind: 'pushups', value: 20, date: '2026-07-01' });
       const partnerCookie = await login(app, 'partnerin', 'password2');
       await request(app).post('/api/max-tests').set('Cookie', partnerCookie).send({ kind: 'bodyweight', value: 60 });
 
-      const res = await request(app).get('/api/partner/progress').set('Cookie', partnerCookie);
+      const others = await request(app).get('/api/users').set('Cookie', partnerCookie);
+      const tuncayId = others.body.find((u) => u.name === 'tuncay').id;
+
+      const res = await request(app)
+        .get(`/api/partner/progress?user_id=${tuncayId}`)
+        .set('Cookie', partnerCookie);
       expect(res.status).toBe(200);
       expect(res.body.name).toBe('tuncay');
       expect(res.body.max_tests).toHaveLength(1);
       expect(res.body.max_tests[0]).toMatchObject({ kind: 'pushups', value: 20 });
+    });
+
+    it('ohne user_id -> 422', async () => {
+      const res = await request(app).get('/api/partner/progress').set('Cookie', cookie);
+      expect(res.status).toBe(422);
+    });
+
+    it('unbekannter user_id -> 404', async () => {
+      const res = await request(app).get('/api/partner/progress?user_id=999').set('Cookie', cookie);
+      expect(res.status).toBe(404);
     });
   });
 });
