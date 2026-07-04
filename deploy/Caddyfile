@@ -1,4 +1,4 @@
-workout.example.com {
+workout.tunikb.com {
   handle /api/* {
     reverse_proxy api:3000
   }
