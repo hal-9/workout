@@ -2,6 +2,8 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import { authRouter } from './routes/auth.js';
 import { planRouter } from './routes/plan.js';
+import { sessionsRouter } from './routes/sessions.js';
+import { historyRouter } from './routes/history.js';
 
 export function createApp(db) {
   const app = express();
@@ -15,6 +17,8 @@ export function createApp(db) {
 
   app.use('/api', authRouter(db));
   app.use('/api', planRouter(db));
+  app.use('/api', sessionsRouter(db));
+  app.use('/api', historyRouter(db));
 
   app.use('/api', (req, res) => {
     res.status(404).json({ error: 'not found' });
