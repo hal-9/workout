@@ -1,6 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import { setupTestApp } from './helpers.js';
+
+const { generateContentMock } = vi.hoisted(() => ({ generateContentMock: vi.fn() }));
+vi.mock('@google/genai', () => ({
+  GoogleGenAI: vi.fn().mockImplementation(() => ({
+    models: { generateContent: generateContentMock },
+  })),
+}));
 
 function plan(overrides = {}) {
   return {
@@ -70,6 +77,9 @@ describe('sessions', () => {
   let cookie;
 
   beforeEach(async () => {
+    generateContentMock.mockReset();
+    generateContentMock.mockImplementation(() => new Promise(() => {}));
+    process.env.GEMINI_API_KEY = 'test-key';
     ({ app, db } = setupTestApp());
     cookie = await login(app);
   });

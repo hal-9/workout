@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../auth.js';
+import { runEvaluation } from '../evaluation.js';
 
 function getActivePlan(db, userId) {
   const row = db
@@ -128,9 +129,13 @@ export function sessionsRouter(db) {
       if (logs.length > 0) {
         db.prepare(
           `INSERT INTO evaluations (session_id, model, status) VALUES (?, ?, 'pending')`
-        ).run(session.id, 'claude-haiku-4-5');
+        ).run(session.id, 'gemini-2.5-flash');
       }
     })();
+
+    if (logs.length > 0) {
+      runEvaluation(db, session.id).catch(() => {});
+    }
 
     const byExercise = new Map();
     for (const log of logs) {
@@ -145,6 +150,51 @@ export function sessionsRouter(db) {
     };
 
     res.json({ session_id: session.id, summary, evaluation: logs.length > 0 });
+  });
+
+  router.post('/sessions/:id/evaluate', (req, res) => {
+    const evaluation = db
+      .prepare(
+        `SELECT evaluations.* FROM evaluations
+         JOIN sessions ON sessions.id = evaluations.session_id
+         WHERE evaluations.session_id = ? AND sessions.user_id = ?`
+      )
+      .get(req.params.id, req.user.id);
+
+    if (!evaluation) {
+      return res.status(404).json({ error: 'not found' });
+    }
+    if (evaluation.status !== 'failed') {
+      return res.status(409).json({ error: evaluation.status });
+    }
+
+    db.prepare(
+      "UPDATE evaluations SET status = 'pending', error = NULL, updated_at = datetime('now') WHERE session_id = ?"
+    ).run(req.params.id);
+    runEvaluation(db, Number(req.params.id)).catch(() => {});
+
+    res.status(202).json({ status: 'pending' });
+  });
+
+  router.get('/sessions/:id/evaluation', (req, res) => {
+    const evaluation = db
+      .prepare(
+        `SELECT evaluations.* FROM evaluations
+         JOIN sessions ON sessions.id = evaluations.session_id
+         WHERE evaluations.session_id = ? AND sessions.user_id = ?`
+      )
+      .get(req.params.id, req.user.id);
+
+    if (!evaluation) {
+      return res.status(404).json({ error: 'not found' });
+    }
+    if (evaluation.status === 'ok') {
+      return res.json({ status: 'ok', summary_md: evaluation.summary_md });
+    }
+    if (evaluation.status === 'failed') {
+      return res.json({ status: 'failed', error: evaluation.error });
+    }
+    res.json({ status: 'pending' });
   });
 
   return router;

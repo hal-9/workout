@@ -20,7 +20,7 @@ Caddy (Reverse Proxy, Auto-TLS)
    ▼
 Node/Express API  ──  SQLite (Datei, Docker Volume)
    │
-   └──► Anthropic API (Server-seitig, Key nur im Backend-ENV)
+   └──► Google Gemini API (Server-seitig, Key nur im Backend-ENV)
 ```
 
 ### Kern-Features (MVP — nicht mehr, nicht weniger)
@@ -29,7 +29,7 @@ Node/Express API  ──  SQLite (Datei, Docker Volume)
 - Trainingsplan pro Nutzer, Import als JSON (Schema v1, siehe §3.1)
 - Workout-Ansicht: Sätze mit editierbaren Reps/Kg, vorausgefüllt mit Werten der letzten Session
 - Extra-Sätze über den Plan hinaus erlaubt; ungeloggte Übungen gelten als geskippt
-- Session finish → Backend aggregiert → 1 Anthropic-Call (Haiku) → Auswertung anzeigen & speichern
+- Session finish → Backend aggregiert → 1 Gemini-Call (2.5 Flash) → Auswertung anzeigen & speichern
 - Fortschritt: Max-Tests (Liegestütze), Klimmzug-Stufen, Körpergewichts-Log, Recharts-Charts,
   Partner-Fortschritt read-only per Toggle
 - Pause-Timer zwischen Sätzen (rein Frontend)
@@ -50,7 +50,7 @@ Multi-Device-Sync über die Offline-Queue hinaus · Auto-Retry der LLM-Auswertun
 | Backend | Express 4, better-sqlite3, zod, bcrypt |
 | Frontend | React 18, Vite, @tanstack/react-query, Recharts, vite-plugin-pwa, react-markdown |
 | Tests | Vitest + supertest (Backend) |
-| LLM | Anthropic Messages API, Modell `claude-haiku-4-5`, max_tokens 600 |
+| LLM | Google Gemini API (`@google/genai`), Modell `gemini-2.5-flash`, max_tokens 600 |
 | Deploy | Docker Compose (caddy + api), Caddy Auto-TLS |
 
 ### Monorepo-Layout
@@ -379,8 +379,8 @@ Modul `backend/src/evaluation.js`. Ablauf bei finish/evaluate:
 - `bodyweight_log`: letzte 5 Einträge aus `max_tests` mit `kind='bodyweight'`.
 - Nur geloggte Sets aufnehmen; `weight_kg`/`duration_s` nur wenn gesetzt.
 
-2. **Call** — Anthropic Messages API (offizielles SDK `@anthropic-ai/sdk`), Modell
-`claude-haiku-4-5`, `max_tokens: 600`, Timeout 30s. System-Prompt wörtlich:
+2. **Call** — Google Gemini API (offizielles SDK `@google/genai`), Modell
+`gemini-2.5-flash`, `maxOutputTokens: 600`, Timeout 30s. System-Prompt wörtlich:
 
 ```
 Du bist ein sachlicher Krafttrainings-Coach. Du bekommst Trainingsdaten als JSON:
@@ -407,8 +407,8 @@ Fehler (API down, Timeout, non-2xx): `status='failed'`, `error` = kurze Fehlerme
 komplett entkoppelt nach der finish-Response. Kein Auto-Retry. Status-Guard (§3.2 evaluate)
 verhindert parallele Calls für dieselbe Session.
 
-`ANTHROPIC_API_KEY` ausschließlich aus Backend-ENV. Fehlt der Key: Evaluation direkt auf
-`failed` mit `error='ANTHROPIC_API_KEY not configured'`.
+`GEMINI_API_KEY` ausschließlich aus Backend-ENV. Fehlt der Key: Evaluation direkt auf
+`failed` mit `error='GEMINI_API_KEY not configured'`.
 
 ## 5. Frontend-Spezifikation
 
@@ -557,11 +557,11 @@ setzt Session fort · Prefill sichtbar.
 ### M4 — LLM-Auswertung
 
 **Tasks**
-1. Aggregation + Anthropic-Call + Persistenz (§4), Anbindung an finish.
+1. Aggregation + Gemini-Call + Persistenz (§4), Anbindung an finish.
 2. `POST …/evaluate` (Retry) + `GET …/evaluation`.
 3. Auswertungs-Screen komplett (Polling, Markdown, Retry, Timeout).
 
-**Pflicht-Tests** (Anthropic-SDK im Test mocken — kein echter API-Call)
+**Pflicht-Tests** (Gemini-SDK im Test mocken — kein echter API-Call)
 - finish → Evaluation wird `ok` mit summary_md (Mock-Antwort) · Mock wirft Fehler →
   `failed` + error, finish-Response war trotzdem 200.
 - Aggregat korrekt: nur gleicher day_key, max 5 previous, ohne aktuelle Session,
@@ -620,7 +620,7 @@ workout.example.com {
    (`docker run --rm -v ...frontend:/app -w /app node:22 sh -c "npm ci && npm run build"`)
    → `dist/` nach `frontend-dist/` syncen → `docker compose up -d --build api` →
    `docker compose restart caddy` nur bei Caddyfile-Änderung.
-6. `deploy/.env.example` mit allen Variablen (ANTHROPIC_API_KEY, SESSION_SECRET,
+6. `deploy/.env.example` mit allen Variablen (GEMINI_API_KEY, SESSION_SECRET,
    DATABASE_PATH, SEED_*).
 
 **Pflicht-Tests:** keine neuen Backend-Tests; bestehende müssen grün bleiben.
@@ -642,6 +642,6 @@ workout.example.com {
 | `PORT` | API-Port, Default 3000 |
 | `DATABASE_PATH` | Pfad zur SQLite-Datei, z.B. `/data/app.db` |
 | `SESSION_SECRET` | reserviert (Cookie-Signierung), `openssl rand -hex 32` |
-| `ANTHROPIC_API_KEY` | nur Backend |
+| `GEMINI_API_KEY` | nur Backend |
 | `SEED_USER1_NAME` / `SEED_USER1_PASSWORD` | Nutzer 1 |
 | `SEED_USER2_NAME` / `SEED_USER2_PASSWORD` | Nutzer 2 |

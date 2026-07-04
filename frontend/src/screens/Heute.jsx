@@ -139,7 +139,9 @@ export default function Heute() {
   async function finishWorkout() {
     const res = await api.post(`/sessions/${sessionId}/finish`);
     queryClient.invalidateQueries({ queryKey: ['history'] });
-    navigate(`/session/${res.session_id}/auswertung`);
+    navigate(`/session/${res.session_id}/auswertung`, {
+      state: { summary: res.summary, evaluation: res.evaluation },
+    });
   }
 
   if (!plan) {
