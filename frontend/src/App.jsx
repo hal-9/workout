@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from './api.js';
 import BottomNav from './components/BottomNav.jsx';
+import OfflineIndicator from './components/OfflineIndicator.jsx';
 import Login from './screens/Login.jsx';
 import Heute from './screens/Heute.jsx';
 import Plan from './screens/Plan.jsx';
@@ -20,6 +21,7 @@ function AuthGuard({ children }) {
 
   return (
     <>
+      <OfflineIndicator />
       {children}
       <BottomNav />
     </>

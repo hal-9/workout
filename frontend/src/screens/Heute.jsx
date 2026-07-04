@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
+import { enqueueSet } from '../offlineQueue.js';
 
 function loadPauseDuration() {
   const stored = localStorage.getItem('pauseDuration');
@@ -35,6 +36,22 @@ export default function Heute() {
   const [sessionId, setSessionId] = useState(null);
   const [setsByExercise, setSetsByExercise] = useState({});
   const [pauseDuration, setPauseDuration] = useState(loadPauseDuration);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    function goOnline() {
+      setIsOnline(true);
+    }
+    function goOffline() {
+      setIsOnline(false);
+    }
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
   const [timerSeconds, setTimerSeconds] = useState(null);
 
   useEffect(() => {
@@ -98,13 +115,20 @@ export default function Heute() {
     const row = setsByExercise[exercise.id][index];
     const nextLogged = !row.logged;
 
-    await api.post(`/sessions/${sessionId}/sets`, {
+    const payload = {
       exercise_id: exercise.id,
       set_number: row.set_number,
       reps: exercise.type === 'bw' || exercise.type === 'wt' ? Number(row.reps) || null : null,
       weight_kg: exercise.type === 'wt' ? Number(row.weight_kg) || null : null,
       duration_s: exercise.type === 'time' || exercise.type === 'cardio' ? Number(row.duration_s) || null : null,
-    });
+    };
+
+    try {
+      await api.post(`/sessions/${sessionId}/sets`, payload);
+    } catch (err) {
+      if (err.status) throw err;
+      await enqueueSet(sessionId, payload);
+    }
 
     setSetsByExercise((prev) => ({
       ...prev,
@@ -162,6 +186,7 @@ export default function Heute() {
           <button
             key={d.key}
             onClick={() => setDayKey(d.key)}
+            disabled={!isOnline && d.key !== dayKey}
             style={{
               flex: '0 0 auto',
               background: d.key === dayKey ? 'var(--ember-dim)' : 'var(--surface)',
@@ -171,8 +196,9 @@ export default function Heute() {
               padding: '9px 13px',
               fontFamily: 'var(--font-mono)',
               fontSize: 12,
-              cursor: 'pointer',
+              cursor: !isOnline && d.key !== dayKey ? 'not-allowed' : 'pointer',
               whiteSpace: 'nowrap',
+              opacity: !isOnline && d.key !== dayKey ? 0.5 : 1,
             }}
           >
             {d.name}
@@ -299,6 +325,7 @@ export default function Heute() {
 
           <button
             onClick={finishWorkout}
+            disabled={!isOnline}
             className="btn primary"
             style={{
               width: '100%',
@@ -307,14 +334,19 @@ export default function Heute() {
               padding: 15,
               fontWeight: 600,
               fontSize: 15,
-              cursor: 'pointer',
-              background: 'var(--ember)',
-              color: '#160a04',
-              margin: '6px 0 20px',
+              cursor: isOnline ? 'pointer' : 'not-allowed',
+              background: isOnline ? 'var(--ember)' : 'var(--surface2)',
+              color: isOnline ? '#160a04' : 'var(--muted)',
+              margin: '6px 0 4px',
             }}
           >
             Workout abschließen
           </button>
+          {!isOnline && (
+            <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 12, margin: '0 0 20px' }}>
+              Offline — Abschließen erfordert Verbindung.
+            </p>
+          )}
         </>
       )}
 

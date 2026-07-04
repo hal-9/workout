@@ -5,4 +5,6 @@ dist/
 *.db-wal
 *.db-shm
 .env
+deploy/frontend-dist/
+deploy/data/
 .DS_Store
