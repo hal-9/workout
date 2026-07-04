@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Trainingskonsole</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E0F12;
+    --surface:#16181D;
+    --surface2:#1E2128;
+    --line:#2A2E37;
+    --text:#ECE7DE;
+    --muted:#878D99;
+    --ember:#EF7A3D;      /* Anstrengung / aktiv */
+    --ember-dim:#3a2417;
+    --sage:#5BC8A0;       /* erledigt / fortschritt */
+    --sage-dim:#16302a;
+    --danger:#E45D5D;
+    --font-display:"Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    --font-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:var(--font-display);
+    line-height:1.45;
+    padding-bottom:calc(78px + env(safe-area-inset-bottom));
+    overscroll-behavior-y:none;
+  }
+  .wrap{max-width:560px; margin:0 auto; padding:0 16px;}
+
+  /* ---------- Header ---------- */
+  header{
+    position:sticky; top:0; z-index:30;
+    background:linear-gradient(180deg, var(--bg) 70%, rgba(14,15,18,0));
+    padding:calc(14px + env(safe-area-inset-top)) 0 10px;
+  }
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand h1{
+    font-size:20px; font-weight:700; letter-spacing:-.02em; margin:0;
+  }
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--ember);box-shadow:0 0 10px var(--ember);}
+  .brand small{font-family:var(--font-mono); color:var(--muted); font-size:11px; letter-spacing:.04em; margin-left:auto;}
+
+  /* ---------- Screens ---------- */
+  .screen{display:none; animation:fade .25s ease;}
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  .eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:22px 0 8px;}
+  h2{font-size:23px; font-weight:700; letter-spacing:-.02em; margin:2px 0 14px;}
+  h3{font-size:16px; font-weight:600; margin:0;}
+  p{color:var(--muted); font-size:14px;}
+
+  /* ---------- Cards ---------- */
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:12px;}
+  .card.flat{background:transparent;}
+
+  /* ---------- Gauges (Hero) ---------- */
+  .gauges{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:6px;}
+  .gauge{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px;}
+  .gauge .lab{font-family:var(--font-mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted);}
+  .gauge .val{font-family:var(--font-mono); font-weight:700; letter-spacing:-.02em; margin:4px 0 2px; display:flex; align-items:baseline; gap:6px;}
+  .gauge .val b{font-size:30px; color:var(--text);}
+  .gauge .val span{font-size:13px; color:var(--muted);}
+  .track{height:7px; border-radius:6px; background:var(--surface2); overflow:hidden; margin-top:10px;}
+  .fill{height:100%; border-radius:6px; transition:width .5s cubic-bezier(.2,.8,.2,1);}
+  .fill.ember{background:linear-gradient(90deg,#c95a25,var(--ember));}
+  .fill.sage{background:linear-gradient(90deg,#2f8f6f,var(--sage));}
+
+  /* ---------- Day picker ---------- */
+  .pills{display:flex; gap:8px; overflow-x:auto; padding:2px 0 4px; margin:0 -16px; padding-left:16px; padding-right:16px; scrollbar-width:none;}
+  .pills::-webkit-scrollbar{display:none;}
+  .pill{flex:0 0 auto; background:var(--surface); border:1px solid var(--line); color:var(--muted); border-radius:11px; padding:9px 13px; font-family:var(--font-mono); font-size:12px; cursor:pointer; white-space:nowrap; transition:.18s;}
+  .pill.on{background:var(--ember-dim); border-color:var(--ember); color:var(--ember);}
+
+  /* ---------- Exercise ---------- */
+  .exhead{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+  .exmeta{font-family:var(--font-mono); font-size:11px; color:var(--muted); letter-spacing:.03em; margin-top:3px;}
+  .cue{font-size:13px; color:var(--muted); margin:10px 0 0; padding-left:11px; border-left:2px solid var(--line);}
+  .prescribe{font-family:var(--font-mono); color:var(--ember); font-size:13px; font-weight:500; white-space:nowrap;}
+
+  .sets{display:flex; flex-wrap:wrap; gap:8px; margin-top:13px;}
+  .setbox{width:42px; height:42px; border-radius:11px; border:1px solid var(--line); background:var(--surface2); color:var(--muted); font-family:var(--font-mono); font-weight:600; font-size:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:.15s;}
+  .setbox.done{background:var(--sage-dim); border-color:var(--sage); color:var(--sage);}
+  .setbox:active{transform:scale(.92);}
+
+  .exfoot{display:flex; align-items:center; gap:10px; margin-top:13px; flex-wrap:wrap;}
+  .wt{display:flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:13px; color:var(--muted);}
+  .wt input{width:58px; background:var(--surface2); border:1px solid var(--line); color:var(--text); border-radius:9px; padding:7px 8px; font-family:var(--font-mono); font-size:14px; text-align:center;}
+  .timerbtn{margin-left:auto; background:var(--surface2); border:1px solid var(--line); color:var(--text); border-radius:10px; padding:8px 12px; font-family:var(--font-mono); font-size:12.5px; cursor:pointer;}
+  .timerbtn:active{background:var(--ember-dim);}
+
+  /* ---------- Buttons ---------- */
+  .btn{display:block; width:100%; text-align:center; border:none; border-radius:13px; padding:15px; font-family:var(--font-display); font-weight:600; font-size:15px; cursor:pointer; transition:.15s;}
+  .btn.primary{background:var(--ember); color:#160a04;}
+  .btn.primary:active{filter:brightness(.92);}
+  .btn.ghost{background:var(--surface); border:1px solid var(--line); color:var(--text);}
+  .btn.done{background:var(--sage-dim); border:1px solid var(--sage); color:var(--sage);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+  .stepper{display:flex; align-items:center; gap:10px;}
+  .stepper button{width:46px;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-size:22px;font-family:var(--font-mono);cursor:pointer;}
+  .stepper button:active{background:var(--ember-dim);}
+  .stepper .num{flex:1; text-align:center; font-family:var(--font-mono); font-weight:700; font-size:28px;}
+
+  .chip{display:inline-flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--line); border-radius:9px; padding:7px 11px; font-family:var(--font-mono); font-size:12px; cursor:pointer; color:var(--text);}
+  .chip:active{background:var(--ember-dim);}
+
+  /* ---------- Stage list (pull-up) ---------- */
+  .stage{display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px solid var(--line);}
+  .stage:last-child{border-bottom:none;}
+  .stage .ix{flex:0 0 26px; height:26px; border-radius:50%; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:12px; color:var(--muted);}
+  .stage.cur .ix{background:var(--ember); color:#160a04; border-color:var(--ember);}
+  .stage.passed .ix{background:var(--sage-dim); color:var(--sage); border-color:var(--sage);}
+  .stage.cur .st{color:var(--text);}
+  .stage .st{font-size:14px; color:var(--muted);}
+  .stage .sm{font-family:var(--font-mono); font-size:11.5px; color:var(--muted); margin-top:2px;}
+
+  /* ---------- Accordion (Plan / Wissen) ---------- */
+  .acc{border:1px solid var(--line); border-radius:14px; margin-bottom:10px; overflow:hidden; background:var(--surface);}
+  .acc summary{list-style:none; cursor:pointer; padding:15px; display:flex; align-items:center; gap:10px; font-weight:600; font-size:15px;}
+  .acc summary::-webkit-details-marker{display:none;}
+  .acc summary .tag{font-family:var(--font-mono); font-size:11px; color:var(--ember); border:1px solid var(--ember); border-radius:7px; padding:2px 7px;}
+  .acc summary .arr{margin-left:auto; color:var(--muted); transition:.2s;}
+  .acc[open] summary .arr{transform:rotate(90deg);}
+  .acc .body{padding:0 15px 15px;}
+  .acc .body li{font-size:13.5px; color:var(--muted); margin:6px 0;}
+  .acc .ex{display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-top:1px solid var(--line); font-size:13.5px;}
+  .acc .ex span{font-family:var(--font-mono); color:var(--ember); white-space:nowrap;}
+
+  .know p{font-size:14px; line-height:1.6;}
+  .know strong{color:var(--text);}
+
+  /* ---------- Nav ---------- */
+  nav{position:fixed; bottom:0; left:0; right:0; z-index:40; background:rgba(20,22,27,.92); backdrop-filter:blur(14px); border-top:1px solid var(--line); padding:8px 0 calc(8px + env(safe-area-inset-bottom));}
+  .navin{max-width:560px; margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr);}
+  .nav-btn{background:none; border:none; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px; cursor:pointer; font-family:var(--font-display); font-size:11px;}
+  .nav-btn svg{width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.7;}
+  .nav-btn.on{color:var(--ember);}
+
+  /* ---------- Rest timer overlay ---------- */
+  .overlay{position:fixed; inset:0; z-index:60; background:rgba(8,9,11,.82); backdrop-filter:blur(8px); display:none; align-items:center; justify-content:center;}
+  .overlay.show{display:flex;}
+  .timer-card{background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:30px; width:min(86vw,330px); text-align:center;}
+  .timer-card .ring{font-family:var(--font-mono); font-weight:700; font-size:64px; letter-spacing:-.03em; color:var(--ember);}
+  .timer-card .lab{font-family:var(--font-mono); font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted);}
+  .timer-card .adj{display:flex; gap:8px; justify-content:center; margin:18px 0;}
+  .timer-card .adj button{background:var(--surface2); border:1px solid var(--line); color:var(--text); border-radius:10px; padding:9px 13px; font-family:var(--font-mono); font-size:13px; cursor:pointer;}
+
+  .mini{font-family:var(--font-mono); font-size:11.5px; color:var(--muted);}
+  .spark{display:flex; align-items:flex-end; gap:3px; height:46px; margin-top:10px;}
+  .spark i{flex:1; background:var(--sage-dim); border-radius:3px 3px 0 0; min-height:3px; display:block;}
+  .toast{position:fixed; left:50%; bottom:calc(92px + env(safe-area-inset-bottom)); transform:translateX(-50%); background:var(--surface2); border:1px solid var(--sage); color:var(--sage); font-family:var(--font-mono); font-size:13px; padding:11px 16px; border-radius:12px; opacity:0; transition:.3s; z-index:70; pointer-events:none;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap brand">
+    <span class="dot"></span>
+    <h1>Trainingskonsole</h1>
+    <small id="todayStr"></small>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ HEUTE ============ -->
+  <section id="s-heute" class="screen active">
+    <div class="gauges">
+      <div class="gauge">
+        <div class="lab">Liegestütze</div>
+        <div class="val"><b id="puNow">3</b><span>/ 50</span></div>
+        <div class="track"><div class="fill ember" id="puFill" style="width:6%"></div></div>
+      </div>
+      <div class="gauge">
+        <div class="lab">Klimmzüge</div>
+        <div class="val"><b id="clNow">0</b><span>/ 5</span></div>
+        <div class="track"><div class="fill sage" id="clFill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="eyebrow">Trainingstag wählen</div>
+    <div class="pills" id="dayPills"></div>
+
+    <div class="eyebrow" id="dayFocus" style="margin-top:16px"></div>
+    <h2 id="dayTitle" style="margin-top:2px"></h2>
+
+    <div id="exList"></div>
+
+    <button class="btn primary" id="finishBtn" style="margin:6px 0 4px">Workout abschließen</button>
+    <p style="text-align:center; margin-top:8px">Sätze antippen zum Abhaken · Pause-Timer pro Übung</p>
+  </section>
+
+  <!-- ============ PLAN ============ -->
+  <section id="s-plan" class="screen">
+    <div class="eyebrow">Wochenstruktur</div>
+    <h2>Dein Split</h2>
+    <p style="margin-top:-6px">4 Trainingstage. Dazwischen Pause oder lockeres Greasing (siehe unten). Mindestens ein voller Ruhetag pro Woche.</p>
+
+    <div class="card flat" style="padding:0">
+      <div id="planWeek"></div>
+    </div>
+
+    <div id="planDays"></div>
+
+    <div class="eyebrow">Geheimwaffe</div>
+    <h2 style="margin-top:2px">Grease the Groove</h2>
+    <div class="card know">
+      <p>Der schnellste Weg zu 50 Liegestützen und dem ersten Klimmzug ist <strong>häufiges, lockeres Üben</strong> — nie bis zur Erschöpfung. Über den Tag verteilt mehrere kleine Sätze. Das trainiert die Bewegung als Skill, ohne dich auszubrennen.</p>
+      <p style="margin-bottom:0"><strong>Täglich, an fast jedem Tag:</strong></p>
+    </div>
+    <div class="card">
+      <div class="exhead"><h3>Liegestütz-Mini-Sätze</h3><span class="prescribe" id="gtgPuTarget">3–4 Sätze</span></div>
+      <p class="cue" id="gtgPuCue">Jeweils ca. die Hälfte deines Maximums, sauber, mit Pause dazwischen.</p>
+      <div class="exfoot">
+        <span class="mini">Heute geloggt: <b id="gtgPuCount" style="color:var(--sage)">0</b> Sätze</span>
+        <button class="chip" style="margin-left:auto" onclick="addGtg('pushups')">+ Satz erledigt</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="exhead"><h3>Passiver Hang an der Stange</h3><span class="prescribe">3–4 × 20–30s</span></div>
+      <p class="cue">Baut Griffkraft und Schulterstabilität für Klimmzüge. Locker hängen, Schultern aktiv.</p>
+      <div class="exfoot">
+        <span class="mini">Heute geloggt: <b id="gtgHangCount" style="color:var(--sage)">0</b></span>
+        <button class="chip" style="margin-left:auto" onclick="addGtg('hangs')">+ Hang erledigt</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FORTSCHRITT ============ -->
+  <section id="s-fortschritt" class="screen">
+    <div class="eyebrow">Die zwei Ziele</div>
+    <h2>Fortschritt</h2>
+
+    <div class="card">
+      <div class="exhead">
+        <div><h3>Liegestütze — Max-Test</h3><div class="exmeta">Ziel: 50 · alle 1–2 Wochen testen</div></div>
+        <span class="prescribe" id="puGaugeTxt">3 / 50</span>
+      </div>
+      <div class="track" style="margin:14px 0 16px"><div class="fill ember" id="puFill2" style="width:6%"></div></div>
+      <div class="stepper">
+        <button onclick="bumpMax('pushups',-1)">−</button>
+        <div class="num" id="puStep">3</div>
+        <button onclick="bumpMax('pushups',1)">+</button>
+      </div>
+      <button class="btn ghost" style="margin-top:12px" onclick="logMax('pushups')">Neuen Max-Test speichern</button>
+      <p class="mini" style="margin-top:10px" id="puHist"></p>
+      <p class="cue" id="puReco" style="margin-top:12px"></p>
+    </div>
+
+    <div class="card">
+      <div class="exhead">
+        <div><h3>Klimmzug-Stufen</h3><div class="exmeta">Ziel: 5 saubere Klimmzüge</div></div>
+        <span class="prescribe" id="clGaugeTxt">0 / 5</span>
+      </div>
+      <div class="track" style="margin:14px 0 4px"><div class="fill sage" id="clFill2" style="width:0%"></div></div>
+      <div id="stageList" style="margin-top:10px"></div>
+      <div class="row2" style="margin-top:14px">
+        <button class="btn ghost" onclick="moveStage(-1)">Stufe zurück</button>
+        <button class="btn done" onclick="moveStage(1)">Stufe geschafft</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="exhead"><div><h3>Körpergewicht</h3><div class="exmeta">Leichter = relativ stärker → bessere Klimmzüge</div></div></div>
+      <div class="exfoot" style="margin-top:14px">
+        <span class="wt">kg <input id="bwInput" type="number" inputmode="decimal" step="0.1" placeholder="98.8"></span>
+        <button class="chip" style="margin-left:auto" onclick="logBw()">Eintragen</button>
+      </div>
+      <div class="spark" id="bwSpark"></div>
+      <p class="mini" id="bwNote" style="margin-top:8px"></p>
+    </div>
+
+    <div class="card">
+      <div class="exhead"><div><h3>Trainingsverlauf</h3></div><span class="prescribe" id="logCount">0</span></div>
+      <p class="mini" id="logNote" style="margin-top:8px">Noch keine Workouts abgeschlossen.</p>
+    </div>
+  </section>
+
+  <!-- ============ WISSEN ============ -->
+  <section id="s-wissen" class="screen know">
+    <div class="eyebrow">Warum dieser Plan funktioniert</div>
+    <h2>Prinzipien</h2>
+
+    <details class="acc" open><summary><span class="tag">01</span> Progressive Belastung <span class="arr">›</span></summary>
+      <div class="body"><p>Muskeln wachsen nur, wenn der Reiz steigt. Schaffst du das obere Ende des Wiederholungsbereichs sauber (gefühlt bleiben 1–2 Wdh. übrig), erhöhst du: erst Wiederholungen, dann Gewicht, dann schwierigere Variante. Da deine Hanteln bei 10 kg enden, gehst du bei Bedarf über mehr Wiederholungen, langsameres Tempo und kurze Pausen am tiefsten Punkt.</p></div>
+    </details>
+
+    <details class="acc"><summary><span class="tag">02</span> Häufigkeit schlägt Erschöpfung <span class="arr">›</span></summary>
+      <div class="body"><p>Für Skill-Ziele wie Liegestütze und Klimmzüge ist <strong>oft & frisch üben</strong> wirksamer als selten bis zum Versagen. Deshalb die täglichen Mini-Sätze (Grease the Groove). Die Bewegung wird zur Gewohnheit, das Nervensystem effizienter.</p></div>
+    </details>
+
+    <details class="acc"><summary><span class="tag">03</span> Erholung ist Teil des Trainings <span class="arr">›</span></summary>
+      <div class="body"><p>Jede Muskelgruppe braucht ~48 h. Der Split trennt Push / Pull / Beine, damit nichts überlastet. Schlaf und mindestens ein echter Ruhetag pro Woche zählen genauso wie das Training selbst.</p></div>
+    </details>
+
+    <details class="acc"><summary><span class="tag">04</span> Relative Kraft &amp; Körpergewicht <span class="arr">›</span></summary>
+      <div class="body"><p>Klimmzüge hängen stark vom Verhältnis Kraft zu Gewicht ab. Schon ein moderater, nachhaltiger Gewichtsverlust macht den ersten Klimmzug deutlich leichter — daher das Laufband als ruhiges Zusatz-Cardio. Eine konkrete Ernährungsstrategie sprengt diesen Plan; dabei helfe ich dir gern separat.</p></div>
+    </details>
+
+    <details class="acc"><summary><span class="tag">05</span> Form &amp; sichere Progression <span class="arr">›</span></summary>
+      <div class="body"><p>Volle Bewegungsamplitude vor mehr Wiederholungen — die Liegestützgriffe helfen dir, tiefer zu kommen. Cardio langsam steigern (anfangs Gehen / leichte Intervalle, max. ~10 % mehr pro Woche), um Gelenke und Schienbeine zu schonen. Wärm dich immer 5 Minuten auf. Bei Schmerzen (nicht Muskelkater) pausieren.</p></div>
+    </details>
+
+    <div class="eyebrow">Übungen steigern</div>
+    <h2 style="margin-top:2px">So gehst du voran</h2>
+    <div class="card"><p style="margin:0"><strong style="color:var(--ember)">Liegestütze:</strong> Falls 3 saubere noch zu schwer für Sätze sind, beginne erhöht (Hände auf Tisch/Treppe) und arbeite dich runter: erhöht → flach → mit Liegestützgriffen (mehr Tiefe). Steigere wöchentlich Sätze/Wiederholungen.</p></div>
+    <div class="card"><p style="margin:0"><strong style="color:var(--sage)">Klimmzüge:</strong> Hang → Schulterblatt-Pulls → Negative (langsam ablassen) → fußunterstützt → erste volle. Jede Stufe steht im Reiter „Fortschritt". Negative sind der Schlüssel von 0 auf 1.</p></div>
+
+    <div class="card flat" style="margin-top:18px">
+      <button class="btn ghost" onclick="resetAll()" style="border-color:var(--danger); color:var(--danger)">Allen Fortschritt zurücksetzen</button>
+      <p class="mini" style="text-align:center; margin-top:10px">Kein medizinischer Rat. Bei Vorerkrankungen oder Beschwerden vorher ärztlich abklären.</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- Rest timer overlay -->
+<div class="overlay" id="overlay">
+  <div class="timer-card">
+    <div class="lab">Pause</div>
+    <div class="ring" id="ring">90</div>
+    <div class="adj">
+      <button onclick="adjTimer(-15)">−15s</button>
+      <button onclick="adjTimer(15)">+15s</button>
+    </div>
+    <button class="btn primary" onclick="stopTimer()">Fertig</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Nav -->
+<nav><div class="navin">
+  <button class="nav-btn on" data-s="heute"><svg viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Heute</button>
+  <button class="nav-btn" data-s="plan"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>Plan</button>
+  <button class="nav-btn" data-s="fortschritt"><svg viewBox="0 0 24 24"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>Fortschritt</button>
+  <button class="nav-btn" data-s="wissen"><svg viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>Wissen</button>
+</div></nav>
+
+<script>
+/* ---------------- Persistente Speicherung (window.storage in Claude-Artifacts) ---------------- */
+const mem = {};
+const hasStore = (typeof window !== 'undefined' && window.storage);
+async function dbGet(key, fb){
+  if(!hasStore){ return (key in mem) ? mem[key] : fb; }
+  try{ const r = await window.storage.get(key); return r ? JSON.parse(r.value) : fb; }
+  catch(e){ return fb; }
+}
+async function dbSet(key, val){
+  if(!hasStore){ mem[key] = val; return; }
+  try{ await window.storage.set(key, JSON.stringify(val)); }catch(e){ console.error(e); }
+}
+const todayKey = () => new Date().toISOString().slice(0,10);
+
+/* ---------------- Trainingsplan-Daten ---------------- */
+const PLAN = {
+  push:{ name:"Push & Core", focus:"Brust · Schultern · Trizeps · Core", short:"Drücken",
+    ex:[
+      {id:"pu",  name:"Liegestütze (Skill)", muscle:"Brust · Schulter · Trizeps", presc:"5 × Wdh. ≈ ½ Max", sets:5, type:"bw",
+       cue:"Sauber, nicht bis zum Versagen. Brust zwischen die Liegestützgriffe. Falls zu schwer: erhöht starten."},
+      {id:"pike",name:"Pike-Liegestütze", muscle:"Schultern (vordere)", presc:"3 × 6–10", sets:3, type:"bw",
+       cue:"Hüfte hoch (umgedrehtes V), Kopf Richtung Boden. Vorstufe zum Handstand-Drücken."},
+      {id:"ohp", name:"Schulterdrücken (KH)", muscle:"Schultern", presc:"3 × 8–12", sets:3, type:"wt", w:7.5,
+       cue:"Stehend oder sitzend, Hanteln kontrolliert über Kopf. Rumpf fest."},
+      {id:"lat", name:"Seitheben (KH)", muscle:"Seitliche Schulter", presc:"3 × 12–15", sets:3, type:"wt", w:5,
+       cue:"Leicht angewinkelt, bis Schulterhöhe, langsam ablassen. Breite Schultern."},
+      {id:"tri", name:"Trizepsdrücken über Kopf (KH)", muscle:"Trizeps", presc:"3 × 10–12", sets:3, type:"wt", w:7.5,
+       cue:"Eine Hantel beidhändig hinter den Kopf, Ellbogen eng."},
+      {id:"plank",name:"Unterarmstütz (Plank)", muscle:"Core", presc:"3 × 30–45s", sets:3, type:"time", dur:40,
+       cue:"Gerade Linie Kopf–Ferse, Po anspannen, nicht durchhängen."},
+      {id:"holl", name:"Hollow Hold", muscle:"Gerade Bauchmuskeln", presc:"3 × 20–30s", sets:3, type:"time", dur:25,
+       cue:"Auf dem Rücken, Schultern & Beine leicht heben, unterer Rücken am Boden."}
+    ]},
+  legs:{ name:"Beine & Kondition", focus:"Beine · Posterior Chain · Cardio", short:"Beine",
+    ex:[
+      {id:"gob", name:"Goblet Squat (KB/KH)", muscle:"Beine · Po", presc:"3 × 10–12", sets:3, type:"wt", w:10,
+       cue:"Kettlebell vor der Brust, tief, Brust auf, Fersen am Boden."},
+      {id:"rdl", name:"Rumänisches Kreuzheben (KH)", muscle:"Beinrückseite · Rücken", presc:"3 × 10–12", sets:3, type:"wt", w:10,
+       cue:"Hüfte nach hinten, leicht gebeugte Knie, Rücken gerade, Hanteln nah am Bein."},
+      {id:"lun", name:"Ausfallschritte rückwärts", muscle:"Beine · Balance", presc:"3 × 8–10 / Seite", sets:3, type:"wt", w:7.5,
+       cue:"Kontrolliert nach hinten steigen, vorderes Knie über dem Fuß."},
+      {id:"sw",  name:"Kettlebell Swings", muscle:"Hüfte · Po · Kondition", presc:"4 × 12–15", sets:4, type:"time", dur:40,
+       cue:"Kraft aus der Hüfte (kein Kniebeuge), KB schwingt bis Brusthöhe. Auch gut für Traps & Atmung."},
+      {id:"calf",name:"Wadenheben", muscle:"Waden", presc:"3 × 15–20", sets:3, type:"bw",
+       cue:"Voller Bewegungsumfang, oben kurz halten."},
+      {id:"z2",  name:"Laufband — Zone 2", muscle:"Ausdauer · Fettabbau", presc:"15–25 min locker", sets:1, type:"cardio",
+       cue:"Tempo, bei dem du noch reden könntest. Erst Gehen, dann erhöhen. Schienbeine schonen."},
+      {id:"hang",name:"Passiver Hang (Pull-Skill)", muscle:"Griff · Schulter", presc:"3 × max", sets:3, type:"time", dur:25,
+       cue:"Locker an der Stange hängen, Schultern aktiv nach unten ziehen."}
+    ]},
+  pull:{ name:"Pull & Core", focus:"Rücken · Bizeps · Trapez · Core", short:"Ziehen",
+    ex:[
+      {id:"neg", name:"Klimmzug-Negative", muscle:"Rücken · Bizeps", presc:"4 × 3–5", sets:4, type:"bw",
+       cue:"Hochspringen/-steigen, dann 3–5s langsam ablassen. DER Schlüssel von 0 → 1 Klimmzug."},
+      {id:"row", name:"Vorgebeugtes Rudern (KH)", muscle:"Oberer Rücken · Bizeps", presc:"3 × 10–12", sets:3, type:"wt", w:10,
+       cue:"Hüfte gebeugt, Rücken gerade, Hanteln zur Hüfte ziehen, Schulterblätter zusammen."},
+      {id:"shr", name:"Schulterzucken / Shrugs (KH)", muscle:"Trapez", presc:"3 × 12–15", sets:3, type:"wt", w:10,
+       cue:"Beide 10er-Hanteln, Schultern gerade nach oben ziehen, oben halten. Gezielt für die Traps."},
+      {id:"ham", name:"Hammercurls (KH)", muscle:"Bizeps · Unterarm", presc:"3 × 10–12", sets:3, type:"wt", w:7.5,
+       cue:"Neutraler Griff (Daumen oben), kontrolliert."},
+      {id:"cur", name:"Bizepscurls (KH)", muscle:"Bizeps", presc:"3 × 10–12", sets:3, type:"wt", w:7.5,
+       cue:"Ellbogen fix am Körper, oben kurz anspannen."},
+      {id:"knee",name:"Hängendes Knieheben", muscle:"Unterer Core · Griff", presc:"3 × 8–12", sets:3, type:"bw",
+       cue:"An der Klimmzugstange Knie kontrolliert heben. Baut zusätzlich Griffkraft für Klimmzüge."},
+      {id:"deadb",name:"Dead Bug", muscle:"Tiefer Core", presc:"3 × 8 / Seite", sets:3, type:"bw",
+       cue:"Rücken flach am Boden, gegengleich Arm & Bein strecken."}
+    ]},
+  full:{ name:"Ganzkörper & Skill", focus:"Liegestütz- & Klimmzug-Fokus · Trapez", short:"Skill",
+    ex:[
+      {id:"puV", name:"Liegestütze (Volumen)", muscle:"Brust · Schulter · Trizeps", presc:"5 × Wdh. ≈ ½ Max", sets:5, type:"bw",
+       cue:"Etwas mehr Volumen als am Push-Tag, weiter mit Pause statt bis zum Versagen."},
+      {id:"asst",name:"Klimmzüge fußunterstützt / Negative", muscle:"Rücken · Bizeps", presc:"4 × 4", sets:4, type:"bw",
+       cue:"Falls Stange niedrig: Füße aufsetzen und mithelfen. Sonst Negative mit längerem Ablassen."},
+      {id:"upr", name:"Aufrechtes Rudern (KH)", muscle:"Trapez · Schultern", presc:"3 × 10–12", sets:3, type:"wt", w:7.5,
+       cue:"Hanteln eng am Körper bis Brusthöhe ziehen, Ellbogen führen."},
+      {id:"gob2",name:"Goblet Squat (KB)", muscle:"Beine", presc:"3 × 12", sets:3, type:"wt", w:10,
+       cue:"Hält den Unterkörper im Rhythmus, hohe Wiederholungen."},
+      {id:"farm",name:"Farmer's Carry (KH/KB)", muscle:"Trapez · Griff · Core", presc:"3 × 30–40s", sets:3, type:"time", dur:35,
+       cue:"Schwerste Gewichte, aufrecht gehen, Schultern stabil. Stark für Trapez & Haltung."},
+      {id:"rus", name:"Russian Twist (KB/KH)", muscle:"Seitlicher Core", presc:"3 × 20", sets:3, type:"bw",
+       cue:"Sitzend, leicht zurücklehnen, Gewicht von Seite zu Seite."},
+      {id:"raise",name:"Beinheben liegend", muscle:"Unterer Core", presc:"3 × 10–15", sets:3, type:"bw",
+       cue:"Beine gestreckt heben & langsam senken, unterer Rücken bleibt am Boden."}
+    ]}
+};
+const DAY_ORDER = ["push","legs","pull","full"];
+const WEEK = [
+  {d:"Mo", k:"push"},{d:"Di", k:"legs"},{d:"Mi", k:"rest"},
+  {d:"Do", k:"pull"},{d:"Fr", k:"full"},{d:"Sa", k:"rest"},{d:"So", k:"rest"}
+];
+
+const STAGES = [
+  {st:"Passiver Hang", sm:"3 × 30s frei hängen"},
+  {st:"Schulterblatt-Pulls", sm:"3 × 6–8, nur Schultern ziehen"},
+  {st:"Negative Klimmzüge", sm:"4 × 3–5, 3–5s ablassen"},
+  {st:"Fußunterstützte Klimmzüge", sm:"3 × 5 mit etwas Beinhilfe"},
+  {st:"Erste volle Klimmzüge", sm:"1–3 saubere Wdh."},
+  {st:"5 Klimmzüge — Ziel erreicht", sm:"🎉 Geschafft!"}
+];
+
+/* ---------------- State ---------------- */
+let state = {
+  pushMax:[{date:todayKey(), v:3}],
+  clStage:0,
+  weights:{},
+  bwLog:[],
+  sessions:[],          // {date, day}
+  gtg:{},               // {dateKey:{pushups,hangs}}
+  curDay:"push",
+  checks:{}             // key `${date}:${day}:${exId}` -> [bool...]
+};
+
+async function load(){
+  state.pushMax = await dbGet("pushMax", state.pushMax);
+  state.clStage = await dbGet("clStage", 0);
+  state.weights = await dbGet("weights", {});
+  state.bwLog   = await dbGet("bwLog", []);
+  state.sessions= await dbGet("sessions", []);
+  state.gtg     = await dbGet("gtg", {});
+  state.checks  = await dbGet("checks", {});
+  // Standardtag = heutiger Wochentag, sonst push
+  const wd = new Date().getDay(); // 0 So .. 6 Sa
+  const map = {1:"push",2:"legs",4:"pull",5:"full"};
+  state.curDay = map[wd] || "push";
+}
+
+/* ---------------- Helpers ---------------- */
+function curMax(){ return state.pushMax[state.pushMax.length-1].v; }
+function pct(v,goal){ return Math.max(0, Math.min(100, Math.round(v/goal*100))); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1800); }
+function buzz(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
+
+/* ---------------- Render: Heute ---------------- */
+function renderHeute(){
+  // gauges
+  const m = curMax(), cl = state.clStage>=5 ? 5 : Math.round(state.clStage); 
+  const clReps = state.clStage>=5 ? 5 : 0;
+  document.getElementById('puNow').textContent = m;
+  document.getElementById('puFill').style.width = pct(m,50)+"%";
+  document.getElementById('puFill2').style.width = pct(m,50)+"%";
+  document.getElementById('clNow').textContent = clReps;
+  document.getElementById('clFill').style.width = pct(state.clStage,5)+"%";
+  document.getElementById('clFill2').style.width = pct(state.clStage,5)+"%";
+
+  // pills
+  const pc = document.getElementById('dayPills'); pc.innerHTML="";
+  DAY_ORDER.forEach(k=>{
+    const b=document.createElement('button');
+    b.className="pill"+(k===state.curDay?" on":"");
+    b.textContent=PLAN[k].name;
+    b.onclick=()=>{ state.curDay=k; renderHeute(); };
+    pc.appendChild(b);
+  });
+
+  const day = PLAN[state.curDay];
+  document.getElementById('dayFocus').textContent = day.focus;
+  document.getElementById('dayTitle').textContent = day.name;
+
+  const list = document.getElementById('exList'); list.innerHTML="";
+  day.ex.forEach(ex=>{
+    list.appendChild(exCard(ex));
+  });
+  updateFinishBtn();
+}
+
+function checkKey(exId){ return `${todayKey()}:${state.curDay}:${exId}`; }
+
+function exCard(ex){
+  const card=document.createElement('div'); card.className="card";
+  let presc = ex.presc;
+  if(ex.id==="pu"||ex.id==="puV"){ const t=Math.max(2,Math.round(curMax()*0.5)); presc=`${ex.sets} × ${t} Wdh.`; }
+
+  card.innerHTML = `
+    <div class="exhead">
+      <div><h3>${ex.name}</h3><div class="exmeta">${ex.muscle}</div></div>
+      <div class="prescribe">${presc}</div>
+    </div>
+    <div class="cue">${ex.cue}</div>
+    <div class="sets" data-ex="${ex.id}"></div>
+    <div class="exfoot"></div>`;
+
+  const setsWrap=card.querySelector('.sets');
+  const saved = state.checks[checkKey(ex.id)] || Array(ex.sets).fill(false);
+  for(let i=0;i<ex.sets;i++){
+    const b=document.createElement('div'); b.className="setbox"+(saved[i]?" done":"");
+    b.textContent = saved[i] ? "✓" : (i+1);
+    b.onclick=()=>{ toggleSet(ex,i,b); };
+    setsWrap.appendChild(b);
+  }
+
+  const foot=card.querySelector('.exfoot');
+  if(ex.type==="wt"){
+    const w = state.weights[ex.id] ?? ex.w;
+    foot.innerHTML = `<span class="wt">kg <input type="number" inputmode="decimal" step="0.5" value="${w}"></span>`;
+    foot.querySelector('input').onchange=(e)=>{ state.weights[ex.id]=parseFloat(e.target.value)||0; dbSet("weights",state.weights); };
+  }
+  if(ex.type==="time" || ex.type==="wt" || ex.type==="bw"){
+    const rest = ex.type==="cardio"?0:90;
+    if(ex.type!=="cardio"){
+      const tb=document.createElement('button'); tb.className="timerbtn"; tb.textContent="⏱ Pause 90s";
+      tb.style.marginLeft="auto";
+      tb.onclick=()=>startTimer(90);
+      foot.appendChild(tb);
+    }
+  }
+  if(ex.type==="time"){
+    const tb2=document.createElement('button'); tb2.className="timerbtn"; tb2.textContent=`▶ ${ex.dur}s`;
+    tb2.style.marginLeft = foot.children.length? "8px":"auto";
+    tb2.onclick=()=>startTimer(ex.dur);
+    foot.appendChild(tb2);
+  }
+  return card;
+}
+
+function toggleSet(ex,i,el){
+  const key=checkKey(ex.id);
+  const arr = state.checks[key] || Array(ex.sets).fill(false);
+  arr[i]=!arr[i];
+  state.checks[key]=arr;
+  el.classList.toggle('done', arr[i]);
+  el.textContent = arr[i] ? "✓" : (i+1);
+  buzz(12);
+  dbSet("checks", state.checks);
+  // Auto-Pause starten beim Abhaken
+  if(arr[i] && ex.type!=="cardio") startTimer(ex.type==="time"?60:90);
+  updateFinishBtn();
+}
+
+function updateFinishBtn(){
+  const day=PLAN[state.curDay];
+  let done=0,total=0;
+  day.ex.forEach(ex=>{ const a=state.checks[checkKey(ex.id)]||[]; total+=ex.sets; done+=a.filter(Boolean).length; });
+  const btn=document.getElementById('finishBtn');
+  btn.textContent = done>=total && total>0 ? "Workout abschließen ✓" : `Workout abschließen (${done}/${total})`;
+}
+
+document.getElementById('finishBtn').onclick=async ()=>{
+  state.sessions.push({date:todayKey(), day:state.curDay});
+  await dbSet("sessions", state.sessions);
+  buzz([20,40,20]);
+  toast("Stark. Session gespeichert.");
+  const n = state.sessions.length;
+  if(n % 4 === 0) setTimeout(()=>toast("Tipp: Zeit für einen neuen Max-Test 💪"), 1900);
+  renderProgress();
+};
+
+/* ---------------- Rest Timer ---------------- */
+let tInt=null, tLeft=0, audioCtx=null;
+function startTimer(sec){
+  tLeft=sec;
+  document.getElementById('ring').textContent=tLeft;
+  document.getElementById('overlay').classList.add('show');
+  clearInterval(tInt);
+  tInt=setInterval(()=>{
+    tLeft--;
+    document.getElementById('ring').textContent=Math.max(0,tLeft);
+    if(tLeft<=0){ beep(); buzz([60,80,60]); stopTimer(); }
+  },1000);
+}
+function adjTimer(d){ tLeft=Math.max(5,tLeft+d); document.getElementById('ring').textContent=tLeft; }
+function stopTimer(){ clearInterval(tInt); document.getElementById('overlay').classList.remove('show'); }
+function beep(){
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    [0,150,300].forEach(t=>{
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.frequency.value=880; o.type="sine";
+      const s=audioCtx.currentTime+t/1000;
+      g.gain.setValueAtTime(0.0001,s); g.gain.exponentialRampToValueAtTime(0.2,s+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,s+0.12);
+      o.start(s); o.stop(s+0.13);
+    });
+  }catch(e){}
+}
+
+/* ---------------- GTG ---------------- */
+async function addGtg(type){
+  const k=todayKey();
+  state.gtg[k]=state.gtg[k]||{pushups:0,hangs:0};
+  state.gtg[k][type]++;
+  await dbSet("gtg",state.gtg);
+  buzz(15); renderGtg(); toast("Geloggt — locker bleiben!");
+}
+function renderGtg(){
+  const k=todayKey(); const g=state.gtg[k]||{pushups:0,hangs:0};
+  document.getElementById('gtgPuCount').textContent=g.pushups;
+  document.getElementById('gtgHangCount').textContent=g.hangs;
+  const t=Math.max(2,Math.round(curMax()*0.5));
+  document.getElementById('gtgPuTarget').textContent=`3–4 Sätze à ${t}`;
+  document.getElementById('gtgPuCue').textContent=`Jeweils ca. ${t} Wdh. (halbes Max), sauber, mit Pause dazwischen.`;
+}
+
+/* ---------------- Render: Plan ---------------- */
+function renderPlan(){
+  const w=document.getElementById('planWeek'); w.innerHTML="";
+  WEEK.forEach(d=>{
+    const rest = d.k==="rest";
+    const el=document.createElement('div'); el.className="acc"; el.style.marginBottom="8px";
+    el.innerHTML=`<summary><span class="tag" style="${rest?'color:var(--muted);border-color:var(--line)':''}">${d.d}</span> ${rest?'Ruhetag / Greasing':PLAN[d.k].name} <span class="arr"></span></summary>`;
+    w.appendChild(el);
+  });
+  const pd=document.getElementById('planDays'); pd.innerHTML="";
+  DAY_ORDER.forEach((k,ix)=>{
+    const day=PLAN[k];
+    const det=document.createElement('details'); det.className="acc"; if(ix===0) det.open=true;
+    let rows="";
+    day.ex.forEach(ex=>{
+      let presc=ex.presc;
+      if(ex.id==="pu"||ex.id==="puV"){ const t=Math.max(2,Math.round(curMax()*0.5)); presc=`${ex.sets} × ${t}`; }
+      rows+=`<div class="ex"><div>${ex.name}<div class="mini">${ex.muscle}</div></div><span>${presc}</span></div>`;
+    });
+    det.innerHTML=`<summary><span class="tag">${["A","B","C","D"][ix]}</span> ${day.name} <span class="arr">›</span></summary>
+      <div class="body"><p style="margin-top:0">${day.focus}</p>
+      <div class="ex" style="border-top:none"><div class="mini">Aufwärmen</div><span style="color:var(--muted)">5 min + Mobility</span></div>
+      ${rows}</div>`;
+    pd.appendChild(det);
+  });
+  renderGtg();
+}
+
+/* ---------------- Render: Fortschritt ---------------- */
+function renderProgress(){
+  const m=curMax();
+  document.getElementById('puStep').textContent=m;
+  document.getElementById('puGaugeTxt').textContent=`${m} / 50`;
+  document.getElementById('puFill2').style.width=pct(m,50)+"%";
+  // Historie
+  const h=state.pushMax.slice(-6).map(e=>`${e.date.slice(5)}: ${e.v}`).join("  ·  ");
+  document.getElementById('puHist').textContent = state.pushMax.length>1 ? "Verlauf — "+h : "Noch keine zweite Messung.";
+  const t=Math.max(2,Math.round(m*0.5));
+  document.getElementById('puReco').textContent=`Empfehlung heute (Grease the Groove): 3–4 lockere Sätze à ${t} Wiederholungen über den Tag verteilt.`;
+
+  // Klimmzug-Stufen
+  document.getElementById('clGaugeTxt').textContent=`${Math.min(state.clStage,5)} / 5`;
+  document.getElementById('clFill2').style.width=pct(state.clStage,5)+"%";
+  const sl=document.getElementById('stageList'); sl.innerHTML="";
+  STAGES.forEach((s,i)=>{
+    const cls = i<state.clStage?"passed":(i===state.clStage?"cur":"");
+    const el=document.createElement('div'); el.className="stage "+cls;
+    el.innerHTML=`<div class="ix">${i<state.clStage?"✓":i+1}</div><div><div class="st">${s.st}</div><div class="sm">${s.sm}</div></div>`;
+    sl.appendChild(el);
+  });
+
+  // Körpergewicht
+  renderBw();
+
+  // Verlauf
+  document.getElementById('logCount').textContent=state.sessions.length;
+  const ln=document.getElementById('logNote');
+  if(state.sessions.length){
+    const last=state.sessions.slice(-5).reverse().map(s=>`${s.date.slice(5)} · ${PLAN[s.day].short}`).join("\n");
+    ln.style.whiteSpace="pre-line"; ln.textContent=`Letzte Sessions:\n${last}`;
+  }
+}
+function bumpMax(type,d){
+  const last=state.pushMax[state.pushMax.length-1];
+  last.v=Math.max(0,last.v+d);
+  document.getElementById('puStep').textContent=last.v;
+}
+async function logMax(){
+  const v=parseInt(document.getElementById('puStep').textContent)||0;
+  state.pushMax.push({date:todayKey(), v});
+  await dbSet("pushMax", state.pushMax);
+  buzz(20); toast(`Max gespeichert: ${v} Liegestütze`); renderProgress(); renderHeute();
+}
+async function moveStage(d){
+  state.clStage=Math.max(0,Math.min(5,state.clStage+d));
+  await dbSet("clStage", state.clStage);
+  buzz(20); renderProgress(); renderHeute();
+  if(state.clStage>=5) toast("Klimmzug-Ziel erreicht! 🎉");
+}
+async function logBw(){
+  const v=parseFloat(document.getElementById('bwInput').value);
+  if(!v) return;
+  state.bwLog.push({date:todayKey(), kg:v});
+  await dbSet("bwLog", state.bwLog);
+  document.getElementById('bwInput').value="";
+  buzz(15); toast("Gewicht eingetragen"); renderBw();
+}
+function renderBw(){
+  const sp=document.getElementById('bwSpark'); sp.innerHTML="";
+  const data=state.bwLog.slice(-12);
+  if(!data.length){ document.getElementById('bwNote').textContent="Noch kein Gewicht erfasst."; return; }
+  const vals=data.map(d=>d.kg); const mn=Math.min(...vals)-1, mx=Math.max(...vals)+1;
+  data.forEach(d=>{ const i=document.createElement('i'); const h=mx>mn?((d.kg-mn)/(mx-mn))*100:50; i.style.height=Math.max(6,h)+"%"; i.title=`${d.date}: ${d.kg}kg`; sp.appendChild(i); });
+  const first=data[0].kg, last=data[data.length-1].kg, diff=(last-first).toFixed(1);
+  document.getElementById('bwNote').textContent=`Aktuell ${last} kg` + (data.length>1?` · Veränderung ${diff>0?'+':''}${diff} kg`:``);
+}
+
+/* ---------------- Reset ---------------- */
+async function resetAll(){
+  if(!confirm("Wirklich allen Fortschritt löschen? Das kann nicht rückgängig gemacht werden.")) return;
+  state={pushMax:[{date:todayKey(),v:3}],clStage:0,weights:{},bwLog:[],sessions:[],gtg:{},curDay:"push",checks:{}};
+  await dbSet("pushMax",state.pushMax); await dbSet("clStage",0); await dbSet("weights",{});
+  await dbSet("bwLog",[]); await dbSet("sessions",[]); await dbSet("gtg",{}); await dbSet("checks",{});
+  renderAll(); toast("Zurückgesetzt.");
+}
+
+/* ---------------- Nav ---------------- */
+document.querySelectorAll('.nav-btn').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+    b.classList.add('on');
+    document.getElementById('s-'+b.dataset.s).classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+});
+
+function renderAll(){ renderHeute(); renderPlan(); renderProgress(); }
+
+/* ---------------- Init ---------------- */
+(async ()=>{
+  document.getElementById('todayStr').textContent =
+    new Date().toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'});
+  await load();
+  renderAll();
+})();
+</script>
+</body>
+</html>
