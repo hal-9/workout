@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../api.js';
@@ -43,6 +44,11 @@ export default function Fortschritt() {
     queryKey: ['partner-progress', selectedUserId],
     queryFn: () => api.get(`/partner/progress?user_id=${selectedUserId}`),
     enabled: viewPartner,
+  });
+  const { data: recent } = useQuery({
+    queryKey: ['sessions-recent'],
+    queryFn: () => api.get('/sessions/recent'),
+    enabled: !viewPartner,
   });
 
   const [kind, setKind] = useState('pushups');
@@ -145,6 +151,47 @@ export default function Fortschritt() {
         <h3>Körpergewicht</h3>
         <Chart data={byKind.bodyweight} dataLabel="kg" />
       </div>
+
+      {!viewPartner && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 16, marginBottom: 12 }}>
+          <h3>Auswertungen</h3>
+          {(recent?.sessions ?? []).length === 0 && (
+            <p style={{ color: 'var(--muted)', fontSize: 13 }}>Noch keine abgeschlossenen Workouts.</p>
+          )}
+          {(recent?.sessions ?? []).map((s) => (
+            <Link
+              key={s.session_id}
+              to={`/session/${s.session_id}/auswertung`}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 8,
+                padding: '9px 0',
+                borderBottom: '1px solid var(--line)',
+                color: 'var(--text)',
+                textDecoration: 'none',
+                fontSize: 14,
+              }}
+            >
+              <span>{s.day_name}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
+                {new Date(s.finished_at.replace(' ', 'T') + 'Z').toLocaleDateString('de-DE', {
+                  day: '2-digit',
+                  month: '2-digit',
+                })}{' '}
+                {s.evaluation_status === 'ok'
+                  ? '✓'
+                  : s.evaluation_status === 'pending'
+                    ? '…'
+                    : s.evaluation_status === 'failed'
+                      ? '⚠'
+                      : '–'}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
 
       {!viewPartner && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 16 }}>

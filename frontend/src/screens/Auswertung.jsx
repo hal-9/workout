@@ -9,12 +9,32 @@ const POLL_TIMEOUT_MS = 60000;
 export default function Auswertung() {
   const { id } = useParams();
   const location = useLocation();
-  const summary = location.state?.summary;
-  const hasEvaluation = location.state?.evaluation ?? true;
+  const [fetched, setFetched] = useState(null);
+
+  // Direktaufruf (z.B. aus der Historie): Summary vom Server statt Router-State
+  const known = location.state ?? fetched;
+  const summary = known?.summary;
+  const hasEvaluation = known ? (known.evaluation ?? true) : null;
 
   const [evaluation, setEvaluation] = useState(null);
   const [pollKey, setPollKey] = useState(0);
   const startedAtRef = useRef(Date.now());
+
+  useEffect(() => {
+    if (location.state) return;
+    let cancelled = false;
+    api
+      .get(`/sessions/${id}/summary`)
+      .then((res) => {
+        if (!cancelled) setFetched(res);
+      })
+      .catch(() => {
+        if (!cancelled) setFetched({ summary: null, evaluation: false, error: true });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, location.state]);
 
   useEffect(() => {
     if (!hasEvaluation) return;
@@ -59,8 +79,17 @@ export default function Auswertung() {
   return (
     <div className="wrap">
       <h2>Auswertung</h2>
+      {fetched?.day_name && (
+        <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: -6 }}>
+          {fetched.day_name}
+          {fetched.finished_at &&
+            ` · ${new Date(fetched.finished_at.replace(' ', 'T') + 'Z').toLocaleDateString('de-DE')}`}
+        </p>
+      )}
 
-      {!hasEvaluation && (
+      {!known && <p style={{ color: 'var(--muted)' }}>Lade…</p>}
+
+      {known && !hasEvaluation && (
         <p style={{ color: 'var(--muted)' }}>Keine Auswertung (keine Sätze geloggt).</p>
       )}
 
@@ -110,7 +139,7 @@ export default function Auswertung() {
                 marginBottom: 8,
               }}
             >
-              <strong>{ex.exercise_id}</strong>
+              <strong>{ex.name ?? ex.exercise_id}</strong>
               <div style={{ fontSize: 13, color: 'var(--muted)' }}>
                 {ex.sets.map((s) => `Satz ${s.set_number}: ${s.reps ?? s.duration_s ?? '-'}`).join(' · ')}
               </div>
