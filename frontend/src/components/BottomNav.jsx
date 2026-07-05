@@ -9,15 +9,16 @@ const TABS = [
 export default function BottomNav() {
   return (
     <nav
+      className="glass"
       style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
         zIndex: 40,
-        background: 'rgba(20,22,27,.92)',
-        backdropFilter: 'blur(14px)',
-        borderTop: '1px solid var(--line)',
+        borderLeft: 'none',
+        borderRight: 'none',
+        borderBottom: 'none',
         padding: '8px 0 calc(8px + env(safe-area-inset-bottom))',
       }}
     >
@@ -36,7 +37,7 @@ export default function BottomNav() {
             style={({ isActive }) => ({
               background: 'none',
               border: 'none',
-              color: isActive ? 'var(--ember)' : 'var(--muted)',
+              color: isActive ? 'var(--primary)' : 'var(--muted)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',

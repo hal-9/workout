@@ -1,15 +1,22 @@
 :root {
-  --bg: #0e0f12;
-  --surface: #16181d;
-  --surface2: #1e2128;
-  --line: #2a2e37;
-  --text: #ece7de;
-  --muted: #878d99;
-  --ember: #ef7a3d;
-  --ember-dim: #3a2417;
-  --sage: #5bc8a0;
-  --sage-dim: #16302a;
-  --danger: #e45d5d;
+  --bg: #f6f2fb;
+  --bg-gradient: linear-gradient(165deg, #fdf2f8 0%, #f5eefc 45%, #eef0fe 100%);
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface2: #f4edfa;
+  --line: #e7dcf3;
+  --text: #2e2440;
+  --muted: #7d6f96;
+  --primary: #7c3aed;
+  --primary-dim: #efe7fd;
+  --accent: #ec4899;
+  --primary-grad: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  --on-primary: #ffffff;
+  --success: #2f9e77;
+  --success-dim: #e2f5ec;
+  --danger: #dd4a72;
+  --glass: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --shadow-card: 0 6px 22px rgba(124, 58, 237, 0.08);
   --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
@@ -27,6 +34,8 @@ body {
 
 body {
   background: var(--bg);
+  background-image: var(--bg-gradient);
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-display);
   line-height: 1.45;
@@ -42,4 +51,12 @@ body {
   max-width: 560px;
   margin: 0 auto;
   padding: 0 16px;
+}
+
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter: blur(18px) saturate(1.5);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
 }

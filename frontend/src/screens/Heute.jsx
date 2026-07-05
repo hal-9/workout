@@ -261,9 +261,9 @@ export default function Heute() {
               style={{
                 flex: '0 0 auto',
                 textAlign: 'left',
-                background: selected ? 'var(--ember-dim)' : doneAt ? 'var(--sage-dim)' : 'var(--surface)',
-                border: `1px solid ${selected ? 'var(--ember)' : doneAt ? 'var(--sage)' : 'var(--line)'}`,
-                color: selected ? 'var(--ember)' : doneAt ? 'var(--sage)' : 'var(--muted)',
+                background: selected ? 'var(--primary-dim)' : doneAt ? 'var(--success-dim)' : 'var(--surface)',
+                border: `1px solid ${selected ? 'var(--primary)' : doneAt ? 'var(--success)' : 'var(--line)'}`,
+                color: selected ? 'var(--primary)' : doneAt ? 'var(--success)' : 'var(--muted)',
                 borderRadius: 11,
                 padding: '9px 13px',
                 fontFamily: 'var(--font-mono)',
@@ -284,8 +284,8 @@ export default function Heute() {
                       borderRadius: 999,
                       fontSize: 10,
                       textTransform: 'uppercase',
-                      background: 'var(--ember-dim)',
-                      color: 'var(--ember)',
+                      background: 'var(--primary-dim)',
+                      color: 'var(--primary)',
                     }}
                   >
                     Als Nächstes
@@ -305,8 +305,8 @@ export default function Heute() {
       {showRestartGate && (
         <div
           style={{
-            background: 'var(--sage-dim)',
-            border: '1px solid var(--sage)',
+            background: 'var(--success-dim)',
+            border: '1px solid var(--success)',
             borderRadius: 16,
             padding: 16,
             marginBottom: 12,
@@ -316,7 +316,7 @@ export default function Heute() {
             gap: 12,
           }}
         >
-          <div style={{ color: 'var(--sage)', fontSize: 13 }}>
+          <div style={{ color: 'var(--success)', fontSize: 13 }}>
             ✓ Diese Woche erledigt ({dayDoneAt.toLocaleDateString('de-DE', { weekday: 'short' })}).
           </div>
           <button
@@ -351,8 +351,8 @@ export default function Heute() {
             <div
               key={ex.id}
               style={{
-                background: allLogged ? 'var(--sage-dim)' : 'var(--surface)',
-                border: `1px solid ${allLogged ? 'var(--sage)' : 'var(--line)'}`,
+                background: allLogged ? 'var(--success-dim)' : 'var(--surface)',
+                border: `1px solid ${allLogged ? 'var(--success)' : 'var(--line)'}`,
                 borderRadius: 16,
                 padding: 16,
                 marginBottom: 12,
@@ -361,7 +361,7 @@ export default function Heute() {
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <div>
                   <h3>
-                    {allLogged && <span style={{ color: 'var(--sage)' }}>✓ </span>}
+                    {allLogged && <span style={{ color: 'var(--success)' }}>✓ </span>}
                     {ex.name}
                   </h3>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
@@ -372,7 +372,7 @@ export default function Heute() {
                   href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ex.video_query)}`}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ fontFamily: 'var(--font-mono)', color: 'var(--ember)', fontSize: 12 }}
+                  style={{ fontFamily: 'var(--font-mono)', color: 'var(--primary)', fontSize: 12 }}
                 >
                   Technik
                 </a>
@@ -421,8 +421,8 @@ export default function Heute() {
                         height: 34,
                         borderRadius: 9,
                         border: '1px solid var(--line)',
-                        background: row.logged ? 'var(--sage-dim)' : 'var(--surface2)',
-                        color: row.logged ? 'var(--sage)' : 'var(--muted)',
+                        background: row.logged ? 'var(--success-dim)' : 'var(--surface2)',
+                        color: row.logged ? 'var(--success)' : 'var(--muted)',
                         fontFamily: 'var(--font-mono)',
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -497,8 +497,8 @@ export default function Heute() {
               fontWeight: 600,
               fontSize: 15,
               cursor: isOnline && sessionId ? 'pointer' : 'not-allowed',
-              background: isOnline && sessionId ? 'var(--ember)' : 'var(--surface2)',
-              color: isOnline && sessionId ? '#160a04' : 'var(--muted)',
+              background: isOnline && sessionId ? 'var(--primary-grad)' : 'var(--surface2)',
+              color: isOnline && sessionId ? 'var(--on-primary)' : 'var(--muted)',
               margin: '6px 0 4px',
             }}
           >
@@ -518,16 +518,17 @@ export default function Heute() {
             position: 'fixed',
             inset: 0,
             zIndex: 60,
-            background: 'rgba(8,9,11,.82)',
+            background: 'rgba(46,36,64,.3)',
+            WebkitBackdropFilter: 'blur(6px)',
+            backdropFilter: 'blur(6px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
           <div
+            className="glass"
             style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--line)',
               borderRadius: 22,
               padding: 30,
               width: 'min(86vw,330px)',
@@ -535,7 +536,7 @@ export default function Heute() {
             }}
           >
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>Pause</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 64, color: 'var(--ember)' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 64, color: 'var(--primary)' }}>
               {Math.max(0, timerSeconds)}
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', margin: '18px 0' }}>
@@ -544,9 +545,9 @@ export default function Heute() {
                   key={d}
                   onClick={() => changePauseDuration(d)}
                   style={{
-                    background: d === pauseDuration ? 'var(--ember-dim)' : 'var(--surface2)',
+                    background: d === pauseDuration ? 'var(--primary-dim)' : 'var(--surface2)',
                     border: '1px solid var(--line)',
-                    color: d === pauseDuration ? 'var(--ember)' : 'var(--text)',
+                    color: d === pauseDuration ? 'var(--primary)' : 'var(--text)',
                     borderRadius: 10,
                     padding: '9px 13px',
                     fontFamily: 'var(--font-mono)',
@@ -569,8 +570,8 @@ export default function Heute() {
                 fontWeight: 600,
                 fontSize: 15,
                 cursor: 'pointer',
-                background: 'var(--ember)',
-                color: '#160a04',
+                background: 'var(--primary-grad)',
+                color: 'var(--on-primary)',
               }}
             >
               Fertig

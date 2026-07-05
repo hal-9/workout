@@ -52,7 +52,7 @@ export default function OfflineIndicator() {
         zIndex: 50,
         background: 'var(--surface2)',
         border: '1px solid var(--line)',
-        color: isOnline ? 'var(--sage)' : 'var(--muted)',
+        color: isOnline ? 'var(--success)' : 'var(--muted)',
         borderRadius: 10,
         padding: '6px 12px',
         fontFamily: 'var(--font-mono)',

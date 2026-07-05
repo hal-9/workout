@@ -24,7 +24,18 @@ export default function Login() {
 
   return (
     <div className="wrap" style={{ paddingTop: 'calc(60px + env(safe-area-inset-top))' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700 }}>Trainingskonsole</h1>
+      <h1
+        style={{
+          fontSize: 28,
+          fontWeight: 700,
+          background: 'var(--primary-grad)',
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+          color: 'transparent',
+        }}
+      >
+        LiLief-Workout
+      </h1>
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: 12 }}>
           <input
@@ -76,6 +87,6 @@ const btnStyle = {
   fontWeight: 600,
   fontSize: 15,
   cursor: 'pointer',
-  background: 'var(--ember)',
-  color: '#160a04',
+  background: 'var(--primary-grad)',
+  color: 'var(--on-primary)',
 };

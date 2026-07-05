@@ -65,7 +65,7 @@ export default function Plan() {
                   }}
                 >
                   <span>{ex.name}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--ember)' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}>
                     {ex.sets} × {ex.target_reps ?? `${ex.target_seconds}s`}
                   </span>
                 </div>
@@ -123,8 +123,8 @@ export default function Plan() {
               fontWeight: 600,
               fontSize: 15,
               cursor: 'pointer',
-              background: 'var(--ember)',
-              color: '#160a04',
+              background: 'var(--primary-grad)',
+              color: 'var(--on-primary)',
             }}
           >
             Importieren

@@ -23,7 +23,7 @@ function Chart({ data, dataLabel }) {
         <XAxis dataKey="date" stroke="var(--muted)" fontSize={11} />
         <YAxis stroke="var(--muted)" fontSize={11} />
         <Tooltip formatter={(v) => [v, dataLabel]} />
-        <Line type="monotone" dataKey="value" stroke="var(--ember)" strokeWidth={2} dot={{ r: 3 }} />
+        <Line type="monotone" dataKey="value" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
       </LineChart>
     </ResponsiveContainer>
   );
@@ -81,9 +81,9 @@ export default function Fortschritt() {
           onClick={() => setSelectedUserId(null)}
           style={{
             flex: '0 0 auto',
-            background: !viewPartner ? 'var(--ember-dim)' : 'var(--surface)',
-            border: `1px solid ${!viewPartner ? 'var(--ember)' : 'var(--line)'}`,
-            color: !viewPartner ? 'var(--ember)' : 'var(--muted)',
+            background: !viewPartner ? 'var(--primary-dim)' : 'var(--surface)',
+            border: `1px solid ${!viewPartner ? 'var(--primary)' : 'var(--line)'}`,
+            color: !viewPartner ? 'var(--primary)' : 'var(--muted)',
             borderRadius: 11,
             padding: '9px 13px',
             fontFamily: 'var(--font-mono)',
@@ -100,9 +100,9 @@ export default function Fortschritt() {
             onClick={() => setSelectedUserId(u.id)}
             style={{
               flex: '0 0 auto',
-              background: selectedUserId === u.id ? 'var(--ember-dim)' : 'var(--surface)',
-              border: `1px solid ${selectedUserId === u.id ? 'var(--ember)' : 'var(--line)'}`,
-              color: selectedUserId === u.id ? 'var(--ember)' : 'var(--muted)',
+              background: selectedUserId === u.id ? 'var(--primary-dim)' : 'var(--surface)',
+              border: `1px solid ${selectedUserId === u.id ? 'var(--primary)' : 'var(--line)'}`,
+              color: selectedUserId === u.id ? 'var(--primary)' : 'var(--muted)',
               borderRadius: 11,
               padding: '9px 13px',
               fontFamily: 'var(--font-mono)',
@@ -125,7 +125,7 @@ export default function Fortschritt() {
         <h3>Klimmzug-Stufen</h3>
         {currentStageIndex !== null && PULLUP_STAGES[currentStageIndex] ? (
           <>
-            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 22, color: 'var(--ember)' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 22, color: 'var(--primary)' }}>
               {currentStageIndex + 1}. {PULLUP_STAGES[currentStageIndex].label}
             </div>
             <div style={{ color: 'var(--muted)', fontSize: 13 }}>{PULLUP_STAGES[currentStageIndex].description}</div>
@@ -222,8 +222,8 @@ export default function Fortschritt() {
                 fontWeight: 600,
                 fontSize: 15,
                 cursor: 'pointer',
-                background: 'var(--ember)',
-                color: '#160a04',
+                background: 'var(--primary-grad)',
+                color: 'var(--on-primary)',
               }}
             >
               Eintragen

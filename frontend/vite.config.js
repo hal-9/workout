@@ -18,12 +18,12 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: 'Trainingskonsole',
-        short_name: 'Trainingskonsole',
+        name: 'LiLief-Workout',
+        short_name: 'LiLief',
         description: 'Selbst-gehostete Workout-PWA',
         display: 'standalone',
-        background_color: '#0E0F12',
-        theme_color: '#0E0F12',
+        background_color: '#f6f2fb',
+        theme_color: '#f6f2fb',
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },

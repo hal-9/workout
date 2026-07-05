@@ -116,8 +116,8 @@ export default function Auswertung() {
               fontWeight: 600,
               fontSize: 15,
               cursor: 'pointer',
-              background: 'var(--ember)',
-              color: '#160a04',
+              background: 'var(--primary-grad)',
+              color: 'var(--on-primary)',
             }}
           >
             Erneut auswerten
