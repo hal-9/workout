@@ -31,9 +31,107 @@ const setSchema = z
     message: 'exactly one of reps/duration_s must be set',
   });
 
+function groupSetsByExercise(logs) {
+  const byExercise = new Map();
+  for (const log of logs) {
+    if (!byExercise.has(log.exercise_id)) byExercise.set(log.exercise_id, []);
+    byExercise.get(log.exercise_id).push(log);
+  }
+  return byExercise;
+}
+
 export function sessionsRouter(db) {
   const router = Router();
   router.use(requireAuth(db));
+
+  router.get('/sessions/recent', (req, res) => {
+    let limit = Number(req.query.limit) || 20;
+    limit = Math.min(Math.max(Math.trunc(limit), 1), 50);
+
+    const rows = db
+      .prepare(
+        `SELECT sessions.id, sessions.plan_id, sessions.day_key, sessions.finished_at,
+                evaluations.status AS evaluation_status
+         FROM sessions
+         LEFT JOIN evaluations ON evaluations.session_id = sessions.id
+         WHERE sessions.user_id = ? AND sessions.status = 'finished'
+         ORDER BY sessions.finished_at DESC
+         LIMIT ?`
+      )
+      .all(req.user.id, limit);
+
+    const dayNamesByPlan = new Map();
+    function dayName(planId, dayKey) {
+      if (!dayNamesByPlan.has(planId)) {
+        const planRow = db.prepare('SELECT json_payload FROM plans WHERE id = ?').get(planId);
+        const days = planRow ? JSON.parse(planRow.json_payload).days : [];
+        dayNamesByPlan.set(planId, new Map(days.map((d) => [d.key, d.name])));
+      }
+      return dayNamesByPlan.get(planId).get(dayKey) ?? dayKey;
+    }
+
+    const sessions = rows.map((r) => ({
+      session_id: r.id,
+      day_key: r.day_key,
+      day_name: dayName(r.plan_id, r.day_key),
+      finished_at: r.finished_at,
+      evaluation_status: r.evaluation_status ?? null,
+    }));
+
+    const activeRow = db
+      .prepare(
+        `SELECT id, day_key, started_at FROM sessions
+         WHERE user_id = ? AND status = 'active'
+         ORDER BY started_at DESC LIMIT 1`
+      )
+      .get(req.user.id);
+
+    const active = activeRow
+      ? {
+          session_id: activeRow.id,
+          day_key: activeRow.day_key,
+          started_at: activeRow.started_at,
+          set_logs: setLogsForSession(db, activeRow.id),
+        }
+      : null;
+
+    res.json({ sessions, active });
+  });
+
+  router.get('/sessions/:id/summary', (req, res) => {
+    const session = db
+      .prepare('SELECT * FROM sessions WHERE id = ? AND user_id = ?')
+      .get(req.params.id, req.user.id);
+
+    if (!session) {
+      return res.status(404).json({ error: 'not found' });
+    }
+
+    const planRow = db.prepare('SELECT json_payload FROM plans WHERE id = ?').get(session.plan_id);
+    const days = planRow ? JSON.parse(planRow.json_payload).days : [];
+    const day = days.find((d) => d.key === session.day_key);
+    const exerciseNames = new Map((day?.exercises ?? []).map((e) => [e.id, e.name]));
+
+    const logs = setLogsForSession(db, session.id);
+    const summary = {
+      exercises: [...groupSetsByExercise(logs).entries()].map(([exercise_id, sets]) => ({
+        exercise_id,
+        name: exerciseNames.get(exercise_id) ?? exercise_id,
+        sets,
+      })),
+    };
+
+    const evaluation = db.prepare('SELECT 1 FROM evaluations WHERE session_id = ?').get(session.id);
+
+    res.json({
+      session_id: session.id,
+      day_key: session.day_key,
+      day_name: day?.name ?? session.day_key,
+      finished_at: session.finished_at,
+      evaluation: Boolean(evaluation),
+      summary,
+    });
+  });
 
   router.post('/sessions', (req, res) => {
     const { day_key } = req.body || {};
@@ -137,13 +235,8 @@ export function sessionsRouter(db) {
       runEvaluation(db, session.id).catch(() => {});
     }
 
-    const byExercise = new Map();
-    for (const log of logs) {
-      if (!byExercise.has(log.exercise_id)) byExercise.set(log.exercise_id, []);
-      byExercise.get(log.exercise_id).push(log);
-    }
     const summary = {
-      exercises: [...byExercise.entries()].map(([exercise_id, sets]) => ({
+      exercises: [...groupSetsByExercise(logs).entries()].map(([exercise_id, sets]) => ({
         exercise_id,
         sets,
       })),
