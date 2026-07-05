@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
@@ -7,6 +7,16 @@ import { enqueueSet } from '../offlineQueue.js';
 function loadPauseDuration() {
   const stored = localStorage.getItem('pauseDuration');
   return stored ? Number(stored) : 90;
+}
+
+function parseUtc(ts) {
+  return new Date(ts.replace(' ', 'T') + 'Z');
+}
+
+function mondayStart() {
+  const now = new Date();
+  const offset = (now.getDay() + 6) % 7;
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
 }
 
 function buildInitialSets(exercise, prefillSets, resumedSets) {
@@ -31,9 +41,14 @@ export default function Heute() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: plan } = useQuery({ queryKey: ['plan'], queryFn: () => api.get('/plan'), retry: false });
+  const { data: recent } = useQuery({
+    queryKey: ['sessions-recent'],
+    queryFn: () => api.get('/sessions/recent'),
+  });
 
   const [dayKey, setDayKey] = useState(null);
   const [sessionId, setSessionId] = useState(null);
+  const sessionPromiseRef = useRef(null);
   const [setsByExercise, setSetsByExercise] = useState({});
   const [pauseDuration, setPauseDuration] = useState(loadPauseDuration);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -54,31 +69,55 @@ export default function Heute() {
   }, []);
   const [timerSeconds, setTimerSeconds] = useState(null);
 
-  useEffect(() => {
-    if (!dayKey && plan?.days?.length) {
-      setDayKey(plan.days[0].key);
+  // Wochen-Status: jüngste finished Session je day_key innerhalb der lokalen Kalenderwoche (Mo–So)
+  const weekStart = mondayStart();
+  const doneThisWeek = new Map();
+  for (const s of recent?.sessions ?? []) {
+    const finished = parseUtc(s.finished_at);
+    if (finished >= weekStart && !doneThisWeek.has(s.day_key)) {
+      doneThisWeek.set(s.day_key, finished);
     }
-  }, [plan, dayKey]);
+  }
+  const nextDayKey = plan?.days?.find((d) => !doneThisWeek.has(d.key))?.key ?? plan?.days?.[0]?.key;
+
+  function freshActiveSession() {
+    const active = queryClient.getQueryData(['sessions-recent'])?.active;
+    if (!active) return null;
+    if (Date.now() - parseUtc(active.started_at).getTime() > 24 * 3600 * 1000) return null;
+    return active;
+  }
+
+  // Vorauswahl: offene Session (<24h) gewinnt, sonst nächster offener Tag der Woche
+  useEffect(() => {
+    if (dayKey || !plan?.days?.length || !recent) return;
+    const active = freshActiveSession();
+    if (active && plan.days.some((d) => d.key === active.day_key)) {
+      setDayKey(active.day_key);
+    } else {
+      setDayKey(nextDayKey);
+    }
+  }, [plan, recent, dayKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!dayKey) return;
+    if (!dayKey || !plan) return;
     let cancelled = false;
 
-    async function start() {
-      const [sessionRes, historyRes] = await Promise.all([
-        api.post('/sessions', { day_key: dayKey }),
-        api.get(`/history?day_key=${encodeURIComponent(dayKey)}`),
-      ]);
+    async function load() {
+      const historyRes = await api.get(`/history?day_key=${encodeURIComponent(dayKey)}`);
       if (cancelled) return;
 
-      setSessionId(sessionRes.session_id);
-      const day = plan.days.find((d) => d.key === dayKey);
+      const active = freshActiveSession();
+      const resumed = active?.day_key === dayKey ? active : null;
+      setSessionId(resumed ? resumed.session_id : null);
+      sessionPromiseRef.current = null;
+
       const resumedByExercise = {};
-      for (const log of sessionRes.set_logs) {
+      for (const log of resumed?.set_logs ?? []) {
         resumedByExercise[log.exercise_id] = resumedByExercise[log.exercise_id] || [];
         resumedByExercise[log.exercise_id].push(log);
       }
 
+      const day = plan.days.find((d) => d.key === dayKey);
       const initial = {};
       for (const ex of day.exercises) {
         initial[ex.id] = buildInitialSets(ex, historyRes.prefill[ex.id], resumedByExercise[ex.id]);
@@ -86,11 +125,29 @@ export default function Heute() {
       setSetsByExercise(initial);
     }
 
-    start();
+    load();
     return () => {
       cancelled = true;
     };
-  }, [dayKey, plan]);
+  }, [dayKey, plan]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lazy: Session entsteht erst beim ersten Satz-Haken bzw. explizit über „Nochmal starten"
+  function ensureSession() {
+    if (sessionId) return Promise.resolve(sessionId);
+    if (!sessionPromiseRef.current) {
+      sessionPromiseRef.current = api
+        .post('/sessions', { day_key: dayKey })
+        .then((res) => {
+          setSessionId(res.session_id);
+          return res.session_id;
+        })
+        .catch((err) => {
+          sessionPromiseRef.current = null;
+          throw err;
+        });
+    }
+    return sessionPromiseRef.current;
+  }
 
   useEffect(() => {
     if (timerSeconds === null) return;
@@ -123,11 +180,18 @@ export default function Heute() {
       duration_s: exercise.type === 'time' || exercise.type === 'cardio' ? Number(row.duration_s) || null : null,
     };
 
+    let sid;
     try {
-      await api.post(`/sessions/${sessionId}/sets`, payload);
+      sid = await ensureSession();
+    } catch {
+      return; // Session-Start fehlgeschlagen — Haken bleibt unverändert
+    }
+
+    try {
+      await api.post(`/sessions/${sid}/sets`, payload);
     } catch (err) {
       if (err.status) throw err;
-      await enqueueSet(sessionId, payload);
+      await enqueueSet(sid, payload);
     }
 
     setSetsByExercise((prev) => ({
@@ -163,6 +227,7 @@ export default function Heute() {
   async function finishWorkout() {
     const res = await api.post(`/sessions/${sessionId}/finish`);
     queryClient.invalidateQueries({ queryKey: ['history'] });
+    queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
     navigate(`/session/${res.session_id}/auswertung`, {
       state: { summary: res.summary, evaluation: res.evaluation },
     });
@@ -178,45 +243,116 @@ export default function Heute() {
   }
 
   const day = plan.days.find((d) => d.key === dayKey);
+  const dayDoneAt = dayKey ? doneThisWeek.get(dayKey) : null;
+  const showRestartGate = Boolean(dayDoneAt) && !sessionId;
 
   return (
     <div className="wrap">
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', margin: '16px 0' }}>
-        {plan.days.map((d) => (
+        {plan.days.map((d) => {
+          const doneAt = doneThisWeek.get(d.key);
+          const isNext = !doneAt && d.key === nextDayKey;
+          const selected = d.key === dayKey;
+          return (
+            <button
+              key={d.key}
+              onClick={() => setDayKey(d.key)}
+              disabled={!isOnline && !selected}
+              style={{
+                flex: '0 0 auto',
+                textAlign: 'left',
+                background: selected ? 'var(--ember-dim)' : doneAt ? 'var(--sage-dim)' : 'var(--surface)',
+                border: `1px solid ${selected ? 'var(--ember)' : doneAt ? 'var(--sage)' : 'var(--line)'}`,
+                color: selected ? 'var(--ember)' : doneAt ? 'var(--sage)' : 'var(--muted)',
+                borderRadius: 11,
+                padding: '9px 13px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 12,
+                cursor: !isOnline && !selected ? 'not-allowed' : 'pointer',
+                whiteSpace: 'nowrap',
+                opacity: !isOnline && !selected ? 0.5 : 1,
+              }}
+            >
+              <span>
+                {doneAt ? '✓ ' : ''}
+                {d.name}
+                {isNext && (
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      padding: '2px 6px',
+                      borderRadius: 999,
+                      fontSize: 10,
+                      textTransform: 'uppercase',
+                      background: 'var(--ember-dim)',
+                      color: 'var(--ember)',
+                    }}
+                  >
+                    Als Nächstes
+                  </span>
+                )}
+              </span>
+              {doneAt && (
+                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.8 }}>
+                  Erledigt ({doneAt.toLocaleDateString('de-DE', { weekday: 'short' })})
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {showRestartGate && (
+        <div
+          style={{
+            background: 'var(--sage-dim)',
+            border: '1px solid var(--sage)',
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
+          <div style={{ color: 'var(--sage)', fontSize: 13 }}>
+            ✓ Diese Woche erledigt ({dayDoneAt.toLocaleDateString('de-DE', { weekday: 'short' })}).
+          </div>
           <button
-            key={d.key}
-            onClick={() => setDayKey(d.key)}
-            disabled={!isOnline && d.key !== dayKey}
+            onClick={() => ensureSession().catch(() => {})}
+            disabled={!isOnline}
             style={{
               flex: '0 0 auto',
-              background: d.key === dayKey ? 'var(--ember-dim)' : 'var(--surface)',
-              border: `1px solid ${d.key === dayKey ? 'var(--ember)' : 'var(--line)'}`,
-              color: d.key === dayKey ? 'var(--ember)' : 'var(--muted)',
-              borderRadius: 11,
-              padding: '9px 13px',
+              background: 'var(--surface2)',
+              border: '1px solid var(--line)',
+              color: 'var(--text)',
+              borderRadius: 9,
+              padding: '7px 11px',
               fontFamily: 'var(--font-mono)',
               fontSize: 12,
-              cursor: !isOnline && d.key !== dayKey ? 'not-allowed' : 'pointer',
-              whiteSpace: 'nowrap',
-              opacity: !isOnline && d.key !== dayKey ? 0.5 : 1,
+              cursor: isOnline ? 'pointer' : 'not-allowed',
             }}
           >
-            {d.name}
+            Nochmal starten
           </button>
-        ))}
-      </div>
+        </div>
+      )}
 
       {day && (
         <>
           <div style={{ color: 'var(--muted)', fontSize: 11, textTransform: 'uppercase' }}>{day.focus}</div>
           <h2>{day.name}</h2>
 
-          {day.exercises.map((ex) => (
+          {day.exercises.map((ex) => {
+            const rows = setsByExercise[ex.id] || [];
+            const allLogged = rows.length > 0 && rows.every((r) => r.logged);
+            return (
             <div
               key={ex.id}
               style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--line)',
+                background: allLogged ? 'var(--sage-dim)' : 'var(--surface)',
+                border: `1px solid ${allLogged ? 'var(--sage)' : 'var(--line)'}`,
                 borderRadius: 16,
                 padding: 16,
                 marginBottom: 12,
@@ -224,7 +360,10 @@ export default function Heute() {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <div>
-                  <h3>{ex.name}</h3>
+                  <h3>
+                    {allLogged && <span style={{ color: 'var(--sage)' }}>✓ </span>}
+                    {ex.name}
+                  </h3>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
                     {ex.muscle}
                   </div>
@@ -235,7 +374,7 @@ export default function Heute() {
                   rel="noreferrer"
                   style={{ fontFamily: 'var(--font-mono)', color: 'var(--ember)', fontSize: 12 }}
                 >
-                  Video
+                  Technik
                 </a>
               </div>
               <p
@@ -250,11 +389,33 @@ export default function Heute() {
                 {ex.cue}
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 13 }}>
-                {(setsByExercise[ex.id] || []).map((row, i) => (
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 8,
+                  marginTop: 13,
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 10,
+                  textTransform: 'uppercase',
+                  color: 'var(--muted)',
+                }}
+              >
+                <div style={{ width: 34, textAlign: 'center', flexShrink: 0 }}>Satz</div>
+                {(ex.type === 'bw' || ex.type === 'wt') && (
+                  <div style={{ width: 70, textAlign: 'center', flexShrink: 0 }}>Wdh.</div>
+                )}
+                {ex.type === 'wt' && <div style={{ width: 70, textAlign: 'center', flexShrink: 0 }}>kg</div>}
+                {(ex.type === 'time' || ex.type === 'cardio') && (
+                  <div style={{ width: 70, textAlign: 'center', flexShrink: 0 }}>Sek.</div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
+                {rows.map((row, i) => (
                   <div key={row.set_number} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <button
                       onClick={() => toggleSet(ex, i)}
+                      disabled={showRestartGate || (!isOnline && !sessionId)}
                       style={{
                         width: 34,
                         height: 34,
@@ -321,11 +482,12 @@ export default function Heute() {
                 + Satz
               </button>
             </div>
-          ))}
+            );
+          })}
 
           <button
             onClick={finishWorkout}
-            disabled={!isOnline}
+            disabled={!isOnline || !sessionId}
             className="btn primary"
             style={{
               width: '100%',
@@ -334,9 +496,9 @@ export default function Heute() {
               padding: 15,
               fontWeight: 600,
               fontSize: 15,
-              cursor: isOnline ? 'pointer' : 'not-allowed',
-              background: isOnline ? 'var(--ember)' : 'var(--surface2)',
-              color: isOnline ? '#160a04' : 'var(--muted)',
+              cursor: isOnline && sessionId ? 'pointer' : 'not-allowed',
+              background: isOnline && sessionId ? 'var(--ember)' : 'var(--surface2)',
+              color: isOnline && sessionId ? '#160a04' : 'var(--muted)',
               margin: '6px 0 4px',
             }}
           >
@@ -344,7 +506,7 @@ export default function Heute() {
           </button>
           {!isOnline && (
             <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 12, margin: '0 0 20px' }}>
-              Offline — Abschließen erfordert Verbindung.
+              Offline — {sessionId ? 'Abschließen erfordert Verbindung.' : 'Session-Start erfordert Verbindung.'}
             </p>
           )}
         </>
