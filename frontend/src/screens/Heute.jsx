@@ -3,20 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { enqueueSet } from '../offlineQueue.js';
+import { parseUtc, mondayStart } from '../lib/dates.js';
+import { nextDueDayKey } from '../lib/schedule.js';
 
 function loadPauseDuration() {
   const stored = localStorage.getItem('pauseDuration');
   return stored ? Number(stored) : 90;
-}
-
-function parseUtc(ts) {
-  return new Date(ts.replace(' ', 'T') + 'Z');
-}
-
-function mondayStart() {
-  const now = new Date();
-  const offset = (now.getDay() + 6) % 7;
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
 }
 
 function buildInitialSets(exercise, prefillSets, resumedSets) {
@@ -78,7 +70,7 @@ export default function Heute() {
       doneThisWeek.set(s.day_key, finished);
     }
   }
-  const nextDayKey = plan?.days?.find((d) => !doneThisWeek.has(d.key))?.key ?? plan?.days?.[0]?.key;
+  const nextDayKey = nextDueDayKey(plan, doneThisWeek);
 
   function freshActiveSession() {
     const active = queryClient.getQueryData(['sessions-recent'])?.active;
@@ -228,6 +220,7 @@ export default function Heute() {
     const res = await api.post(`/sessions/${sessionId}/finish`);
     queryClient.invalidateQueries({ queryKey: ['history'] });
     queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
+    queryClient.invalidateQueries({ queryKey: ['sessions-range'] });
     navigate(`/session/${res.session_id}/auswertung`, {
       state: { summary: res.summary, evaluation: res.evaluation },
     });
@@ -400,13 +393,13 @@ export default function Heute() {
                   color: 'var(--muted)',
                 }}
               >
-                <div style={{ width: 34, textAlign: 'center', flexShrink: 0 }}>Satz</div>
+                <div style={{ width: 44, textAlign: 'center', flexShrink: 0 }}>Satz</div>
                 {(ex.type === 'bw' || ex.type === 'wt') && (
-                  <div style={{ width: 70, textAlign: 'center', flexShrink: 0 }}>Wdh.</div>
+                  <div style={{ width: 72, textAlign: 'center', flexShrink: 0 }}>Wdh.</div>
                 )}
-                {ex.type === 'wt' && <div style={{ width: 70, textAlign: 'center', flexShrink: 0 }}>kg</div>}
+                {ex.type === 'wt' && <div style={{ width: 72, textAlign: 'center', flexShrink: 0 }}>kg</div>}
                 {(ex.type === 'time' || ex.type === 'cardio') && (
-                  <div style={{ width: 70, textAlign: 'center', flexShrink: 0 }}>Sek.</div>
+                  <div style={{ width: 72, textAlign: 'center', flexShrink: 0 }}>Sek.</div>
                 )}
               </div>
 
@@ -417,8 +410,8 @@ export default function Heute() {
                       onClick={() => toggleSet(ex, i)}
                       disabled={showRestartGate || (!isOnline && !sessionId)}
                       style={{
-                        width: 34,
-                        height: 34,
+                        width: 44,
+                        height: 44,
                         borderRadius: 9,
                         border: '1px solid var(--line)',
                         background: row.logged ? 'var(--success-dim)' : 'var(--surface2)',
@@ -584,13 +577,13 @@ export default function Heute() {
 }
 
 const inputStyle = {
-  width: 70,
+  width: 72,
   background: 'var(--surface2)',
   border: '1px solid var(--line)',
   color: 'var(--text)',
   borderRadius: 9,
   padding: '7px 8px',
   fontFamily: 'var(--font-mono)',
-  fontSize: 14,
+  fontSize: 16,
   textAlign: 'center',
 };

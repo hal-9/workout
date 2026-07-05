@@ -19,6 +19,24 @@ function setLogsForSession(db, sessionId) {
     .all(sessionId);
 }
 
+function makeDayNameResolver(db) {
+  const dayNamesByPlan = new Map();
+  return function dayName(planId, dayKey) {
+    if (!dayNamesByPlan.has(planId)) {
+      const planRow = db.prepare('SELECT json_payload FROM plans WHERE id = ?').get(planId);
+      const days = planRow ? JSON.parse(planRow.json_payload).days : [];
+      dayNamesByPlan.set(planId, new Map(days.map((d) => [d.key, d.name])));
+    }
+    return dayNamesByPlan.get(planId).get(dayKey) ?? dayKey;
+  };
+}
+
+const sqlTs = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+const rangeSchema = z.object({
+  from: z.string().regex(sqlTs),
+  to: z.string().regex(sqlTs),
+});
+
 const setSchema = z
   .object({
     exercise_id: z.string().min(1),
@@ -60,15 +78,7 @@ export function sessionsRouter(db) {
       )
       .all(req.user.id, limit);
 
-    const dayNamesByPlan = new Map();
-    function dayName(planId, dayKey) {
-      if (!dayNamesByPlan.has(planId)) {
-        const planRow = db.prepare('SELECT json_payload FROM plans WHERE id = ?').get(planId);
-        const days = planRow ? JSON.parse(planRow.json_payload).days : [];
-        dayNamesByPlan.set(planId, new Map(days.map((d) => [d.key, d.name])));
-      }
-      return dayNamesByPlan.get(planId).get(dayKey) ?? dayKey;
-    }
+    const dayName = makeDayNameResolver(db);
 
     const sessions = rows.map((r) => ({
       session_id: r.id,
@@ -96,6 +106,35 @@ export function sessionsRouter(db) {
       : null;
 
     res.json({ sessions, active });
+  });
+
+  router.get('/sessions', (req, res) => {
+    const parsed = rangeSchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(422).json({ error: 'validation failed', details: parsed.error.issues });
+    }
+    const { from, to } = parsed.data;
+
+    const rows = db
+      .prepare(
+        `SELECT id, plan_id, day_key, started_at, finished_at
+         FROM sessions
+         WHERE user_id = ? AND status = 'finished'
+           AND finished_at >= ? AND finished_at < ?
+         ORDER BY finished_at ASC`
+      )
+      .all(req.user.id, from, to);
+
+    const dayName = makeDayNameResolver(db);
+    res.json({
+      sessions: rows.map((r) => ({
+        session_id: r.id,
+        day_key: r.day_key,
+        day_name: dayName(r.plan_id, r.day_key),
+        started_at: r.started_at,
+        finished_at: r.finished_at,
+      })),
+    });
   });
 
   router.get('/sessions/:id/summary', (req, res) => {
@@ -243,6 +282,22 @@ export function sessionsRouter(db) {
     };
 
     res.json({ session_id: session.id, summary, evaluation: logs.length > 0 });
+  });
+
+  router.post('/sessions/:id/discard', (req, res) => {
+    const session = db
+      .prepare('SELECT * FROM sessions WHERE id = ? AND user_id = ?')
+      .get(req.params.id, req.user.id);
+
+    if (!session) {
+      return res.status(404).json({ error: 'not found' });
+    }
+    if (session.status !== 'finished') {
+      return res.status(409).json({ error: 'not finished' });
+    }
+
+    db.prepare("UPDATE sessions SET status = 'discarded' WHERE id = ?").run(session.id);
+    res.json({ ok: true });
   });
 
   router.post('/sessions/:id/evaluate', (req, res) => {

@@ -17,6 +17,7 @@ const daySchema = z.object({
   key: z.string().min(1),
   name: z.string().min(1),
   focus: z.string(),
+  weekday: z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']).nullable().optional(),
   exercises: z.array(exerciseSchema).min(1),
 }).strip();
 

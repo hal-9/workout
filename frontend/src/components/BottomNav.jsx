@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 
 const TABS = [
   { to: '/heute', label: 'Heute' },
+  { to: '/kalender', label: 'Kalender' },
   { to: '/plan', label: 'Plan' },
   { to: '/fortschritt', label: 'Fortschritt' },
 ];
@@ -41,8 +42,10 @@ export default function BottomNav() {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: 3,
-              padding: 6,
+              padding: '10px 6px',
+              minHeight: 44,
               fontSize: 11,
               textDecoration: 'none',
               fontFamily: 'var(--font-display)',

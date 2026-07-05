@@ -46,7 +46,7 @@ export default function OfflineIndicator() {
     <div
       style={{
         position: 'fixed',
-        top: 'calc(8px + env(safe-area-inset-top))',
+        top: 'calc(60px + env(safe-area-inset-top))',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 50,

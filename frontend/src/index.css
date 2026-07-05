@@ -19,6 +19,8 @@
   --shadow-card: 0 6px 22px rgba(124, 58, 237, 0.08);
   --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --header-h: 52px;
+  --nav-h: 78px;
 }
 
 * {
@@ -32,6 +34,10 @@ body {
   padding: 0;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: var(--bg);
   background-image: var(--bg-gradient);
@@ -39,7 +45,7 @@ body {
   color: var(--text);
   font-family: var(--font-display);
   line-height: 1.45;
-  padding-bottom: calc(78px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
   overscroll-behavior-y: none;
 }
 
@@ -59,4 +65,43 @@ body {
   backdrop-filter: blur(18px) saturate(1.5);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-card);
+}
+
+.app-shell {
+  padding-top: calc(var(--header-h) + env(safe-area-inset-top));
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+}
+
+/* Farbige Blobs im Hintergrund — machen den Blur der Glas-Flächen sichtbar */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(70px);
+}
+
+body::before {
+  width: 340px;
+  height: 340px;
+  top: -80px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.35), transparent 70%);
+}
+
+body::after {
+  width: 380px;
+  height: 380px;
+  bottom: -120px;
+  left: -120px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.28), transparent 70%);
 }

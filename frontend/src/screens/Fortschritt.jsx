@@ -243,5 +243,5 @@ const inputStyle = {
   borderRadius: 9,
   padding: '10px 12px',
   fontFamily: 'var(--font-display)',
-  fontSize: 14,
+  fontSize: 16,
 };

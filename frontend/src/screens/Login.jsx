@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
+import Logo from '../components/Logo.jsx';
 
 export default function Login() {
   const [name, setName] = useState('');
@@ -24,10 +25,14 @@ export default function Login() {
 
   return (
     <div className="wrap" style={{ paddingTop: 'calc(60px + env(safe-area-inset-top))' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+        <Logo size={72} />
+      </div>
       <h1
         style={{
           fontSize: 28,
           fontWeight: 700,
+          textAlign: 'center',
           background: 'var(--primary-grad)',
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',
@@ -76,7 +81,7 @@ const inputStyle = {
   borderRadius: 9,
   padding: '12px 14px',
   fontFamily: 'var(--font-display)',
-  fontSize: 15,
+  fontSize: 16,
 };
 
 const btnStyle = {

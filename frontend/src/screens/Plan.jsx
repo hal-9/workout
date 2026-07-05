@@ -94,7 +94,7 @@ export default function Plan() {
               borderRadius: 9,
               padding: 10,
               fontFamily: 'var(--font-mono)',
-              fontSize: 13,
+              fontSize: 16,
             }}
           />
           {importError && (
