@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { addDays, formatWeekLabel, localDateKey, mondayStart, parseUtc, toSqlUtc } from '../lib/dates.js';
-import { WEEKDAYS, WEEKDAY_LABELS, assignWeekdays, nextDueDayKey } from '../lib/schedule.js';
+import { WEEKDAYS, WEEKDAY_LABELS, assignWeekdays, getMissedDays, nextDueDayKey, weekProgress } from '../lib/schedule.js';
 
 const pagerBtnStyle = {
   width: 44,
@@ -52,7 +52,11 @@ export default function Kalender() {
   const dueByWeekday = assignWeekdays(plan);
   const isCurrentWeek = weeksAgo === 0;
   const todayKey = localDateKey(new Date());
+  const todayIdx = (new Date().getDay() + 6) % 7;
   const nextKey = isCurrentWeek && plan ? nextDueDayKey(plan, doneKeys) : null;
+  const missedDays = isCurrentWeek && plan ? getMissedDays(plan, doneKeys) : [];
+  const missedKeys = new Set(missedDays.map((d) => d.key));
+  const progress = plan ? weekProgress(plan, doneKeys) : { done: 0, total: 0 };
 
   async function resetDay() {
     try {
@@ -69,7 +73,21 @@ export default function Kalender() {
 
   return (
     <div className="wrap">
-      <h2>Kalender</h2>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 16, gap: 12 }}>
+        <h2 style={{ margin: 0 }}>Kalender</h2>
+        {isCurrentWeek && progress.total > 0 && (
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              color: progress.done === progress.total ? 'var(--success)' : 'var(--muted)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {progress.done}/{progress.total} diese Woche
+          </div>
+        )}
+      </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '12px 0' }}>
         <button onClick={() => setWeeksAgo((w) => w + 1)} aria-label="Vorherige Woche" style={pagerBtnStyle}>
@@ -110,6 +128,7 @@ export default function Kalender() {
           const due = dueByWeekday.get(wd);
           const doneSessions = byDate.get(dateKey) ?? [];
           const isToday = isCurrentWeek && dateKey === todayKey;
+          const isMissed = isCurrentWeek && due && i < todayIdx && missedKeys.has(due.key);
           const isNext = isCurrentWeek && due && due.key === nextKey && !doneKeys.has(due.key);
           return (
             <div
@@ -118,8 +137,8 @@ export default function Kalender() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                background: isToday ? 'var(--primary-dim)' : 'var(--surface)',
-                border: `1px solid ${isToday ? 'var(--primary)' : 'var(--line)'}`,
+                background: isToday ? 'var(--primary-dim)' : isMissed ? 'rgba(236, 72, 153, 0.08)' : 'var(--surface)',
+                border: `1px solid ${isToday ? 'var(--primary)' : isMissed ? 'var(--accent)' : 'var(--line)'}`,
                 borderRadius: 14,
                 padding: '10px 14px',
                 minHeight: 56,
@@ -138,6 +157,21 @@ export default function Kalender() {
                 {due ? (
                   <div style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {due.name}
+                    {isMissed && (
+                      <span
+                        style={{
+                          marginLeft: 6,
+                          padding: '2px 6px',
+                          borderRadius: 999,
+                          fontSize: 10,
+                          textTransform: 'uppercase',
+                          background: 'rgba(236, 72, 153, 0.12)',
+                          color: 'var(--accent)',
+                        }}
+                      >
+                        Offen
+                      </span>
+                    )}
                     {isNext && (
                       <span
                         style={{

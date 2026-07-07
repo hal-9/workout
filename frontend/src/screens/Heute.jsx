@@ -4,7 +4,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { enqueueSet } from '../offlineQueue.js';
 import { parseUtc, mondayStart } from '../lib/dates.js';
-import { nextDueDayKey } from '../lib/schedule.js';
+import {
+  WEEKDAY_LABELS,
+  getMissedDays,
+  missedDayKeys,
+  nextDueDayKey,
+  weekProgress,
+} from '../lib/schedule.js';
 
 function loadPauseDuration() {
   const stored = localStorage.getItem('pauseDuration');
@@ -71,6 +77,9 @@ export default function Heute() {
     }
   }
   const nextDayKey = nextDueDayKey(plan, doneThisWeek);
+  const missedDays = getMissedDays(plan, doneThisWeek);
+  const missedKeys = missedDayKeys(plan, doneThisWeek);
+  const progress = weekProgress(plan, doneThisWeek);
 
   function freshActiveSession() {
     const active = queryClient.getQueryData(['sessions-recent'])?.active;
@@ -241,9 +250,75 @@ export default function Heute() {
 
   return (
     <div className="wrap">
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 16, gap: 12 }}>
+        <h2 style={{ margin: 0 }}>Heute</h2>
+        {progress.total > 0 && (
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              color: progress.done === progress.total ? 'var(--success)' : 'var(--muted)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {progress.done}/{progress.total} diese Woche
+          </div>
+        )}
+      </div>
+
+      {missedDays.length > 0 && (
+        <div
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--line)',
+            borderRadius: 14,
+            padding: '12px 14px',
+            margin: '12px 0',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+          }}
+        >
+          {missedDays.map((d) => (
+            <div
+              key={d.key}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
+            >
+              <div style={{ fontSize: 13, color: 'var(--text)', minWidth: 0 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent)', marginRight: 6 }}>
+                  {WEEKDAY_LABELS[d.weekday]}
+                </span>
+                <span style={{ color: 'var(--muted)' }}>{d.name}</span>
+                <span style={{ color: 'var(--muted)' }}> · noch offen</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDayKey(d.key)}
+                disabled={!isOnline && dayKey !== d.key}
+                style={{
+                  flex: '0 0 auto',
+                  background: dayKey === d.key ? 'var(--primary-dim)' : 'var(--surface2)',
+                  border: `1px solid ${dayKey === d.key ? 'var(--primary)' : 'var(--line)'}`,
+                  color: dayKey === d.key ? 'var(--primary)' : 'var(--text)',
+                  borderRadius: 9,
+                  padding: '7px 11px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12,
+                  cursor: !isOnline && dayKey !== d.key ? 'not-allowed' : 'pointer',
+                  opacity: !isOnline && dayKey !== d.key ? 0.5 : 1,
+                }}
+              >
+                Nachholen
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', margin: '16px 0' }}>
         {plan.days.map((d) => {
           const doneAt = doneThisWeek.get(d.key);
+          const isMissed = missedKeys.has(d.key);
           const isNext = !doneAt && d.key === nextDayKey;
           const selected = d.key === dayKey;
           return (
@@ -254,9 +329,15 @@ export default function Heute() {
               style={{
                 flex: '0 0 auto',
                 textAlign: 'left',
-                background: selected ? 'var(--primary-dim)' : doneAt ? 'var(--success-dim)' : 'var(--surface)',
-                border: `1px solid ${selected ? 'var(--primary)' : doneAt ? 'var(--success)' : 'var(--line)'}`,
-                color: selected ? 'var(--primary)' : doneAt ? 'var(--success)' : 'var(--muted)',
+                background: selected
+                  ? 'var(--primary-dim)'
+                  : doneAt
+                    ? 'var(--success-dim)'
+                    : isMissed
+                      ? 'rgba(236, 72, 153, 0.08)'
+                      : 'var(--surface)',
+                border: `1px solid ${selected ? 'var(--primary)' : doneAt ? 'var(--success)' : isMissed ? 'var(--accent)' : 'var(--line)'}`,
+                color: selected ? 'var(--primary)' : doneAt ? 'var(--success)' : isMissed ? 'var(--text)' : 'var(--muted)',
                 borderRadius: 11,
                 padding: '9px 13px',
                 fontFamily: 'var(--font-mono)',
@@ -269,6 +350,21 @@ export default function Heute() {
               <span>
                 {doneAt ? '✓ ' : ''}
                 {d.name}
+                {isMissed && (
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      padding: '2px 6px',
+                      borderRadius: 999,
+                      fontSize: 10,
+                      textTransform: 'uppercase',
+                      background: 'rgba(236, 72, 153, 0.12)',
+                      color: 'var(--accent)',
+                    }}
+                  >
+                    Nachholbar
+                  </span>
+                )}
                 {isNext && (
                   <span
                     style={{
