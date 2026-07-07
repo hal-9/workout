@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
 import { api } from '../api.js';
+import { suggestionsFromSummary } from '../lib/progression.js';
+import { setOverride } from '../lib/weightOverrides.js';
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 60000;
@@ -18,7 +21,10 @@ export default function Auswertung() {
 
   const [evaluation, setEvaluation] = useState(null);
   const [pollKey, setPollKey] = useState(0);
+  const [appliedIds, setAppliedIds] = useState(new Set());
   const startedAtRef = useRef(Date.now());
+
+  const { data: plan } = useQuery({ queryKey: ['plan'], queryFn: () => api.get('/plan'), retry: false });
 
   useEffect(() => {
     if (location.state) return;
@@ -76,6 +82,15 @@ export default function Auswertung() {
     setPollKey((k) => k + 1);
   }
 
+  function handleApplySuggestion(suggestion) {
+    if (suggestion.type === 'weight' && suggestion.nextValue != null) {
+      setOverride(suggestion.exerciseId, suggestion.nextValue);
+      setAppliedIds((prev) => new Set(prev).add(suggestion.exerciseId));
+    }
+  }
+
+  const progressionSuggestions = summary ? suggestionsFromSummary(plan, summary) : [];
+
   return (
     <div className="wrap">
       <h2>Auswertung</h2>
@@ -122,6 +137,54 @@ export default function Auswertung() {
           >
             Erneut auswerten
           </button>
+        </div>
+      )}
+
+      {progressionSuggestions.length > 0 && (
+        <div
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--line)',
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 20,
+          }}
+        >
+          <h3 style={{ marginTop: 0 }}>Nächstes Mal</h3>
+          {progressionSuggestions.map((s) => (
+            <div
+              key={s.exerciseId}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginTop: 10,
+              }}
+            >
+              <div style={{ fontSize: 13, color: 'var(--text)' }}>{s.message}</div>
+              {s.type === 'weight' && s.nextValue != null && (
+                <button
+                  type="button"
+                  onClick={() => handleApplySuggestion(s)}
+                  disabled={appliedIds.has(s.exerciseId)}
+                  style={{
+                    flex: '0 0 auto',
+                    background: appliedIds.has(s.exerciseId) ? 'var(--success-dim)' : 'var(--surface2)',
+                    border: `1px solid ${appliedIds.has(s.exerciseId) ? 'var(--success)' : 'var(--line)'}`,
+                    color: appliedIds.has(s.exerciseId) ? 'var(--success)' : 'var(--text)',
+                    borderRadius: 9,
+                    padding: '7px 11px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 12,
+                    cursor: appliedIds.has(s.exerciseId) ? 'default' : 'pointer',
+                  }}
+                >
+                  {appliedIds.has(s.exerciseId) ? 'Übernommen' : 'Übernehmen'}
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

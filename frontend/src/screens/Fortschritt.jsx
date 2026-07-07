@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../api.js';
 import { PULLUP_STAGES } from '../pullupStages.js';
+import { addDays, mondayStart, toSqlUtc } from '../lib/dates.js';
+import { buildWeekRecap, groupSessionsByWeek } from '../lib/weekRecap.js';
 
 function groupByKind(entries) {
   const byKind = { pushups: [], pullup_stage: [], bodyweight: [] };
@@ -51,6 +53,23 @@ export default function Fortschritt() {
     enabled: !viewPartner,
   });
 
+  const recapFrom = mondayStart(3);
+  const recapTo = addDays(mondayStart(0), 7);
+  const { data: recapRange } = useQuery({
+    queryKey: ['sessions-recap', recapFrom.toISOString()],
+    queryFn: () =>
+      api.get(
+        `/sessions?from=${encodeURIComponent(toSqlUtc(recapFrom))}&to=${encodeURIComponent(toSqlUtc(recapTo))}`
+      ),
+    enabled: !viewPartner,
+  });
+  const { data: plan } = useQuery({
+    queryKey: ['plan'],
+    queryFn: () => api.get('/plan'),
+    retry: false,
+    enabled: !viewPartner,
+  });
+
   const [kind, setKind] = useState('pushups');
   const [value, setValue] = useState('');
   const [date, setDate] = useState('');
@@ -71,6 +90,11 @@ export default function Fortschritt() {
   const byKind = groupByKind(entries);
   const currentStageEntry = byKind.pullup_stage[byKind.pullup_stage.length - 1];
   const currentStageIndex = currentStageEntry ? Number(currentStageEntry.value) - 1 : null;
+
+  const weekRecap =
+    plan && recapRange
+      ? buildWeekRecap(plan, groupSessionsByWeek(recapRange.sessions, 4))
+      : null;
 
   return (
     <div className="wrap">
@@ -115,6 +139,39 @@ export default function Fortschritt() {
           </button>
         ))}
       </div>
+
+      {!viewPartner && weekRecap && weekRecap.weeks.length > 0 && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 16, marginBottom: 12 }}>
+          <h3 style={{ marginTop: 0 }}>Trainingswochen</h3>
+          {weekRecap.weeks.map((w) => (
+            <div key={w.weekLabel} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{ width: 52, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+                {w.weekLabel}
+              </div>
+              <div style={{ flex: 1, display: 'flex', gap: 3 }}>
+                {Array.from({ length: w.total }).map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      flex: 1,
+                      height: 8,
+                      borderRadius: 4,
+                      background: i < w.done ? 'var(--primary)' : 'var(--line)',
+                    }}
+                  />
+                ))}
+              </div>
+              <div style={{ width: 36, fontFamily: 'var(--font-mono)', fontSize: 11, textAlign: 'right' }}>
+                {w.done}/{w.total}
+              </div>
+            </div>
+          ))}
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>
+            Ø {weekRecap.averageDone}/{weekRecap.total}
+            {weekRecap.streak > 0 && ` · Serie: ${weekRecap.streak} Woche${weekRecap.streak === 1 ? '' : 'n'}`}
+          </div>
+        </div>
+      )}
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 16, marginBottom: 12 }}>
         <h3>Liegestütze — Max-Test</h3>

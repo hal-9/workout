@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { enqueueSet } from '../offlineQueue.js';
 import { parseUtc, mondayStart } from '../lib/dates.js';
+import { compareExercise } from '../lib/exerciseCompare.js';
 import {
   WEEKDAY_LABELS,
   getMissedDays,
@@ -11,6 +12,14 @@ import {
   nextDueDayKey,
   weekProgress,
 } from '../lib/schedule.js';
+import { getAllOverrides, getOverride } from '../lib/weightOverrides.js';
+import {
+  isSoundEnabled,
+  playRestEnd,
+  playTick,
+  setSoundEnabled,
+  unlockAudio,
+} from '../lib/workoutSounds.js';
 
 function loadPauseDuration() {
   const stored = localStorage.getItem('pauseDuration');
@@ -19,6 +28,7 @@ function loadPauseDuration() {
 
 function buildInitialSets(exercise, prefillSets, resumedSets) {
   const source = resumedSets?.length ? resumedSets : prefillSets;
+  const defaultWeight = getOverride(exercise.id) ?? exercise.default_weight_kg ?? '';
   const rows = [];
   const count = Math.max(exercise.sets, source?.length || 0);
   for (let i = 1; i <= count; i++) {
@@ -27,13 +37,24 @@ function buildInitialSets(exercise, prefillSets, resumedSets) {
     rows.push({
       set_number: i,
       reps: fromSource?.reps ?? '',
-      weight_kg: fromSource?.weight_kg ?? exercise.default_weight_kg ?? '',
+      weight_kg: fromSource?.weight_kg ?? defaultWeight,
       duration_s: fromSource?.duration_s ?? '',
       logged: Boolean(isResumed),
     });
   }
   return rows;
 }
+
+function formatElapsed(ms) {
+  const mins = Math.floor(ms / 60000);
+  return `${mins} min`;
+}
+
+const TREND_LABELS = {
+  up: { text: '↑ besser', color: 'var(--success)' },
+  same: { text: '→ gleich', color: 'var(--muted)' },
+  down: { text: '↓ weniger', color: 'var(--accent)' },
+};
 
 export default function Heute() {
   const navigate = useNavigate();
@@ -48,6 +69,11 @@ export default function Heute() {
   const [sessionId, setSessionId] = useState(null);
   const sessionPromiseRef = useRef(null);
   const [setsByExercise, setSetsByExercise] = useState({});
+  const [historyRes, setHistoryRes] = useState(null);
+  const [sessionStartedAt, setSessionStartedAt] = useState(null);
+  const [elapsedNow, setElapsedNow] = useState(Date.now());
+  const [soundOn, setSoundOn] = useState(isSoundEnabled);
+  const setRowRefs = useRef(new Map());
   const [pauseDuration, setPauseDuration] = useState(loadPauseDuration);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
@@ -106,6 +132,7 @@ export default function Heute() {
     async function load() {
       const historyRes = await api.get(`/history?day_key=${encodeURIComponent(dayKey)}`);
       if (cancelled) return;
+      setHistoryRes(historyRes);
 
       const active = freshActiveSession();
       const resumed = active?.day_key === dayKey ? active : null;
@@ -124,6 +151,11 @@ export default function Heute() {
         initial[ex.id] = buildInitialSets(ex, historyRes.prefill[ex.id], resumedByExercise[ex.id]);
       }
       setSetsByExercise(initial);
+      if (resumed?.started_at) {
+        setSessionStartedAt(parseUtc(resumed.started_at).getTime());
+      } else {
+        setSessionStartedAt(null);
+      }
     }
 
     load();
@@ -140,6 +172,7 @@ export default function Heute() {
         .post('/sessions', { day_key: dayKey })
         .then((res) => {
           setSessionId(res.session_id);
+          setSessionStartedAt(Date.now());
           return res.session_id;
         })
         .catch((err) => {
@@ -150,12 +183,52 @@ export default function Heute() {
     return sessionPromiseRef.current;
   }
 
+  const scrollToNextSet = useCallback(() => {
+    if (!plan || !dayKey) return;
+    const dayPlan = plan.days.find((d) => d.key === dayKey);
+    if (!dayPlan) return;
+    for (const ex of dayPlan.exercises) {
+      const rows = setsByExercise[ex.id] ?? [];
+      const nextIndex = rows.findIndex((r) => !r.logged);
+      if (nextIndex >= 0) {
+        const key = `${ex.id}-${nextIndex}`;
+        const el = setRowRefs.current.get(key);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    }
+  }, [plan, dayKey, setsByExercise]);
+
+  useEffect(() => {
+    if (!sessionStartedAt) return;
+    const id = setInterval(() => setElapsedNow(Date.now()), 10000);
+    return () => clearInterval(id);
+  }, [sessionStartedAt]);
+
   useEffect(() => {
     if (timerSeconds === null) return;
-    if (timerSeconds <= 0) return;
+
+    if (timerSeconds === 0) {
+      playRestEnd();
+      setTimerSeconds(null);
+      scrollToNextSet();
+      return;
+    }
+
+    if (timerSeconds <= 5) {
+      playTick();
+    }
+
     const id = setTimeout(() => setTimerSeconds((s) => s - 1), 1000);
     return () => clearTimeout(id);
-  }, [timerSeconds]);
+  }, [timerSeconds, scrollToNextSet]);
+
+  function handleToggleSound() {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
+    if (next) unlockAudio();
+  }
 
   function changePauseDuration(value) {
     setPauseDuration(value);
@@ -201,6 +274,8 @@ export default function Heute() {
     }));
 
     if (nextLogged) {
+      unlockAudio();
+      if (!sessionStartedAt) setSessionStartedAt(Date.now());
       setTimerSeconds(pauseDuration);
     }
   }
@@ -247,6 +322,15 @@ export default function Heute() {
   const day = plan.days.find((d) => d.key === dayKey);
   const dayDoneAt = dayKey ? doneThisWeek.get(dayKey) : null;
   const showRestartGate = Boolean(dayDoneAt) && !sessionId;
+  const weightOverrides = getAllOverrides();
+
+  const totalPlannedSets =
+    day?.exercises.reduce((sum, ex) => sum + (ex.sets ?? 0), 0) ?? 0;
+  const loggedSetCount = day
+    ? day.exercises.reduce((sum, ex) => sum + (setsByExercise[ex.id]?.filter((r) => r.logged).length ?? 0), 0)
+    : 0;
+  const activeOverrides =
+    day?.exercises.filter((ex) => weightOverrides[ex.id] != null && ex.type === 'wt') ?? [];
 
   return (
     <div className="wrap">
@@ -430,12 +514,48 @@ export default function Heute() {
 
       {day && (
         <>
+          {sessionId && sessionStartedAt && (
+            <div
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 12,
+                color: 'var(--muted)',
+                marginBottom: 10,
+              }}
+            >
+              {formatElapsed(elapsedNow - sessionStartedAt)} · Satz {loggedSetCount}/{totalPlannedSets}
+            </div>
+          )}
+
+          {activeOverrides.length > 0 && (
+            <div
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--line)',
+                borderRadius: 12,
+                padding: '10px 12px',
+                marginBottom: 12,
+                fontSize: 12,
+                color: 'var(--muted)',
+              }}
+            >
+              {activeOverrides.map((ex) => (
+                <div key={ex.id}>
+                  {ex.name}: {weightOverrides[ex.id]} kg <span style={{ color: 'var(--primary)' }}>(angepasst)</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div style={{ color: 'var(--muted)', fontSize: 11, textTransform: 'uppercase' }}>{day.focus}</div>
           <h2>{day.name}</h2>
 
           {day.exercises.map((ex) => {
             const rows = setsByExercise[ex.id] || [];
             const allLogged = rows.length > 0 && rows.every((r) => r.logged);
+            const prefillSets = historyRes?.prefill?.[ex.id];
+            const compare = compareExercise(ex, rows, prefillSets);
+            const trendMeta = compare.trend ? TREND_LABELS[compare.trend] : null;
             return (
             <div
               key={ex.id}
@@ -478,6 +598,38 @@ export default function Heute() {
                 {ex.cue}
               </p>
 
+              {(compare.lastSummary || compare.targetLabel) && (
+                <div
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 11,
+                    color: 'var(--muted)',
+                    marginTop: 10,
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  {compare.lastSummary && <span>Letzte Session: {compare.lastSummary}</span>}
+                  {compare.lastSummary && compare.targetLabel && <span>·</span>}
+                  {compare.targetLabel && <span>Ziel: {compare.targetLabel}</span>}
+                  {trendMeta && (
+                    <span
+                      style={{
+                        padding: '2px 6px',
+                        borderRadius: 999,
+                        fontSize: 10,
+                        color: trendMeta.color,
+                        background: 'var(--surface2)',
+                      }}
+                    >
+                      {trendMeta.text}
+                    </span>
+                  )}
+                </div>
+              )}
+
               <div
                 style={{
                   display: 'flex',
@@ -501,7 +653,14 @@ export default function Heute() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
                 {rows.map((row, i) => (
-                  <div key={row.set_number} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div
+                    key={row.set_number}
+                    ref={(el) => {
+                      if (el) setRowRefs.current.set(`${ex.id}-${i}`, el);
+                      else setRowRefs.current.delete(`${ex.id}-${i}`);
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
                     <button
                       onClick={() => toggleSet(ex, i)}
                       disabled={showRestartGate || (!isOnline && !sessionId)}
@@ -625,9 +784,35 @@ export default function Heute() {
             }}
           >
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>Pause</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 64, color: 'var(--primary)' }}>
+            <div
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontWeight: 700,
+                fontSize: 64,
+                color: timerSeconds <= 5 ? 'var(--accent)' : 'var(--primary)',
+              }}
+            >
               {Math.max(0, timerSeconds)}
             </div>
+            <button
+              type="button"
+              onClick={handleToggleSound}
+              aria-label={soundOn ? 'Ton aus' : 'Ton an'}
+              style={{
+                margin: '0 auto 12px',
+                display: 'block',
+                background: 'var(--surface2)',
+                border: '1px solid var(--line)',
+                color: 'var(--muted)',
+                borderRadius: 999,
+                padding: '6px 12px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11,
+                cursor: 'pointer',
+              }}
+            >
+              {soundOn ? '🔊 Ton an' : '🔇 Ton aus'}
+            </button>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', margin: '18px 0' }}>
               {[60, 90, 120].map((d) => (
                 <button
