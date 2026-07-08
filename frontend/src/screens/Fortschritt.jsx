@@ -1,45 +1,82 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../api.js';
-import { PULLUP_STAGES } from '../pullupStages.js';
 import { addDays, mondayStart, toSqlUtc } from '../lib/dates.js';
 import { buildWeekRecap, groupSessionsByWeek } from '../lib/weekRecap.js';
+import {
+  TREND_LABELS,
+  formatProgressDelta,
+  formatPlanSince,
+  exercisesBeyondHighlights,
+} from '../lib/exerciseProgress.js';
+import ExerciseChart from '../components/ExerciseChart.jsx';
 
-function groupByKind(entries) {
-  const byKind = { pushups: [], pullup_stage: [], bodyweight: [] };
-  for (const entry of entries) {
-    byKind[entry.kind]?.push(entry);
-  }
-  return byKind;
-}
+const cardStyle = {
+  background: 'var(--surface)',
+  border: '1px solid var(--line)',
+  borderRadius: 16,
+  padding: 16,
+  marginBottom: 12,
+};
 
-function Chart({ data, dataLabel }) {
-  if (!data.length) {
-    return <p style={{ color: 'var(--muted)', fontSize: 13 }}>Noch keine Einträge.</p>;
-  }
+const tabButtonStyle = (active) => ({
+  flex: '0 0 auto',
+  background: active ? 'var(--primary-dim)' : 'var(--surface)',
+  border: `1px solid ${active ? 'var(--primary)' : 'var(--line)'}`,
+  color: active ? 'var(--primary)' : 'var(--muted)',
+  borderRadius: 11,
+  padding: '9px 13px',
+  fontFamily: 'var(--font-mono)',
+  fontSize: 12,
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+});
+
+const ExerciseProgressCard = ({ exercise }) => {
+  const delta = formatProgressDelta(exercise.first_value, exercise.latest_value, exercise.metric_label);
+  const trendMeta = exercise.trend ? TREND_LABELS[exercise.trend] : null;
+
   return (
-    <ResponsiveContainer width="100%" height={160}>
-      <LineChart data={data}>
-        <XAxis dataKey="date" stroke="var(--muted)" fontSize={11} />
-        <YAxis stroke="var(--muted)" fontSize={11} />
-        <Tooltip formatter={(v) => [v, dataLabel]} />
-        <Line type="monotone" dataKey="value" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
-      </LineChart>
-    </ResponsiveContainer>
+    <div style={cardStyle}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: 16 }}>{exercise.name}</h3>
+          <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 2 }}>{exercise.muscle}</div>
+        </div>
+        {trendMeta && (
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              color: trendMeta.color,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {trendMeta.text}
+          </span>
+        )}
+      </div>
+      {delta && (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--primary)', marginBottom: 8 }}>
+          {delta}
+        </div>
+      )}
+      <ExerciseChart points={exercise.points} target={exercise.target} metricLabel={exercise.metric_label} />
+    </div>
   );
-}
+};
 
 export default function Fortschritt() {
-  const queryClient = useQueryClient();
   const { data: others } = useQuery({ queryKey: ['users'], queryFn: () => api.get('/users') });
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [showAllExercises, setShowAllExercises] = useState(false);
   const viewPartner = selectedUserId !== null;
 
-  const { data: ownEntries } = useQuery({
-    queryKey: ['max-tests'],
-    queryFn: () => api.get('/max-tests'),
+  const { data: ownProgress } = useQuery({
+    queryKey: ['progress'],
+    queryFn: () => api.get('/progress'),
+    retry: false,
     enabled: !viewPartner,
   });
   const { data: partnerData } = useQuery({
@@ -70,26 +107,11 @@ export default function Fortschritt() {
     enabled: !viewPartner,
   });
 
-  const [kind, setKind] = useState('pushups');
-  const [value, setValue] = useState('');
-  const [date, setDate] = useState('');
-
-  async function submitEntry(e) {
-    e.preventDefault();
-    await api.post('/max-tests', {
-      kind,
-      value: Number(value),
-      ...(date ? { date } : {}),
-    });
-    setValue('');
-    setDate('');
-    queryClient.invalidateQueries({ queryKey: ['max-tests'] });
-  }
-
-  const entries = viewPartner ? partnerData?.max_tests ?? [] : ownEntries ?? [];
-  const byKind = groupByKind(entries);
-  const currentStageEntry = byKind.pullup_stage[byKind.pullup_stage.length - 1];
-  const currentStageIndex = currentStageEntry ? Number(currentStageEntry.value) - 1 : null;
+  const progress = viewPartner ? partnerData : ownProgress;
+  const highlights = progress?.highlights ?? [];
+  const exercises = progress?.exercises ?? [];
+  const moreExercises = exercisesBeyondHighlights(highlights, exercises);
+  const planSinceLabel = formatPlanSince(progress?.plan_since);
 
   const weekRecap =
     plan && recapRange
@@ -101,39 +123,15 @@ export default function Fortschritt() {
       <h2>Fortschritt</h2>
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', margin: '0 0 16px' }}>
-        <button
-          onClick={() => setSelectedUserId(null)}
-          style={{
-            flex: '0 0 auto',
-            background: !viewPartner ? 'var(--primary-dim)' : 'var(--surface)',
-            border: `1px solid ${!viewPartner ? 'var(--primary)' : 'var(--line)'}`,
-            color: !viewPartner ? 'var(--primary)' : 'var(--muted)',
-            borderRadius: 11,
-            padding: '9px 13px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
+        <button type="button" onClick={() => setSelectedUserId(null)} style={tabButtonStyle(!viewPartner)}>
           Ich
         </button>
         {(others ?? []).map((u) => (
           <button
             key={u.id}
+            type="button"
             onClick={() => setSelectedUserId(u.id)}
-            style={{
-              flex: '0 0 auto',
-              background: selectedUserId === u.id ? 'var(--primary-dim)' : 'var(--surface)',
-              border: `1px solid ${selectedUserId === u.id ? 'var(--primary)' : 'var(--line)'}`,
-              color: selectedUserId === u.id ? 'var(--primary)' : 'var(--muted)',
-              borderRadius: 11,
-              padding: '9px 13px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 12,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
+            style={tabButtonStyle(selectedUserId === u.id)}
           >
             {u.name}
           </button>
@@ -141,7 +139,7 @@ export default function Fortschritt() {
       </div>
 
       {!viewPartner && weekRecap && weekRecap.weeks.length > 0 && (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 16, marginBottom: 12 }}>
+        <div style={cardStyle}>
           <h3 style={{ marginTop: 0 }}>Trainingswochen</h3>
           {weekRecap.weeks.map((w) => (
             <div key={w.weekLabel} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -173,45 +171,66 @@ export default function Fortschritt() {
         </div>
       )}
 
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 16, marginBottom: 12 }}>
-        <h3>Liegestütze — Max-Test</h3>
-        <Chart data={byKind.pushups} dataLabel="Liegestütze" />
-      </div>
+      {progress && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
+            <h3 style={{ margin: 0 }}>Übungs-Fortschritt</h3>
+            {planSinceLabel && (
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+                Seit {planSinceLabel}
+              </span>
+            )}
+          </div>
+          {viewPartner && progress.name && (
+            <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 0, marginBottom: 12 }}>
+              Plan: {progress.plan_name}
+            </p>
+          )}
 
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 16, marginBottom: 12 }}>
-        <h3>Klimmzug-Stufen</h3>
-        {currentStageIndex !== null && PULLUP_STAGES[currentStageIndex] ? (
-          <>
-            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 22, color: 'var(--primary)' }}>
-              {currentStageIndex + 1}. {PULLUP_STAGES[currentStageIndex].label}
+          {highlights.length === 0 && (
+            <div style={cardStyle}>
+              <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0 }}>
+                Nach dem ersten Workout siehst du hier deinen Fortschritt.
+              </p>
             </div>
-            <div style={{ color: 'var(--muted)', fontSize: 13 }}>{PULLUP_STAGES[currentStageIndex].description}</div>
-          </>
-        ) : (
-          <p style={{ color: 'var(--muted)', fontSize: 13 }}>Noch keine Stufe erfasst.</p>
-        )}
-        {byKind.pullup_stage.length > 0 && (
-          <ul style={{ marginTop: 10, paddingLeft: 18, fontSize: 12, color: 'var(--muted)' }}>
-            {byKind.pullup_stage
-              .slice(-5)
-              .reverse()
-              .map((e) => (
-                <li key={e.id}>
-                  {e.date}: {PULLUP_STAGES[Number(e.value) - 1]?.label ?? e.value}
-                </li>
-              ))}
-          </ul>
-        )}
-      </div>
+          )}
 
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 16, marginBottom: 12 }}>
-        <h3>Körpergewicht</h3>
-        <Chart data={byKind.bodyweight} dataLabel="kg" />
-      </div>
+          {highlights.map((exercise) => (
+            <ExerciseProgressCard key={exercise.exercise_id} exercise={exercise} />
+          ))}
+
+          {moreExercises.length > 0 && (
+            <div style={{ marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={() => setShowAllExercises((open) => !open)}
+                style={{
+                  width: '100%',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--line)',
+                  color: 'var(--primary)',
+                  borderRadius: 11,
+                  padding: '10px 12px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  marginBottom: showAllExercises ? 12 : 0,
+                }}
+              >
+                {showAllExercises ? 'Weniger anzeigen' : `Alle Übungen (${moreExercises.length})`}
+              </button>
+              {showAllExercises &&
+                moreExercises.map((exercise) => (
+                  <ExerciseProgressCard key={exercise.exercise_id} exercise={exercise} />
+                ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {!viewPartner && (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 16, marginBottom: 12 }}>
-          <h3>Auswertungen</h3>
+        <div style={cardStyle}>
+          <h3 style={{ marginTop: 0 }}>Auswertungen</h3>
           {(recent?.sessions ?? []).length === 0 && (
             <p style={{ color: 'var(--muted)', fontSize: 13 }}>Noch keine abgeschlossenen Workouts.</p>
           )}
@@ -249,56 +268,6 @@ export default function Fortschritt() {
           ))}
         </div>
       )}
-
-      {!viewPartner && (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 16 }}>
-          <h3>Neuer Eintrag</h3>
-          <form onSubmit={submitEntry} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <select value={kind} onChange={(e) => setKind(e.target.value)} style={inputStyle}>
-              <option value="pushups">Liegestütze-Max</option>
-              <option value="pullup_stage">Klimmzug-Stufe</option>
-              <option value="bodyweight">Körpergewicht</option>
-            </select>
-            <input
-              type="number"
-              inputMode="decimal"
-              placeholder={kind === 'pullup_stage' ? 'Stufe (1-6)' : 'Wert'}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              required
-              style={inputStyle}
-            />
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputStyle} />
-            <button
-              type="submit"
-              className="btn primary"
-              style={{
-                border: 'none',
-                borderRadius: 13,
-                padding: 15,
-                fontWeight: 600,
-                fontSize: 15,
-                cursor: 'pointer',
-                background: 'var(--primary-grad)',
-                color: 'var(--on-primary)',
-              }}
-            >
-              Eintragen
-            </button>
-          </form>
-        </div>
-      )}
     </div>
   );
 }
-
-const inputStyle = {
-  width: '100%',
-  background: 'var(--surface2)',
-  border: '1px solid var(--line)',
-  color: 'var(--text)',
-  borderRadius: 9,
-  padding: '10px 12px',
-  fontFamily: 'var(--font-display)',
-  fontSize: 16,
-};

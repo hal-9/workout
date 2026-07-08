@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "exports": {
-    ".": "./planSchema.js"
+    ".": "./planSchema.js",
+    "./exerciseProgress": "./exerciseProgress.js"
   },
   "dependencies": {
     "zod": "^3.23.8"

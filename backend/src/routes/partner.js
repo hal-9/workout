@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../auth.js';
+import { buildProgressForUser } from '../progress.js';
 
 export function partnerRouter(db) {
   const router = Router();
@@ -23,11 +24,12 @@ export function partnerRouter(db) {
       return res.status(404).json({ error: 'not found' });
     }
 
-    const max_tests = db
-      .prepare('SELECT id, kind, value, date FROM max_tests WHERE user_id = ? ORDER BY date ASC')
-      .all(user.id);
+    const progress = buildProgressForUser(db, user.id);
+    if (!progress) {
+      return res.status(404).json({ error: 'no active plan' });
+    }
 
-    res.json({ name: user.name, max_tests });
+    res.json({ name: user.name, ...progress });
   });
 
   return router;

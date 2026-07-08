@@ -1,10 +1,4 @@
 import { parseTargetReps } from './exerciseCompare.js';
-import { PULLUP_STAGES } from '../pullupStages.js';
-
-function isPullupExercise(exercise) {
-  const hay = `${exercise.id} ${exercise.name} ${exercise.muscle}`.toLowerCase();
-  return hay.includes('pull') || hay.includes('klimmzug') || hay.includes('chin');
-}
 
 export function suggestProgression(exercise, loggedSets) {
   const planned = exercise.sets ?? 0;
@@ -31,16 +25,6 @@ export function suggestProgression(exercise, loggedSets) {
   if (exercise.type === 'bw' && target) {
     const allAtTop = sets.every((s) => (Number(s.reps) || 0) >= target.max);
     if (!allAtTop) return null;
-
-    if (isPullupExercise(exercise)) {
-      return {
-        type: 'pullup_stage',
-        exerciseId: exercise.id,
-        exerciseName: exercise.name,
-        message: `${exercise.name}: Zielbereich erreicht — nächste Klimmzug-Stufe in Fortschritt prüfen.`,
-        nextValue: null,
-      };
-    }
 
     return {
       type: 'reps',
@@ -84,8 +68,4 @@ export function suggestionsFromSummary(plan, summary) {
     if (suggestion) suggestions.push(suggestion);
   }
   return suggestions;
-}
-
-export function pullupStageLabel(stageIndex) {
-  return PULLUP_STAGES[stageIndex]?.label ?? null;
 }

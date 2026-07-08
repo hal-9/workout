@@ -5,13 +5,13 @@ const MAX_OUTPUT_TOKENS = 600;
 const TIMEOUT_MS = 30000;
 
 const SYSTEM_PROMPT = `Du bist ein sachlicher Krafttrainings-Coach. Du bekommst Trainingsdaten als JSON:
-die aktuelle Session, die letzten Sessions desselben Trainingstags und den
-Körpergewichts-Verlauf.
+die aktuelle Session und die letzten Sessions desselben Trainingstags.
+Optional kann ein Körpergewichts-Verlauf enthalten sein.
 
 Aufgabe:
 1. Vergleiche die aktuelle Session pro Übung mit den vorherigen Sessions
    (Wiederholungen, Gewicht, Volumen). Benenne Fortschritt und Rückschritt konkret.
-2. Beziehe den Körpergewichts-Trend ein, wo er relevant ist
+2. Beziehe den Körpergewichts-Trend ein, falls bodyweight_log vorhanden und relevant
    (z.B. bei Körpergewichtsübungen).
 3. Gib 2–3 konkrete, umsetzbare Empfehlungen für die nächste Session.
 
@@ -62,7 +62,7 @@ export function buildAggregate(db, session, plan) {
     )
     .all(session.user_id);
 
-  return {
+  const aggregate = {
     day: day.name,
     current_session: {
       date: session.started_at.slice(0, 10),
@@ -72,8 +72,13 @@ export function buildAggregate(db, session, plan) {
       date: s.started_at.slice(0, 10),
       exercises: formatExerciseSets(db, s.id, exerciseMeta),
     })),
-    bodyweight_log: bodyweightLog.reverse().map((b) => ({ date: b.date, kg: b.value })),
   };
+
+  if (bodyweightLog.length > 0) {
+    aggregate.bodyweight_log = bodyweightLog.reverse().map((b) => ({ date: b.date, kg: b.value }));
+  }
+
+  return aggregate;
 }
 
 export async function runEvaluation(db, sessionId) {
