@@ -6,7 +6,10 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY backend/package.json backend/
-RUN npm ci --omit=dev --workspace=backend
+COPY shared/package.json shared/
+COPY shared/planSchema.js shared/
+
+RUN npm ci --omit=dev --workspace=backend --workspace=shared
 
 COPY backend/ backend/
 
