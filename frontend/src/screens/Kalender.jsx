@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
@@ -226,7 +227,24 @@ export default function Kalender() {
       </div>
 
       {!plan && (
-        <p style={{ color: 'var(--muted)', marginTop: 16 }}>Kein aktiver Plan. Bitte zuerst einen Plan importieren.</p>
+        <div style={{ marginTop: 16 }}>
+          <p style={{ color: 'var(--muted)', margin: '0 0 12px' }}>Kein aktiver Plan. Bitte zuerst einen Plan einrichten.</p>
+          <Link
+            to="/plan"
+            className="btn primary"
+            style={{
+              display: 'inline-block',
+              padding: '12px 18px',
+              borderRadius: 13,
+              textDecoration: 'none',
+              background: 'var(--primary-grad)',
+              color: 'var(--on-primary)',
+              fontWeight: 600,
+            }}
+          >
+            Plan einrichten
+          </Link>
+        </div>
       )}
 
       {detail && (

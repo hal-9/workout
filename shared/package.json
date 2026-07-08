@@ -1,0 +1,12 @@
+{
+  "name": "shared",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./planSchema.js"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}

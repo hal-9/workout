@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { cancelQueuedSet, enqueueDelete, enqueueSet } from '../offlineQueue.js';
@@ -329,7 +329,23 @@ export default function Heute() {
     return (
       <div className="wrap">
         <h2>Heute</h2>
-        <p style={{ color: 'var(--muted)' }}>Kein aktiver Plan. Bitte zuerst einen Plan importieren.</p>
+        <p style={{ color: 'var(--muted)' }}>Kein aktiver Plan. Bitte zuerst einen Plan einrichten.</p>
+        <Link
+          to="/plan"
+          className="btn primary"
+          style={{
+            display: 'inline-block',
+            marginTop: 12,
+            padding: '12px 18px',
+            borderRadius: 13,
+            textDecoration: 'none',
+            background: 'var(--primary-grad)',
+            color: 'var(--on-primary)',
+            fontWeight: 600,
+          }}
+        >
+          Plan einrichten
+        </Link>
       </div>
     );
   }

@@ -1,0 +1,334 @@
+{
+  "schema_version": 1,
+  "name": "Foundation 4-Day Upper/Lower",
+  "days": [
+    {
+      "key": "upper_push",
+      "name": "Oben A – Drücken",
+      "focus": "Brust, Schultern, Trizeps + Klimmzug-Grundlagen",
+      "exercises": [
+        {
+          "id": "incline-pushup",
+          "name": "Incline Push-up (Hände auf Hantelbank)",
+          "muscle": "Brust",
+          "type": "bw",
+          "sets": 4,
+          "target_reps": "6-12",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Körper wie ein Brett, Ellbogen ~45°, 2s runter. Bei 4x12 sauber: flachere Erhöhung oder Boden-Liegestütze",
+          "video_query": "incline push up bench form"
+        },
+        {
+          "id": "db-floor-press",
+          "name": "Dumbbell Floor Press",
+          "muscle": "Brust",
+          "type": "wt",
+          "sets": 4,
+          "target_reps": "8-12",
+          "target_seconds": null,
+          "default_weight_kg": 10,
+          "cue": "Pro Hantel 10kg. Kontrolliert absenken bis Trizeps den Boden berührt, kurz pausieren, explosiv drücken",
+          "video_query": "dumbbell floor press form"
+        },
+        {
+          "id": "db-shoulder-press",
+          "name": "Dumbbell Shoulder Press (sitzend)",
+          "muscle": "Schultern",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "8-12",
+          "target_seconds": null,
+          "default_weight_kg": 7.5,
+          "cue": "Pro Hantel. Rumpf fest, nicht ins Hohlkreuz ausweichen, volle Streckung oben",
+          "video_query": "seated dumbbell shoulder press form"
+        },
+        {
+          "id": "band-assisted-pullup",
+          "name": "Band-assisted Pull-up (20kg Band)",
+          "muscle": "Rücken",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "3-6",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Fuß oder Knie im Band, Schulterblätter zuerst nach unten ziehen, Kinn über die Stange, 3s ablassen",
+          "video_query": "band assisted pull up form"
+        },
+        {
+          "id": "db-lateral-raise",
+          "name": "Lateral Raise",
+          "muscle": "Schultern",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "12-15",
+          "target_seconds": null,
+          "default_weight_kg": 2.5,
+          "cue": "Pro Hantel. Leicht gebeugte Arme, bis Schulterhöhe, kein Schwung aus dem Oberkörper",
+          "video_query": "dumbbell lateral raise form"
+        },
+        {
+          "id": "plank",
+          "name": "Plank",
+          "muscle": "Core",
+          "type": "time",
+          "sets": 3,
+          "target_reps": null,
+          "target_seconds": 30,
+          "default_weight_kg": null,
+          "cue": "Gesäß anspannen, Becken leicht einrollen, keine hängende Hüfte. Steigern bis 60s, dann Varianten",
+          "video_query": "plank proper form"
+        }
+      ]
+    },
+    {
+      "key": "lower_intervals",
+      "name": "Unten A + Intervalle",
+      "focus": "Beine, Rückenstrecker, Core + HIIT-Intervalle",
+      "exercises": [
+        {
+          "id": "goblet-squat",
+          "name": "Goblet Squat (Kettlebell)",
+          "muscle": "Beine",
+          "type": "wt",
+          "sets": 4,
+          "target_reps": "10-15",
+          "target_seconds": null,
+          "default_weight_kg": 10,
+          "cue": "KB vor der Brust, Ellbogen innen an den Knien vorbei, tief wie möglich mit geradem Rücken, 2s runter",
+          "video_query": "goblet squat kettlebell form"
+        },
+        {
+          "id": "db-romanian-deadlift",
+          "name": "Dumbbell Romanian Deadlift",
+          "muscle": "Oberschenkelrückseite",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "10-12",
+          "target_seconds": null,
+          "default_weight_kg": 10,
+          "cue": "Pro Hantel 10kg. Hüfte nach hinten schieben, Rücken neutral, Dehnung im Beinbizeps spüren, mit Gesäß hochdrücken",
+          "video_query": "dumbbell romanian deadlift form"
+        },
+        {
+          "id": "db-reverse-lunge",
+          "name": "Reverse Lunge",
+          "muscle": "Beine",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "8-10 pro Bein",
+          "target_seconds": null,
+          "default_weight_kg": 7.5,
+          "cue": "Pro Hantel, seitlich halten. Großer Schritt nach hinten, vorderes Knie über dem Fuß, Oberkörper aufrecht",
+          "video_query": "dumbbell reverse lunge form"
+        },
+        {
+          "id": "back-extension",
+          "name": "Back Extension (Hantelbank)",
+          "muscle": "Lendenwirbelbereich",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "10-15",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Kontrolliert hoch bis Körper gerade (nicht überstrecken), 1s halten, langsam runter. Später Hantel vor der Brust",
+          "video_query": "back extension bench form"
+        },
+        {
+          "id": "dead-bug",
+          "name": "Dead Bug",
+          "muscle": "Core",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "10-16 alternierend",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Unterer Rücken bleibt am Boden gepresst, Arm und gegenüberliegendes Bein langsam strecken, ausatmen",
+          "video_query": "dead bug exercise form"
+        },
+        {
+          "id": "treadmill-intervals",
+          "name": "Laufband-Intervalle",
+          "muscle": "Ausdauer",
+          "type": "cardio",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 900,
+          "default_weight_kg": null,
+          "cue": "5 Min locker warm, dann 6x: 1 Min zügig (8-9 km/h) / 1 Min gehen. Zügig = sprechen fällt schwer",
+          "video_query": "treadmill interval training beginner"
+        }
+      ]
+    },
+    {
+      "key": "upper_pull",
+      "name": "Oben B – Ziehen",
+      "focus": "Rücken, Bizeps + Liegestütz-Praxis",
+      "exercises": [
+        {
+          "id": "dead-hang",
+          "name": "Dead Hang",
+          "muscle": "Rücken",
+          "type": "time",
+          "sets": 3,
+          "target_reps": null,
+          "target_seconds": 20,
+          "default_weight_kg": null,
+          "cue": "Aktiv hängen: Schultern weg von den Ohren, Körperspannung. Steigern bis 45s, Fundament für den Klimmzug",
+          "video_query": "active dead hang pull up bar"
+        },
+        {
+          "id": "scapular-pullup",
+          "name": "Scapular Pull-up",
+          "muscle": "Rücken",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "5-8",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Arme gestreckt lassen, nur Schulterblätter nach unten/hinten ziehen — der Körper hebt sich wenige cm",
+          "video_query": "scapular pull up form"
+        },
+        {
+          "id": "negative-pullup",
+          "name": "Negative Pull-up",
+          "muscle": "Rücken",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "3-5",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Hochspringen oder von Erhöhung starten, Kinn über der Stange, 3-5s kontrolliert ablassen. Der Schlüssel zum ersten Klimmzug",
+          "video_query": "negative pull up eccentric form"
+        },
+        {
+          "id": "one-arm-db-row",
+          "name": "One-Arm Dumbbell Row",
+          "muscle": "Rücken",
+          "type": "wt",
+          "sets": 4,
+          "target_reps": "8-12 pro Seite",
+          "target_seconds": null,
+          "default_weight_kg": 10,
+          "cue": "Knie und Hand auf der Bank, Rücken neutral, Ellbogen Richtung Hüfte ziehen, Schulterblatt aktiv bewegen",
+          "video_query": "one arm dumbbell row bench form"
+        },
+        {
+          "id": "pushup-practice",
+          "name": "Push-up Praxis (Boden)",
+          "muscle": "Brust",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "max minus 1",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "So viele saubere Wiederholungen wie möglich, aber 1 vor Muskelversagen stoppen. Fortschritt tracken!",
+          "video_query": "push up perfect form"
+        },
+        {
+          "id": "db-biceps-curl",
+          "name": "Biceps Curl",
+          "muscle": "Bizeps",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "10-15",
+          "target_seconds": null,
+          "default_weight_kg": 7.5,
+          "cue": "Pro Hantel. Ellbogen fixiert am Körper, kein Schwung, 2s ablassen",
+          "video_query": "dumbbell biceps curl form"
+        },
+        {
+          "id": "side-plank",
+          "name": "Side Plank",
+          "muscle": "Core",
+          "type": "time",
+          "sets": 3,
+          "target_reps": null,
+          "target_seconds": 20,
+          "default_weight_kg": null,
+          "cue": "Pro Seite. Hüfte hoch, Körper eine Linie, oberer Arm gestreckt. Wichtig für seitliche Rumpfstabilität",
+          "video_query": "side plank form"
+        }
+      ]
+    },
+    {
+      "key": "fullbody_zone2",
+      "name": "Ganzkörper + Zone 2",
+      "focus": "Hintere Muskelkette, Core + Grundlagenausdauer",
+      "exercises": [
+        {
+          "id": "kb-swing",
+          "name": "Kettlebell Swing",
+          "muscle": "Gesäß",
+          "type": "wt",
+          "sets": 4,
+          "target_reps": "12-15",
+          "target_seconds": null,
+          "default_weight_kg": 10,
+          "cue": "Hüft-Hinge, kein Squat: Kraft kommt explosiv aus der Hüfte, Arme sind nur Seile, bis Brusthöhe schwingen",
+          "video_query": "kettlebell swing hip hinge form"
+        },
+        {
+          "id": "db-step-up",
+          "name": "Step-up (auf Hantelbank)",
+          "muscle": "Beine",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "8-10 pro Bein",
+          "target_seconds": null,
+          "default_weight_kg": 7.5,
+          "cue": "Pro Hantel. Ganzer Fuß auf der Bank, aus dem vorderen Bein hochdrücken, kontrolliert absteigen",
+          "video_query": "dumbbell step up form"
+        },
+        {
+          "id": "glute-bridge",
+          "name": "Glute Bridge",
+          "muscle": "Gesäß",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "12-15",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Fersen nah am Gesäß, Hüfte hoch bis Körper gerade, oben 2s Gesäß maximal anspannen. Später Hantel auf die Hüfte",
+          "video_query": "glute bridge form"
+        },
+        {
+          "id": "farmers-walk",
+          "name": "Farmer's Walk",
+          "muscle": "Core",
+          "type": "time",
+          "sets": 3,
+          "target_reps": null,
+          "target_seconds": 40,
+          "default_weight_kg": 10,
+          "cue": "Pro Hand 10kg. Aufrecht gehen, Schultern hinten, Rumpf fest — trainiert Griffkraft für den Klimmzug gleich mit",
+          "video_query": "farmers walk carry form"
+        },
+        {
+          "id": "hollow-hold",
+          "name": "Hollow Body Hold",
+          "muscle": "Core",
+          "type": "time",
+          "sets": 3,
+          "target_reps": null,
+          "target_seconds": 15,
+          "default_weight_kg": null,
+          "cue": "Unterer Rücken fest am Boden, Beine und Schultern leicht abheben. Zu schwer? Knie anwinkeln. Steigern bis 30s",
+          "video_query": "hollow body hold progression"
+        },
+        {
+          "id": "treadmill-zone2",
+          "name": "Laufband Zone 2",
+          "muscle": "Ausdauer",
+          "type": "cardio",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 1500,
+          "default_weight_kg": null,
+          "cue": "6-7 km/h, Nasenatmung/Unterhaltung muss möglich sein. Jede Woche +2 Min bis 40 Min, erst dann Tempo erhöhen",
+          "video_query": "zone 2 cardio treadmill explained"
+        }
+      ]
+    }
+  ]
+}

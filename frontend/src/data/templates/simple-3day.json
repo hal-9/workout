@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "name": "Einfach 3-Tage Ganzkörper",
+  "days": [
+    {
+      "key": "tag_a",
+      "name": "Tag A – Drücken & Beine",
+      "focus": "Brust, Schultern, Beine, Core",
+      "exercises": [
+        {
+          "id": "a-squat",
+          "name": "Kniebeuge (Körpergewicht)",
+          "muscle": "Beine",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "10-15",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Füße schulterbreit, Knie in Richtung Zehen, Brust aufrecht",
+          "video_query": "bodyweight squat form"
+        },
+        {
+          "id": "a-pushup",
+          "name": "Liegestütze",
+          "muscle": "Brust",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "6-12",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Körper als Linie, Ellbogen ~45°",
+          "video_query": "push up form"
+        },
+        {
+          "id": "a-plank",
+          "name": "Plank",
+          "muscle": "Core",
+          "type": "time",
+          "sets": 3,
+          "target_reps": null,
+          "target_seconds": 30,
+          "default_weight_kg": null,
+          "cue": "Gesäß anspannen, keine hängende Hüfte",
+          "video_query": "plank proper form"
+        }
+      ]
+    },
+    {
+      "key": "tag_b",
+      "name": "Tag B – Ziehen & Hüfte",
+      "focus": "Rücken, Po, Core",
+      "exercises": [
+        {
+          "id": "b-row",
+          "name": "Einarmiges Kurzhantel-Rudern",
+          "muscle": "Rücken",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "10-12",
+          "target_seconds": null,
+          "default_weight_kg": 8,
+          "cue": "Rücken parallel zum Boden, Ellbogen eng am Körper",
+          "video_query": "one arm dumbbell row form"
+        },
+        {
+          "id": "b-glute-bridge",
+          "name": "Glute Bridge",
+          "muscle": "Po",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "12-15",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Oben 2s Po anspannen, kontrolliert absenken",
+          "video_query": "glute bridge form"
+        },
+        {
+          "id": "b-dead-bug",
+          "name": "Dead Bug",
+          "muscle": "Core",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "8-10 pro Seite",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Rücken am Boden drücken, langsam gegenüber Arm/Bein strecken",
+          "video_query": "dead bug exercise form"
+        }
+      ]
+    },
+    {
+      "key": "tag_c",
+      "name": "Tag C – Ganzkörper & Cardio",
+      "focus": "Ganzkörper, Ausdauer",
+      "exercises": [
+        {
+          "id": "c-lunge",
+          "name": "Ausfallschritte",
+          "muscle": "Beine",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "8-10 pro Bein",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Oberkörper aufrecht, Knie nicht über die Zehen",
+          "video_query": "walking lunge form"
+        },
+        {
+          "id": "c-shoulder-press",
+          "name": "Schulterdrücken (Kurzhanteln)",
+          "muscle": "Schultern",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "8-12",
+          "target_seconds": null,
+          "default_weight_kg": 6,
+          "cue": "Rumpf fest, volle Streckung oben",
+          "video_query": "dumbbell shoulder press seated form"
+        },
+        {
+          "id": "c-cardio",
+          "name": "Laufband / Fahrrad",
+          "muscle": "Cardio",
+          "type": "cardio",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 600,
+          "default_weight_kg": null,
+          "cue": "10 min locker, du solltest dich noch unterhalten können",
+          "video_query": "treadmill brisk walk"
+        }
+      ]
+    }
+  ]
+}

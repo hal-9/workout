@@ -1,0 +1,374 @@
+{
+  "schema_version": 1,
+  "name": "Glute & Core Foundation – 3x Kraft + 1x Cardio",
+  "days": [
+    {
+      "key": "fullbody_a",
+      "name": "Ganzkörper A – Po & Druck",
+      "focus": "Po, Beine, Brust, Core + Cardio-Finisher",
+      "weekday": "mon",
+      "exercises": [
+        {
+          "id": "a-warmup-walk",
+          "name": "Laufband Warm-up (lockeres Gehen)",
+          "muscle": "Cardio",
+          "type": "cardio",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 300,
+          "default_weight_kg": null,
+          "cue": "5 min locker gehen, Tempo langsam steigern. Du solltest dich noch gut unterhalten können",
+          "video_query": "treadmill warm up walk"
+        },
+        {
+          "id": "a-goblet-squat",
+          "name": "Goblet Squat (Kettlebell)",
+          "muscle": "Po/Beine",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "8-12",
+          "target_seconds": null,
+          "default_weight_kg": 10,
+          "cue": "10kg Kettlebell vor der Brust. Füße schulterbreit, tief setzen bis Oberschenkel parallel, Fersen bleiben am Boden. Bei 3x12 sauber: langsamer absenken (3s)",
+          "video_query": "goblet squat kettlebell form"
+        },
+        {
+          "id": "a-db-rdl",
+          "name": "Rumänisches Kreuzheben (Kurzhanteln)",
+          "muscle": "Po/Beinbeuger",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "10-12",
+          "target_seconds": null,
+          "default_weight_kg": 10,
+          "cue": "Pro Hantel 10kg. Hüfte nach hinten schieben, Rücken gerade, Hanteln nah am Bein bis Mitte Schienbein, dann Po anspannen und aufrichten",
+          "video_query": "dumbbell romanian deadlift form"
+        },
+        {
+          "id": "a-hip-thrust",
+          "name": "Hip Thrust (Schultern auf Hantelbank)",
+          "muscle": "Po",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "10-15",
+          "target_seconds": null,
+          "default_weight_kg": 10,
+          "cue": "Schulterblätter auf Bankkante, 10kg-Hantel auf der Hüfte. Oben Po 2s maximal anspannen, Kinn zur Brust. Wichtigste Po-Übung — hier zuerst schwerer werden",
+          "video_query": "dumbbell hip thrust bench form"
+        },
+        {
+          "id": "a-incline-pushup",
+          "name": "Incline Push-up (Hände auf Hantelbank)",
+          "muscle": "Brust",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "6-12",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Körper wie ein Brett, Ellbogen ~45°, 2s runter. Bei 3x12 sauber: flachere Erhöhung oder Boden-Liegestütze",
+          "video_query": "incline push up bench form"
+        },
+        {
+          "id": "a-db-row",
+          "name": "Einarmiges Rudern (Kurzhantel, Bank)",
+          "muscle": "Rücken",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "10-12",
+          "target_seconds": null,
+          "default_weight_kg": 10,
+          "cue": "Eine Hand und ein Knie auf der Bank, Rücken gerade. Hantel zur Hüfte ziehen, Schulterblatt zuerst. Pro Seite ein Satz",
+          "video_query": "single arm dumbbell row bench form"
+        },
+        {
+          "id": "a-plank",
+          "name": "Plank",
+          "muscle": "Core",
+          "type": "time",
+          "sets": 3,
+          "target_reps": null,
+          "target_seconds": 30,
+          "default_weight_kg": null,
+          "cue": "Gesäß anspannen, Becken leicht einrollen, keine hängende Hüfte. Steigern bis 60s",
+          "video_query": "plank proper form"
+        },
+        {
+          "id": "a-cardio-finisher",
+          "name": "Laufband-Finisher (zügiges Gehen, Steigung)",
+          "muscle": "Cardio",
+          "type": "cardio",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 900,
+          "default_weight_kg": null,
+          "cue": "15 min zügig gehen mit Steigung (Puls: reden noch möglich, singen nicht). Gelenkschonender als Laufen — bei 88kg ideal für Fettverbrennung",
+          "video_query": "incline treadmill walking benefits"
+        }
+      ]
+    },
+    {
+      "key": "fullbody_b",
+      "name": "Ganzkörper B – Zug & Po",
+      "focus": "Rücken, Po, Schultern, Core + Cardio-Finisher",
+      "weekday": "wed",
+      "exercises": [
+        {
+          "id": "b-warmup-walk",
+          "name": "Laufband Warm-up (lockeres Gehen)",
+          "muscle": "Cardio",
+          "type": "cardio",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 300,
+          "default_weight_kg": null,
+          "cue": "5 min locker gehen, Tempo langsam steigern",
+          "video_query": "treadmill warm up walk"
+        },
+        {
+          "id": "b-reverse-lunge",
+          "name": "Reverse Lunge (Kurzhanteln)",
+          "muscle": "Po/Beine",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "8-10 pro Bein",
+          "target_seconds": null,
+          "default_weight_kg": 5,
+          "cue": "Pro Hantel 5kg, seitlich halten. Großer Schritt nach hinten, vorderes Knie über dem Fuß, über die vordere Ferse hochdrücken. Rückwärts ist knieschonender als vorwärts",
+          "video_query": "dumbbell reverse lunge form"
+        },
+        {
+          "id": "b-kb-swing",
+          "name": "Kettlebell Swing",
+          "muscle": "Po/Rücken",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "12-15",
+          "target_seconds": null,
+          "default_weight_kg": 10,
+          "cue": "Hüftschwung, kein Heben mit den Armen — Kraft kommt aus dem Po. Rücken gerade, oben Po anspannen. Kraft + Cardio in einem",
+          "video_query": "kettlebell swing proper form"
+        },
+        {
+          "id": "b-band-pullup",
+          "name": "Band-assisted Pull-up (20kg Band)",
+          "muscle": "Rücken",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "3-6",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Fuß oder Knie im Band, Schulterblätter zuerst nach unten ziehen, Kinn über die Stange, 3s ablassen",
+          "video_query": "band assisted pull up form"
+        },
+        {
+          "id": "b-shoulder-press",
+          "name": "Schulterdrücken (Kurzhanteln, sitzend)",
+          "muscle": "Schultern",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "8-12",
+          "target_seconds": null,
+          "default_weight_kg": 5,
+          "cue": "Pro Hantel 5kg, auf der Bank sitzend. Rumpf fest, nicht ins Hohlkreuz, volle Streckung oben. Bei 3x12 sauber: 7,5kg",
+          "video_query": "seated dumbbell shoulder press form"
+        },
+        {
+          "id": "b-back-extension",
+          "name": "Rückenstrecker (Hantelbank)",
+          "muscle": "Unterer Rücken",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "10-15",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Kontrolliert hoch bis Körper gerade (nicht überstrecken), oben Po anspannen, 2s halten. Trainiert Po und unteren Rücken",
+          "video_query": "bench back extension form"
+        },
+        {
+          "id": "b-side-plank",
+          "name": "Side Plank",
+          "muscle": "Core",
+          "type": "time",
+          "sets": 3,
+          "target_reps": null,
+          "target_seconds": 20,
+          "default_weight_kg": null,
+          "cue": "Pro Seite ein Satz. Hüfte hoch, Körper gerade Linie. Zu schwer: Knie unten lassen. Steigern bis 45s",
+          "video_query": "side plank proper form"
+        },
+        {
+          "id": "b-cardio-finisher",
+          "name": "Laufband-Finisher (zügiges Gehen, Steigung)",
+          "muscle": "Cardio",
+          "type": "cardio",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 900,
+          "default_weight_kg": null,
+          "cue": "15 min zügig mit Steigung. Alternativ 10 min flott + 5 min locker ausgehen",
+          "video_query": "incline treadmill walking benefits"
+        }
+      ]
+    },
+    {
+      "key": "fullbody_c",
+      "name": "Ganzkörper C – Beine & Druck",
+      "focus": "Po, Beine, Brust, Arme, Core + Cardio-Finisher",
+      "weekday": "fri",
+      "exercises": [
+        {
+          "id": "c-warmup-walk",
+          "name": "Laufband Warm-up (lockeres Gehen)",
+          "muscle": "Cardio",
+          "type": "cardio",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 300,
+          "default_weight_kg": null,
+          "cue": "5 min locker gehen, Tempo langsam steigern",
+          "video_query": "treadmill warm up walk"
+        },
+        {
+          "id": "c-step-up",
+          "name": "Step-up auf Hantelbank",
+          "muscle": "Po/Beine",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "8-10 pro Bein",
+          "target_seconds": null,
+          "default_weight_kg": 5,
+          "cue": "Pro Hantel 5kg. Ganzer Fuß auf die Bank, über die Ferse hochdrücken, oben Hüfte strecken, langsam runter. Bank zu hoch: stabile niedrigere Erhöhung nehmen",
+          "video_query": "dumbbell step up form"
+        },
+        {
+          "id": "c-single-leg-glute-bridge",
+          "name": "Einbeinige Glute Bridge",
+          "muscle": "Po",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "10-12 pro Bein",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Rücken auf der Matte, ein Bein gestreckt. Hüfte hoch, oben Po 2s anspannen. Hüfte bleibt gerade, nicht kippen",
+          "video_query": "single leg glute bridge form"
+        },
+        {
+          "id": "c-floor-press",
+          "name": "Dumbbell Floor Press",
+          "muscle": "Brust",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "8-12",
+          "target_seconds": null,
+          "default_weight_kg": 7.5,
+          "cue": "Pro Hantel 7,5kg. Kontrolliert absenken bis Trizeps den Boden berührt, kurz pausieren, drücken. Bei 3x12 sauber: 10kg",
+          "video_query": "dumbbell floor press form"
+        },
+        {
+          "id": "c-negative-pullup",
+          "name": "Negativ-Klimmzug",
+          "muscle": "Rücken",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "3-5",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Mit Sprung oder Stuhl nach oben, dann 3-5s langsam ablassen. Baut die Kraft für echte Klimmzüge auf. Zu schwer: Band nutzen",
+          "video_query": "negative pull up form"
+        },
+        {
+          "id": "c-lateral-raise",
+          "name": "Lateral Raise",
+          "muscle": "Schultern",
+          "type": "wt",
+          "sets": 3,
+          "target_reps": "12-15",
+          "target_seconds": null,
+          "default_weight_kg": 2.5,
+          "cue": "Pro Hantel 2,5kg. Leicht gebeugte Arme, bis Schulterhöhe, kein Schwung aus dem Oberkörper",
+          "video_query": "dumbbell lateral raise form"
+        },
+        {
+          "id": "c-reverse-crunch",
+          "name": "Reverse Crunch (auf der Bank)",
+          "muscle": "Core",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "10-15",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Rücken auf der Bank, Bank hinter dem Kopf greifen. Knie zur Brust ziehen, Becken einrollen, langsam absenken ohne durchzuhängen",
+          "video_query": "reverse crunch bench form"
+        },
+        {
+          "id": "c-cardio-finisher",
+          "name": "Laufband-Finisher (zügiges Gehen, Steigung)",
+          "muscle": "Cardio",
+          "type": "cardio",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 900,
+          "default_weight_kg": null,
+          "cue": "15 min zügig mit Steigung. Wochenende steht an — ruhig etwas flotter",
+          "video_query": "incline treadmill walking benefits"
+        }
+      ]
+    },
+    {
+      "key": "cardio_core",
+      "name": "Cardio & Core",
+      "focus": "Ausdauer, Fettverbrennung, Rumpfstabilität",
+      "weekday": "sat",
+      "exercises": [
+        {
+          "id": "d-liss-walk",
+          "name": "Laufband LISS (zügiges Gehen mit Steigung)",
+          "muscle": "Cardio",
+          "type": "cardio",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 2100,
+          "default_weight_kg": null,
+          "cue": "35 min gleichmäßig zügig, Steigung 3-6%. Puls moderat: reden möglich, singen nicht. Podcast oder Serie an und durchziehen",
+          "video_query": "incline treadmill walking fat loss"
+        },
+        {
+          "id": "d-dead-bug",
+          "name": "Dead Bug",
+          "muscle": "Core",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "8-10 pro Seite",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Unterer Rücken bleibt fest auf der Matte. Gegenüberliegenden Arm und Bein langsam strecken, ausatmen, zurück",
+          "video_query": "dead bug exercise form"
+        },
+        {
+          "id": "d-bird-dog",
+          "name": "Bird Dog",
+          "muscle": "Core/Rücken",
+          "type": "bw",
+          "sets": 3,
+          "target_reps": "8-10 pro Seite",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Vierfüßlerstand, gegenüberliegenden Arm und Bein strecken, 2s halten, Hüfte bleibt gerade. Kein Hohlkreuz",
+          "video_query": "bird dog exercise form"
+        },
+        {
+          "id": "d-back-extension",
+          "name": "Rückenstrecker (Hantelbank, leicht)",
+          "muscle": "Unterer Rücken",
+          "type": "bw",
+          "sets": 2,
+          "target_reps": "12-15",
+          "target_seconds": null,
+          "default_weight_kg": null,
+          "cue": "Lockeres Tempo, nicht bis zum Muskelversagen — heute ist Regenerationsreiz, kein Krafttag",
+          "video_query": "bench back extension form"
+        }
+      ]
+    }
+  ]
+}
