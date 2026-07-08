@@ -208,6 +208,54 @@ describe('sessions', () => {
     });
   });
 
+  describe('DELETE /api/sessions/:id/sets', () => {
+    async function createSessionWithSet() {
+      await request(app).post('/api/plan').set('Cookie', cookie).send(plan());
+      const res = await request(app).post('/api/sessions').set('Cookie', cookie).send({ day_key: 'push' });
+      const sessionId = res.body.session_id;
+      await request(app)
+        .post(`/api/sessions/${sessionId}/sets`)
+        .set('Cookie', cookie)
+        .send({ exercise_id: 'pu', set_number: 1, reps: 10, weight_kg: null, duration_s: null });
+      return sessionId;
+    }
+
+    it('entfernt gespeicherten Satz', async () => {
+      const sessionId = await createSessionWithSet();
+      const res = await request(app)
+        .delete(`/api/sessions/${sessionId}/sets`)
+        .set('Cookie', cookie)
+        .send({ exercise_id: 'pu', set_number: 1 });
+      expect(res.status).toBe(200);
+
+      const rows = db.prepare('SELECT * FROM set_logs WHERE session_id = ?').all(sessionId);
+      expect(rows).toHaveLength(0);
+    });
+
+    it('nicht vorhandener Satz -> 200 (idempotent)', async () => {
+      await request(app).post('/api/plan').set('Cookie', cookie).send(plan());
+      const res = await request(app).post('/api/sessions').set('Cookie', cookie).send({ day_key: 'push' });
+      const sessionId = res.body.session_id;
+
+      const del = await request(app)
+        .delete(`/api/sessions/${sessionId}/sets`)
+        .set('Cookie', cookie)
+        .send({ exercise_id: 'pu', set_number: 99 });
+      expect(del.status).toBe(200);
+    });
+
+    it('finished Session -> 409', async () => {
+      const sessionId = await createSessionWithSet();
+      await request(app).post(`/api/sessions/${sessionId}/finish`).set('Cookie', cookie);
+
+      const res = await request(app)
+        .delete(`/api/sessions/${sessionId}/sets`)
+        .set('Cookie', cookie)
+        .send({ exercise_id: 'pu', set_number: 1 });
+      expect(res.status).toBe(409);
+    });
+  });
+
   describe('POST /api/sessions/:id/finish', () => {
     async function createSession() {
       await request(app).post('/api/plan').set('Cookie', cookie).send(plan());

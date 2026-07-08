@@ -16,9 +16,8 @@ function keyFor(payload) {
   return `${payload.session_id}:${payload.exercise_id}:${payload.set_number}`;
 }
 
-export async function enqueueSet(sessionId, payload) {
+async function putQueuedEntry(entry) {
   const db = await openDb();
-  const entry = { key: keyFor({ session_id: sessionId, ...payload }), sessionId, payload };
   await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     tx.objectStore(STORE_NAME).put(entry);
@@ -26,6 +25,30 @@ export async function enqueueSet(sessionId, payload) {
     tx.onerror = () => reject(tx.error);
   });
   db.close();
+}
+
+export async function enqueueSet(sessionId, payload) {
+  const entry = {
+    key: keyFor({ session_id: sessionId, ...payload }),
+    sessionId,
+    operation: 'upsert',
+    payload,
+  };
+  await putQueuedEntry(entry);
+}
+
+export async function enqueueDelete(sessionId, payload) {
+  const entry = {
+    key: keyFor({ session_id: sessionId, ...payload }),
+    sessionId,
+    operation: 'delete',
+    payload,
+  };
+  await putQueuedEntry(entry);
+}
+
+export async function cancelQueuedSet(sessionId, payload) {
+  await removeQueuedSet(keyFor({ session_id: sessionId, ...payload }));
 }
 
 export async function getQueuedSets() {
@@ -51,11 +74,15 @@ async function removeQueuedSet(key) {
   db.close();
 }
 
-export async function replayQueue(postSet) {
+export async function replayQueue({ postSet, deleteSet }) {
   const entries = await getQueuedSets();
   for (const entry of entries) {
     try {
-      await postSet(entry.sessionId, entry.payload);
+      if (entry.operation === 'delete') {
+        await deleteSet(entry.sessionId, entry.payload);
+      } else {
+        await postSet(entry.sessionId, entry.payload);
+      }
       await removeQueuedSet(entry.key);
     } catch (err) {
       if (err.status === 409) {

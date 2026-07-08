@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
-import { enqueueSet } from '../offlineQueue.js';
+import { cancelQueuedSet, enqueueDelete, enqueueSet } from '../offlineQueue.js';
 import { parseUtc, mondayStart } from '../lib/dates.js';
 import { compareExercise } from '../lib/exerciseCompare.js';
 import {
@@ -246,12 +246,9 @@ export default function Heute() {
     const row = setsByExercise[exercise.id][index];
     const nextLogged = !row.logged;
 
-    const payload = {
+    const setKey = {
       exercise_id: exercise.id,
       set_number: row.set_number,
-      reps: exercise.type === 'bw' || exercise.type === 'wt' ? Number(row.reps) || null : null,
-      weight_kg: exercise.type === 'wt' ? Number(row.weight_kg) || null : null,
-      duration_s: exercise.type === 'time' || exercise.type === 'cardio' ? Number(row.duration_s) || null : null,
     };
 
     let sid;
@@ -261,11 +258,29 @@ export default function Heute() {
       return; // Session-Start fehlgeschlagen — Haken bleibt unverändert
     }
 
-    try {
-      await api.post(`/sessions/${sid}/sets`, payload);
-    } catch (err) {
-      if (err.status) throw err;
-      await enqueueSet(sid, payload);
+    if (nextLogged) {
+      const payload = {
+        ...setKey,
+        reps: exercise.type === 'bw' || exercise.type === 'wt' ? Number(row.reps) || null : null,
+        weight_kg: exercise.type === 'wt' ? Number(row.weight_kg) || null : null,
+        duration_s: exercise.type === 'time' || exercise.type === 'cardio' ? Number(row.duration_s) || null : null,
+      };
+
+      try {
+        await api.post(`/sessions/${sid}/sets`, payload);
+      } catch (err) {
+        if (err.status) throw err;
+        await cancelQueuedSet(sid, setKey);
+        await enqueueSet(sid, payload);
+      }
+    } else {
+      try {
+        await api.delete(`/sessions/${sid}/sets`, setKey);
+      } catch (err) {
+        if (err.status) throw err;
+        await cancelQueuedSet(sid, setKey);
+        await enqueueDelete(sid, setKey);
+      }
     }
 
     setSetsByExercise((prev) => ({

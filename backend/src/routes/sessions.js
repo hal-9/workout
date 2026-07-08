@@ -37,10 +37,13 @@ const rangeSchema = z.object({
   to: z.string().regex(sqlTs),
 });
 
-const setSchema = z
-  .object({
-    exercise_id: z.string().min(1),
-    set_number: z.number().int().min(1),
+const setKeySchema = z.object({
+  exercise_id: z.string().min(1),
+  set_number: z.number().int().min(1),
+});
+
+const setSchema = setKeySchema
+  .extend({
     reps: z.number().int().nullable(),
     weight_kg: z.number().nullable(),
     duration_s: z.number().int().nullable(),
@@ -240,6 +243,31 @@ export function sessionsRouter(db) {
        DO UPDATE SET reps = excluded.reps, weight_kg = excluded.weight_kg,
          duration_s = excluded.duration_s, updated_at = datetime('now')`
     ).run(session.id, exercise_id, set_number, reps, weight_kg, duration_s);
+
+    res.json({ ok: true });
+  });
+
+  router.delete('/sessions/:id/sets', (req, res) => {
+    const session = db
+      .prepare('SELECT * FROM sessions WHERE id = ? AND user_id = ?')
+      .get(req.params.id, req.user.id);
+
+    if (!session) {
+      return res.status(404).json({ error: 'not found' });
+    }
+    if (session.status !== 'active') {
+      return res.status(409).json({ error: 'session finished' });
+    }
+
+    const result = setKeySchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(422).json({ error: 'validation failed', details: result.error.issues });
+    }
+    const { exercise_id, set_number } = result.data;
+
+    db.prepare(
+      'DELETE FROM set_logs WHERE session_id = ? AND exercise_id = ? AND set_number = ?'
+    ).run(session.id, exercise_id, set_number);
 
     res.json({ ok: true });
   });
