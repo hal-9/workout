@@ -62,7 +62,7 @@
         },
         {
           "id": "a-incline-pushup",
-          "name": "Incline Push-up (Hände auf Hantelbank)",
+          "name": "Liegestütze erhöht (Hände auf Hantelbank)",
           "muscle": "Brust",
           "type": "bw",
           "sets": 3,
@@ -213,7 +213,7 @@
         },
         {
           "id": "b-band-pullup",
-          "name": "Band-assisted Pull-up (20kg Band)",
+          "name": "Klimmzug mit Band (20 kg)",
           "muscle": "Rücken",
           "type": "bw",
           "sets": 3,
@@ -252,7 +252,7 @@
         },
         {
           "id": "b-side-plank",
-          "name": "Side Plank",
+          "name": "Seitstütz",
           "muscle": "Core",
           "type": "time",
           "sets": 3,
@@ -364,7 +364,7 @@
         },
         {
           "id": "c-single-leg-glute-bridge",
-          "name": "Einbeinige Glute Bridge",
+          "name": "Einbeinige Hüftbrücke",
           "muscle": "Po",
           "type": "bw",
           "sets": 3,
@@ -377,7 +377,7 @@
         },
         {
           "id": "c-floor-press",
-          "name": "Dumbbell Floor Press",
+          "name": "Bodendrücken (Kurzhanteln)",
           "muscle": "Brust",
           "type": "wt",
           "sets": 3,
@@ -403,7 +403,7 @@
         },
         {
           "id": "c-lateral-raise",
-          "name": "Lateral Raise",
+          "name": "Seitheben",
           "muscle": "Schultern",
           "type": "wt",
           "sets": 3,

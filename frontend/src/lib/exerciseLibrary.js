@@ -20,8 +20,26 @@ function hits(text, keywords) {
   return keywords.filter((word) => text.includes(word)).length;
 }
 
+const ZONE_TO_GROUP = {
+  brust: 'Brust',
+  schultern: 'Schultern',
+  bizeps: 'Arme',
+  trizeps: 'Arme',
+  unterarme: 'Arme',
+  core: 'Core',
+  ruecken: 'Rücken',
+  unterer_ruecken: 'Rücken',
+  gesaess: 'Gesäß & Hüfte',
+  quads: 'Beine',
+  hamstrings: 'Beine',
+  waden: 'Beine',
+};
+
 export function muscleGroup(entry) {
   if (entry?.phase === 'cooldown') return STRETCH_GROUP;
+  if (entry?.type === 'cardio') return 'Cardio';
+  const primary = entry?.zones?.primary ?? [];
+  if (primary.length) return ZONE_TO_GROUP[primary[0]] ?? 'Sonstige';
   const text = String(entry?.muscle ?? '').toLowerCase();
   let best = null;
   let bestScore = 0;
@@ -76,6 +94,8 @@ export function libraryEntryToExercise(entry, existingIds = new Set()) {
     cue: entry.cue ?? '',
     video_query: entry.video_query ?? '',
     phase: entry.phase === 'cooldown' ? 'cooldown' : 'main',
+    zones: entry.zones,
+    equipment: entry.equipment,
   };
   return exercise;
 }

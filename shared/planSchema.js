@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import { EQUIPMENT_KEYS, MUSCLE_ZONES } from './muscles.js';
+
+// Muskelzonen für das 3D-Highlight. Fehlt das Feld, wird aus `muscle` geraten.
+const zonesSchema = z.object({
+  primary: z.array(z.enum(MUSCLE_ZONES)).default([]),
+  secondary: z.array(z.enum(MUSCLE_ZONES)).default([]),
+}).strip();
 
 // Automatische Steigerung. `null` schaltet sie für die Übung ab,
 // fehlendes Feld nutzt die Voreinstellung des Übungstyps.
@@ -23,6 +30,8 @@ const exerciseSchema = z.object({
   video_query: z.string(),
   // 'cooldown' = Stretching/Abwärmen: zählt nicht in Volumen, PRs und Progression.
   phase: z.enum(['main', 'cooldown']).default('main'),
+  zones: zonesSchema.optional(),
+  equipment: z.enum(EQUIPMENT_KEYS).optional(),
   progression: progressionSchema.nullable().optional(),
 }).strip();
 

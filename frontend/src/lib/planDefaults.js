@@ -124,6 +124,8 @@ export function preparePlanForSave(plan) {
           cue: ex.cue ?? '',
           video_query: ex.video_query ?? '',
           phase: ex.phase === 'cooldown' ? 'cooldown' : 'main',
+          zones: ex.zones,
+          equipment: ex.equipment,
           progression: ex.progression === undefined ? undefined : ex.progression,
           sets: Number(ex.sets),
           default_weight_kg:

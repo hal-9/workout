@@ -1,5 +1,48 @@
 [
   {
+    "id": "ab-wheel",
+    "name": "Ab Wheel Rollout",
+    "muscle": "Core",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "6-12",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Rücken darf nicht ins Hohlkreuz kippen. Nur so weit rollen, wie die Spannung hält.",
+    "video_query": "Ab Wheel Rollout Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "ruecken",
+        "schultern"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "hip-abduction-maschine",
+    "name": "Abduktoren-Maschine",
+    "muscle": "Gesäß (Abduktoren)",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "12-20",
+    "target_seconds": null,
+    "default_weight_kg": 30,
+    "cue": "Oberkörper leicht nach vorne für mehr Gluteus medius. Langsam zurückführen.",
+    "video_query": "Abduktoren Maschine Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "gesaess"
+      ],
+      "secondary": []
+    },
+    "equipment": "maschine"
+  },
+  {
     "id": "stretch-adduktoren-frosch",
     "name": "Adduktoren-Dehnung im Sitzen",
     "muscle": "Adduktoren",
@@ -10,51 +53,41 @@
     "default_weight_kg": null,
     "cue": "Fußsohlen zusammen, Knie sinken lassen, nicht drücken.",
     "video_query": "Adduktoren-Dehnung im Sitzen Dehnung Technik",
-    "phase": "cooldown"
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "gesaess"
+      ],
+      "secondary": []
+    },
+    "equipment": "koerpergewicht"
   },
   {
-    "id": "treadmill-zone2",
-    "name": "Laufband Zone 2",
-    "muscle": "Ausdauer",
-    "type": "cardio",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 1500,
-    "default_weight_kg": null,
-    "cue": "6-7 km/h, Nasenatmung/Unterhaltung muss möglich sein. Jede Woche +2 Min bis 40 Min, erst dann Tempo erhöhen",
-    "video_query": "zone 2 cardio treadmill explained",
-    "phase": "main"
-  },
-  {
-    "id": "treadmill-intervals",
-    "name": "Laufband-Intervalle",
-    "muscle": "Ausdauer",
-    "type": "cardio",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 900,
-    "default_weight_kg": null,
-    "cue": "5 Min locker warm, dann 6x: 1 Min zügig (8-9 km/h) / 1 Min gehen. Zügig = sprechen fällt schwer",
-    "video_query": "treadmill interval training beginner",
-    "phase": "main"
-  },
-  {
-    "id": "stretch-kobra",
-    "name": "Kobra",
-    "muscle": "Bauch",
-    "type": "time",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 40,
-    "default_weight_kg": null,
-    "cue": "Schambein bleibt am Boden, Schultern weg von den Ohren.",
-    "video_query": "Kobra Dehnung Technik",
-    "phase": "cooldown"
+    "id": "arnold-press",
+    "name": "Arnold Press",
+    "muscle": "Schultern",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "10-12",
+    "target_seconds": null,
+    "default_weight_kg": 10,
+    "cue": "Start mit Handflächen zum Körper, beim Drücken nach außen drehen. Langsam, kein Schwung.",
+    "video_query": "Arnold Press Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "schultern"
+      ],
+      "secondary": [
+        "trizeps"
+      ]
+    },
+    "equipment": "kurzhantel"
   },
   {
     "id": "c-lunge",
     "name": "Ausfallschritte",
-    "muscle": "Beine",
+    "muscle": "Quadrizeps · Gesäß",
     "type": "bw",
     "sets": 3,
     "target_reps": "8-10 pro Bein",
@@ -62,63 +95,225 @@
     "default_weight_kg": null,
     "cue": "Oberkörper aufrecht, Knie nicht über die Zehen",
     "video_query": "walking lunge form",
-    "phase": "main"
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "quads",
+        "gesaess"
+      ],
+      "secondary": [
+        "hamstrings",
+        "core"
+      ]
+    },
+    "equipment": "koerpergewicht"
   },
   {
-    "id": "goblet-squat",
-    "name": "Goblet Squat (Kettlebell)",
-    "muscle": "Beine",
+    "id": "walking-lunge-db",
+    "name": "Ausfallschritte gehend (Kurzhanteln)",
+    "muscle": "Quadrizeps · Gesäß",
     "type": "wt",
-    "sets": 4,
-    "target_reps": "10-15",
+    "sets": 3,
+    "target_reps": "10-12",
     "target_seconds": null,
     "default_weight_kg": 10,
-    "cue": "KB vor der Brust, Ellbogen innen an den Knien vorbei, tief wie möglich mit geradem Rücken, 2s runter",
-    "video_query": "goblet squat kettlebell form",
-    "phase": "main"
+    "cue": "Langer Schritt, hinteres Knie fast zum Boden. Oberkörper aufrecht.",
+    "video_query": "Walking Lunges Kurzhantel Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "quads",
+        "gesaess"
+      ],
+      "secondary": [
+        "hamstrings",
+        "core"
+      ]
+    },
+    "equipment": "kurzhantel"
   },
   {
-    "id": "a-squat",
-    "name": "Kniebeuge (Körpergewicht)",
-    "muscle": "Beine",
+    "id": "band-pull-apart",
+    "name": "Band Pull-Apart",
+    "muscle": "Hintere Schulter · Rücken",
     "type": "bw",
+    "sets": 3,
+    "target_reps": "15-20",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Arme gestreckt auf Brusthöhe, Band auseinanderziehen bis die Schulterblätter schließen.",
+    "video_query": "Band Pull Apart Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "schultern"
+      ],
+      "secondary": [
+        "ruecken"
+      ]
+    },
+    "equipment": "band"
+  },
+  {
+    "id": "band-assisted-pullup",
+    "name": "Klimmzug mit Band (20 kg)",
+    "muscle": "Rücken · Bizeps",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "3-6",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Fuß oder Knie im Band, Schulterblätter zuerst nach unten ziehen, Kinn über die Stange, 3s ablassen",
+    "video_query": "band assisted pull up form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "bizeps",
+        "unterarme"
+      ]
+    },
+    "equipment": "klimmzugstange"
+  },
+  {
+    "id": "bench-dip",
+    "name": "Bank-Dips",
+    "muscle": "Trizeps",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "8-15",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Hände schulterbreit auf der Bank, Po dicht daran. Nur bis 90° im Ellbogen absenken.",
+    "video_query": "Bank Dips Trizeps Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "trizeps"
+      ],
+      "secondary": [
+        "schultern",
+        "brust"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "bench-press-lh",
+    "name": "Bankdrücken (Langhantel)",
+    "muscle": "Brust · Trizeps",
+    "type": "wt",
+    "sets": 4,
+    "target_reps": "6-10",
+    "target_seconds": null,
+    "default_weight_kg": 40,
+    "cue": "Schulterblätter zusammen und nach unten, Füße fest am Boden. Stange zur unteren Brust, nicht zum Hals.",
+    "video_query": "Bankdrücken Langhantel Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "brust"
+      ],
+      "secondary": [
+        "trizeps",
+        "schultern"
+      ]
+    },
+    "equipment": "langhantel"
+  },
+  {
+    "id": "leg-curl-lying",
+    "name": "Beinbeuger liegend (Maschine)",
+    "muscle": "Beinbeuger",
+    "type": "wt",
     "sets": 3,
     "target_reps": "10-15",
     "target_seconds": null,
+    "default_weight_kg": 25,
+    "cue": "Hüfte bleibt auf dem Polster. Ferse zum Po ziehen, kontrolliert zurück.",
+    "video_query": "Beinbeuger liegend Maschine Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [
+        "waden"
+      ]
+    },
+    "equipment": "maschine"
+  },
+  {
+    "id": "leg-press",
+    "name": "Beinpresse",
+    "muscle": "Quadrizeps · Gesäß",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "10-15",
+    "target_seconds": null,
+    "default_weight_kg": 80,
+    "cue": "Unterer Rücken bleibt am Polster. Knie nicht ganz durchdrücken.",
+    "video_query": "Beinpresse Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "quads",
+        "gesaess"
+      ],
+      "secondary": [
+        "hamstrings"
+      ]
+    },
+    "equipment": "maschine"
+  },
+  {
+    "id": "stretch-hamstrings-vorbeuge",
+    "name": "Beinrückseite im Sitzen",
+    "muscle": "Beinbeuger",
+    "type": "time",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 45,
     "default_weight_kg": null,
-    "cue": "Füße schulterbreit, Knie in Richtung Zehen, Brust aufrecht",
-    "video_query": "bodyweight squat form",
-    "phase": "main"
+    "cue": "Aus der Hüfte beugen, Rücken lang, Knie darf minimal weich sein.",
+    "video_query": "Beinrückseite im Sitzen Dehnung Technik",
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [
+        "waden",
+        "unterer_ruecken"
+      ]
+    },
+    "equipment": "koerpergewicht"
   },
   {
-    "id": "db-reverse-lunge",
-    "name": "Reverse Lunge",
-    "muscle": "Beine",
+    "id": "leg-extension",
+    "name": "Beinstrecker (Maschine)",
+    "muscle": "Quadrizeps",
     "type": "wt",
     "sets": 3,
-    "target_reps": "8-10 pro Bein",
+    "target_reps": "12-15",
     "target_seconds": null,
-    "default_weight_kg": 7.5,
-    "cue": "Pro Hantel, seitlich halten. Großer Schritt nach hinten, vorderes Knie über dem Fuß, Oberkörper aufrecht",
-    "video_query": "dumbbell reverse lunge form",
-    "phase": "main"
-  },
-  {
-    "id": "db-step-up",
-    "name": "Step-up (auf Hantelbank)",
-    "muscle": "Beine",
-    "type": "wt",
-    "sets": 3,
-    "target_reps": "8-10 pro Bein",
-    "target_seconds": null,
-    "default_weight_kg": 7.5,
-    "cue": "Pro Hantel. Ganzer Fuß auf der Bank, aus dem vorderen Bein hochdrücken, kontrolliert absteigen",
-    "video_query": "dumbbell step up form",
-    "phase": "main"
+    "default_weight_kg": 30,
+    "cue": "Drehachse auf Kniehöhe. Oben kurz halten, langsam ablassen.",
+    "video_query": "Beinstrecker Maschine Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "quads"
+      ],
+      "secondary": []
+    },
+    "equipment": "maschine"
   },
   {
     "id": "db-biceps-curl",
-    "name": "Biceps Curl",
+    "name": "Bizeps-Curls (Kurzhanteln)",
     "muscle": "Bizeps",
     "type": "wt",
     "sets": 3,
@@ -127,12 +322,45 @@
     "default_weight_kg": 7.5,
     "cue": "Pro Hantel. Ellbogen fixiert am Körper, kein Schwung, 2s ablassen",
     "video_query": "dumbbell biceps curl form",
-    "phase": "main"
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "bizeps"
+      ],
+      "secondary": [
+        "unterarme"
+      ]
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "d-bird-dog",
+    "name": "Bird Dog",
+    "muscle": "Core · Unterer Rücken",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "8-10 pro Seite",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Vierfüßlerstand, gegenüberliegenden Arm und Bein strecken, 2s halten, Hüfte bleibt gerade. Kein Hohlkreuz",
+    "video_query": "bird dog exercise form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "core",
+        "unterer_ruecken"
+      ],
+      "secondary": [
+        "gesaess",
+        "schultern"
+      ]
+    },
+    "equipment": "koerpergewicht"
   },
   {
     "id": "stretch-bizeps-wand",
     "name": "Bizeps-Dehnung an der Wand",
-    "muscle": "Bizeps",
+    "muscle": "Bizeps · Brust",
     "type": "time",
     "sets": 1,
     "target_reps": null,
@@ -140,12 +368,21 @@
     "default_weight_kg": null,
     "cue": "Handfläche an die Wand, Körper langsam wegdrehen.",
     "video_query": "Bizeps-Dehnung an der Wand Dehnung Technik",
-    "phase": "cooldown"
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "bizeps"
+      ],
+      "secondary": [
+        "brust"
+      ]
+    },
+    "equipment": "koerpergewicht"
   },
   {
     "id": "stretch-brust-tuerrahmen",
     "name": "Brustdehnung am Türrahmen",
-    "muscle": "Brust",
+    "muscle": "Brust · Schulter",
     "type": "time",
     "sets": 1,
     "target_reps": null,
@@ -153,111 +390,84 @@
     "default_weight_kg": null,
     "cue": "Ellbogen auf Schulterhöhe, Brust öffnen, nicht ins Hohlkreuz fallen.",
     "video_query": "Brustdehnung am Türrahmen Dehnung Technik",
-    "phase": "cooldown"
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "brust"
+      ],
+      "secondary": [
+        "schultern"
+      ]
+    },
+    "equipment": "koerpergewicht"
   },
   {
-    "id": "db-floor-press",
-    "name": "Dumbbell Floor Press",
-    "muscle": "Brust",
+    "id": "stretch-brustwirbel-rotation",
+    "name": "Brustwirbel-Rotation im Sitzen",
+    "muscle": "Brustwirbelsäule · Rumpf",
+    "type": "time",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 40,
+    "default_weight_kg": null,
+    "cue": "Aus dem Brustkorb drehen, Becken bleibt still.",
+    "video_query": "Brustwirbel-Rotation im Sitzen Dehnung Technik",
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "core"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "bulgarian-split-squat",
+    "name": "Bulgarian Split Squat",
+    "muscle": "Quadrizeps · Gesäß",
     "type": "wt",
-    "sets": 4,
+    "sets": 3,
     "target_reps": "8-12",
     "target_seconds": null,
-    "default_weight_kg": 10,
-    "cue": "Pro Hantel 10kg. Kontrolliert absenken bis Trizeps den Boden berührt, kurz pausieren, explosiv drücken",
-    "video_query": "dumbbell floor press form",
-    "phase": "main"
+    "default_weight_kg": 12,
+    "cue": "Hinterer Fuß erhöht, vorderes Knie über dem Mittelfuß. Oberkörper leicht vor für mehr Po.",
+    "video_query": "Bulgarian Split Squat Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "quads",
+        "gesaess"
+      ],
+      "secondary": [
+        "hamstrings",
+        "core"
+      ]
+    },
+    "equipment": "kurzhantel"
   },
   {
-    "id": "incline-pushup",
-    "name": "Incline Push-up (Hände auf Hantelbank)",
+    "id": "butterfly-maschine",
+    "name": "Butterfly (Maschine)",
     "muscle": "Brust",
-    "type": "bw",
-    "sets": 4,
-    "target_reps": "6-12",
-    "target_seconds": null,
-    "default_weight_kg": null,
-    "cue": "Körper wie ein Brett, Ellbogen ~45°, 2s runter. Bei 4x12 sauber: flachere Erhöhung oder Boden-Liegestütze",
-    "video_query": "incline push up bench form",
-    "phase": "main"
-  },
-  {
-    "id": "a-pushup",
-    "name": "Liegestütze",
-    "muscle": "Brust",
-    "type": "bw",
+    "type": "wt",
     "sets": 3,
-    "target_reps": "6-12",
+    "target_reps": "10-15",
     "target_seconds": null,
-    "default_weight_kg": null,
-    "cue": "Körper als Linie, Ellbogen ~45°",
-    "video_query": "push up form",
-    "phase": "main"
-  },
-  {
-    "id": "pushup-practice",
-    "name": "Push-up Praxis (Boden)",
-    "muscle": "Brust",
-    "type": "bw",
-    "sets": 3,
-    "target_reps": "max minus 1",
-    "target_seconds": null,
-    "default_weight_kg": null,
-    "cue": "So viele saubere Wiederholungen wie möglich, aber 1 vor Muskelversagen stoppen. Fortschritt tracken!",
-    "video_query": "push up perfect form",
-    "phase": "main"
-  },
-  {
-    "id": "c-cardio",
-    "name": "Laufband / Fahrrad",
-    "muscle": "Cardio",
-    "type": "cardio",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 600,
-    "default_weight_kg": null,
-    "cue": "10 min locker, du solltest dich noch unterhalten können",
-    "video_query": "treadmill brisk walk",
-    "phase": "main"
-  },
-  {
-    "id": "d-liss-walk",
-    "name": "Laufband LISS (zügiges Gehen mit Steigung)",
-    "muscle": "Cardio",
-    "type": "cardio",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 2100,
-    "default_weight_kg": null,
-    "cue": "35 min gleichmäßig zügig, Steigung 3-6%. Puls moderat: reden möglich, singen nicht. Podcast oder Serie an und durchziehen",
-    "video_query": "incline treadmill walking fat loss",
-    "phase": "main"
-  },
-  {
-    "id": "a-warmup-walk",
-    "name": "Laufband Warm-up (lockeres Gehen)",
-    "muscle": "Cardio",
-    "type": "cardio",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 300,
-    "default_weight_kg": null,
-    "cue": "5 min locker gehen, Tempo langsam steigern. Du solltest dich noch gut unterhalten können",
-    "video_query": "treadmill warm up walk",
-    "phase": "main"
-  },
-  {
-    "id": "a-cardio-finisher",
-    "name": "Laufband-Finisher (zügiges Gehen, Steigung)",
-    "muscle": "Cardio",
-    "type": "cardio",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 900,
-    "default_weight_kg": null,
-    "cue": "15 min zügig gehen mit Steigung (Puls: reden noch möglich, singen nicht). Gelenkschonender als Laufen — bei 88kg ideal für Fettverbrennung",
-    "video_query": "incline treadmill walking benefits",
-    "phase": "main"
+    "default_weight_kg": 25,
+    "cue": "Rücken flach an der Lehne, Ellbogen auf Brusthöhe. Kontrolliert öffnen, nicht fallen lassen.",
+    "video_query": "Butterfly Maschine Brust Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "brust"
+      ],
+      "secondary": [
+        "schultern"
+      ]
+    },
+    "equipment": "maschine"
   },
   {
     "id": "b-dead-bug",
@@ -270,12 +480,269 @@
     "default_weight_kg": null,
     "cue": "Rücken am Boden drücken, langsam gegenüber Arm/Bein strecken",
     "video_query": "dead bug exercise form",
-    "phase": "main"
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "core"
+      ],
+      "secondary": []
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "dead-hang",
+    "name": "Dead Hang",
+    "muscle": "Rücken · Unterarme",
+    "type": "time",
+    "sets": 3,
+    "target_reps": null,
+    "target_seconds": 20,
+    "default_weight_kg": null,
+    "cue": "Aktiv hängen: Schultern weg von den Ohren, Körperspannung. Steigern bis 45s, Fundament für den Klimmzug",
+    "video_query": "active dead hang pull up bar",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "ruecken",
+        "unterarme"
+      ],
+      "secondary": [
+        "schultern"
+      ]
+    },
+    "equipment": "klimmzugstange"
+  },
+  {
+    "id": "dips-brust",
+    "name": "Dips (Barren)",
+    "muscle": "Brust · Trizeps",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "6-12",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Oberkörper leicht nach vorne neigen für mehr Brust. Nur so tief, wie die Schulter schmerzfrei bleibt.",
+    "video_query": "Dips Barren Brust Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "brust",
+        "trizeps"
+      ],
+      "secondary": [
+        "schultern"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "db-floor-press",
+    "name": "Bodendrücken (Kurzhanteln)",
+    "muscle": "Brust · Trizeps",
+    "type": "wt",
+    "sets": 4,
+    "target_reps": "8-12",
+    "target_seconds": null,
+    "default_weight_kg": 10,
+    "cue": "Pro Hantel 10kg. Kontrolliert absenken bis Trizeps den Boden berührt, kurz pausieren, explosiv drücken",
+    "video_query": "dumbbell floor press form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "brust"
+      ],
+      "secondary": [
+        "trizeps",
+        "schultern"
+      ]
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "db-romanian-deadlift",
+    "name": "Rumänisches Kreuzheben (Kurzhanteln)",
+    "muscle": "Beinbeuger · Gesäß",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "10-12",
+    "target_seconds": null,
+    "default_weight_kg": 10,
+    "cue": "Pro Hantel 10kg. Hüfte nach hinten schieben, Rücken neutral, Dehnung im Beinbizeps spüren, mit Gesäß hochdrücken",
+    "video_query": "dumbbell romanian deadlift form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "hamstrings",
+        "gesaess"
+      ],
+      "secondary": [
+        "unterer_ruecken",
+        "unterarme"
+      ]
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "db-shoulder-press",
+    "name": "Schulterdrücken (Kurzhanteln, sitzend)",
+    "muscle": "Schultern · Trizeps",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "8-12",
+    "target_seconds": null,
+    "default_weight_kg": 7.5,
+    "cue": "Pro Hantel. Rumpf fest, nicht ins Hohlkreuz ausweichen, volle Streckung oben",
+    "video_query": "seated dumbbell shoulder press form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "schultern"
+      ],
+      "secondary": [
+        "trizeps",
+        "core"
+      ]
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "c-single-leg-glute-bridge",
+    "name": "Einbeinige Hüftbrücke",
+    "muscle": "Gesäß",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "10-12 pro Bein",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Rücken auf der Matte, ein Bein gestreckt. Hüfte hoch, oben Po 2s anspannen. Hüfte bleibt gerade, nicht kippen",
+    "video_query": "single leg glute bridge form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "gesaess"
+      ],
+      "secondary": [
+        "hamstrings",
+        "core"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "single-leg-rdl",
+    "name": "Einbeiniges Kreuzheben (Kurzhantel)",
+    "muscle": "Beinbeuger · Gesäß",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "8-12",
+    "target_seconds": null,
+    "default_weight_kg": 12,
+    "cue": "Hüfte nach hinten, Standbein leicht gebeugt. Becken bleibt waagerecht.",
+    "video_query": "Einbeiniges Kreuzheben Kurzhantel Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "hamstrings",
+        "gesaess"
+      ],
+      "secondary": [
+        "unterer_ruecken",
+        "core"
+      ]
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "single-leg-calf-raise",
+    "name": "Einbeiniges Wadenheben",
+    "muscle": "Waden",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "12-20",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Auf einer Stufe, freies Bein anwinkeln. Leicht festhalten für die Balance.",
+    "video_query": "Einbeiniges Wadenheben Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "waden"
+      ],
+      "secondary": []
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "close-grip-pushup",
+    "name": "Enge Liegestütze (Diamant)",
+    "muscle": "Trizeps · Brust",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "6-12",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Hände unter der Brust, Ellbogen streifen die Rippen. Körper bleibt eine Linie.",
+    "video_query": "Diamant Liegestütze Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "trizeps"
+      ],
+      "secondary": [
+        "brust",
+        "core"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "face-pull",
+    "name": "Face Pull (Kabel)",
+    "muscle": "Hintere Schulter · Nacken",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "12-15",
+    "target_seconds": null,
+    "default_weight_kg": 15,
+    "cue": "Seil auf Augenhöhe, zum Gesicht ziehen und Ellbogen nach hinten außen führen.",
+    "video_query": "Face Pull Kabelzug Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "schultern"
+      ],
+      "secondary": [
+        "ruecken"
+      ]
+    },
+    "equipment": "kabelzug"
+  },
+  {
+    "id": "bike-intervals",
+    "name": "Fahrrad-Intervalle",
+    "muscle": "Ausdauer",
+    "type": "cardio",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 1200,
+    "default_weight_kg": null,
+    "cue": "5 Min einrollen, dann 8x: 30 s hart / 90 s locker.",
+    "video_query": "Fahrrad Intervalltraining Anfänger",
+    "phase": "main",
+    "zones": {
+      "primary": [],
+      "secondary": [
+        "quads",
+        "waden",
+        "gesaess"
+      ]
+    },
+    "equipment": "cardio"
   },
   {
     "id": "farmers-walk",
     "name": "Farmer's Walk",
-    "muscle": "Core",
+    "muscle": "Core · Unterarme",
     "type": "time",
     "sets": 3,
     "target_reps": null,
@@ -283,7 +750,219 @@
     "default_weight_kg": 10,
     "cue": "Pro Hand 10kg. Aufrecht gehen, Schultern hinten, Rumpf fest — trainiert Griffkraft für den Klimmzug gleich mit",
     "video_query": "farmers walk carry form",
-    "phase": "main"
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "core",
+        "unterarme"
+      ],
+      "secondary": [
+        "schultern",
+        "ruecken"
+      ]
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "front-raise",
+    "name": "Frontheben",
+    "muscle": "Vordere Schulter",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "12-15",
+    "target_seconds": null,
+    "default_weight_kg": 7,
+    "cue": "Bis Schulterhöhe, nicht höher. Kein Nachwippen aus dem Rücken.",
+    "video_query": "Frontheben Kurzhantel Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "schultern"
+      ],
+      "secondary": []
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "b-glute-bridge",
+    "name": "Hüftbrücke",
+    "muscle": "Gesäß",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "12-15",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Oben 2s Po anspannen, kontrolliert absenken",
+    "video_query": "glute bridge form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "gesaess"
+      ],
+      "secondary": [
+        "hamstrings",
+        "core"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "goblet-squat",
+    "name": "Goblet Squat (Kettlebell)",
+    "muscle": "Quadrizeps · Gesäß",
+    "type": "wt",
+    "sets": 4,
+    "target_reps": "10-15",
+    "target_seconds": null,
+    "default_weight_kg": 10,
+    "cue": "KB vor der Brust, Ellbogen innen an den Knien vorbei, tief wie möglich mit geradem Rücken, 2s runter",
+    "video_query": "goblet squat kettlebell form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "quads",
+        "gesaess"
+      ],
+      "secondary": [
+        "core",
+        "hamstrings"
+      ]
+    },
+    "equipment": "kettlebell"
+  },
+  {
+    "id": "good-morning",
+    "name": "Good Morning",
+    "muscle": "Unterer Rücken · Beinbeuger",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "8-12",
+    "target_seconds": null,
+    "default_weight_kg": 20,
+    "cue": "Stange auf dem oberen Rücken, Knie leicht gebeugt. Hüfte nach hinten schieben, Rücken bleibt gerade.",
+    "video_query": "Good Morning Übung Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "unterer_ruecken",
+        "hamstrings"
+      ],
+      "secondary": [
+        "gesaess"
+      ]
+    },
+    "equipment": "langhantel"
+  },
+  {
+    "id": "hammer-curl",
+    "name": "Hammer Curls",
+    "muscle": "Bizeps · Unterarme",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "10-12",
+    "target_seconds": null,
+    "default_weight_kg": 10,
+    "cue": "Neutraler Griff, Daumen oben. Ellbogen bleiben am Körper.",
+    "video_query": "Hammer Curls Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "bizeps",
+        "unterarme"
+      ],
+      "secondary": []
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "wrist-curl",
+    "name": "Handgelenk-Curls",
+    "muscle": "Unterarme",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "12-20",
+    "target_seconds": null,
+    "default_weight_kg": 8,
+    "cue": "Unterarme auf den Oberschenkeln ablegen, nur die Handgelenke bewegen.",
+    "video_query": "Handgelenk Curls Unterarm Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "unterarme"
+      ],
+      "secondary": []
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "hanging-leg-raise",
+    "name": "Hängendes Beinheben",
+    "muscle": "Core · Hüftbeuger",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "8-15",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Aus dem Hang, Becken bewusst einrollen statt nur die Beine heben. Kein Schwingen.",
+    "video_query": "Hängendes Beinheben Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "unterarme",
+        "ruecken"
+      ]
+    },
+    "equipment": "klimmzugstange"
+  },
+  {
+    "id": "hip-thrust-lh",
+    "name": "Hip Thrust (Langhantel)",
+    "muscle": "Gesäß",
+    "type": "wt",
+    "sets": 4,
+    "target_reps": "8-12",
+    "target_seconds": null,
+    "default_weight_kg": 40,
+    "cue": "Schulterblätter auf der Bank, Kinn zur Brust. Oben Po fest anspannen, Rippen unten lassen.",
+    "video_query": "Hip Thrust Langhantel Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "gesaess"
+      ],
+      "secondary": [
+        "hamstrings",
+        "quads",
+        "core"
+      ]
+    },
+    "equipment": "langhantel"
+  },
+  {
+    "id": "a-hip-thrust",
+    "name": "Hip Thrust (Schultern auf Hantelbank)",
+    "muscle": "Gesäß",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "10-15",
+    "target_seconds": null,
+    "default_weight_kg": 10,
+    "cue": "Schulterblätter auf Bankkante, 10kg-Hantel auf der Hüfte. Oben Po 2s maximal anspannen, Kinn zur Brust. Wichtigste Po-Übung — hier zuerst schwerer werden",
+    "video_query": "dumbbell hip thrust bench form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "gesaess"
+      ],
+      "secondary": [
+        "hamstrings",
+        "quads"
+      ]
+    },
+    "equipment": "kurzhantel"
   },
   {
     "id": "hollow-hold",
@@ -296,7 +975,690 @@
     "default_weight_kg": null,
     "cue": "Unterer Rücken fest am Boden, Beine und Schultern leicht abheben. Zu schwer? Knie anwinkeln. Steigern bis 30s",
     "video_query": "hollow body hold progression",
-    "phase": "main"
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "quads"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "stretch-hueftbeuger-ausfall",
+    "name": "Hüftbeuger im Ausfallschritt",
+    "muscle": "Hüftbeuger · Quadrizeps",
+    "type": "time",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 45,
+    "default_weight_kg": null,
+    "cue": "Becken aufrichten, Gesäß anspannen, dann nach vorn schieben.",
+    "video_query": "Hüftbeuger im Ausfallschritt Dehnung Technik",
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "quads"
+      ],
+      "secondary": [
+        "gesaess"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "stretch-hueftbeuger-knie",
+    "name": "Hüftbeuger im Kniestand",
+    "muscle": "Hüftbeuger · Quadrizeps",
+    "type": "time",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 40,
+    "default_weight_kg": null,
+    "cue": "Becken aufrichten, Bauch leicht anspannen, sanft nach vorn.",
+    "video_query": "Hüftbeuger im Kniestand Dehnung Technik",
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "quads"
+      ],
+      "secondary": [
+        "gesaess"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "incline-pushup",
+    "name": "Liegestütze erhöht (Hände auf Hantelbank)",
+    "muscle": "Brust · Trizeps",
+    "type": "bw",
+    "sets": 4,
+    "target_reps": "6-12",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Körper wie ein Brett, Ellbogen ~45°, 2s runter. Bei 4x12 sauber: flachere Erhöhung oder Boden-Liegestütze",
+    "video_query": "incline push up bench form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "brust"
+      ],
+      "secondary": [
+        "trizeps",
+        "schultern",
+        "core"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "cable-crunch",
+    "name": "Kabel-Crunch",
+    "muscle": "Core",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "12-15",
+    "target_seconds": null,
+    "default_weight_kg": 25,
+    "cue": "Im Kniestand, Hüfte fix. Wirbel für Wirbel einrollen, nicht aus der Hüfte ziehen.",
+    "video_query": "Kabel Crunch Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "core"
+      ],
+      "secondary": []
+    },
+    "equipment": "kabelzug"
+  },
+  {
+    "id": "cable-curl",
+    "name": "Kabel-Curls",
+    "muscle": "Bizeps",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "12-15",
+    "target_seconds": null,
+    "default_weight_kg": 15,
+    "cue": "Konstante Spannung über die ganze Bahn — auch unten nicht ablegen.",
+    "video_query": "Kabel Curls Bizeps Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "bizeps"
+      ],
+      "secondary": [
+        "unterarme"
+      ]
+    },
+    "equipment": "kabelzug"
+  },
+  {
+    "id": "cable-kickback",
+    "name": "Kabel-Kickback",
+    "muscle": "Gesäß",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "12-15",
+    "target_seconds": null,
+    "default_weight_kg": 10,
+    "cue": "Standbein leicht gebeugt, Rücken fix. Bein nur so weit nach hinten, wie die Hüfte still bleibt.",
+    "video_query": "Kabel Kickback Gesäß Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "gesaess"
+      ],
+      "secondary": [
+        "hamstrings"
+      ]
+    },
+    "equipment": "kabelzug"
+  },
+  {
+    "id": "chest-fly-kabel",
+    "name": "Kabelzug-Fliegende",
+    "muscle": "Brust",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "12-15",
+    "target_seconds": null,
+    "default_weight_kg": 10,
+    "cue": "Leichte Ellbogenbeugung fixieren, Bewegung nur aus der Schulter. Vorne kurz zusammendrücken.",
+    "video_query": "Kabelzug Fliegende Brust Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "brust"
+      ],
+      "secondary": [
+        "schultern"
+      ]
+    },
+    "equipment": "kabelzug"
+  },
+  {
+    "id": "stretch-katze-kuh",
+    "name": "Katze-Kuh",
+    "muscle": "Wirbelsäule · Rücken",
+    "type": "time",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 40,
+    "default_weight_kg": null,
+    "cue": "Langsam Wirbel für Wirbel bewegen, mit dem Atem koppeln.",
+    "video_query": "Katze-Kuh Dehnung Technik",
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "core"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "kb-swing",
+    "name": "Kettlebell Swing",
+    "muscle": "Gesäß · Beinbeuger",
+    "type": "wt",
+    "sets": 4,
+    "target_reps": "12-15",
+    "target_seconds": null,
+    "default_weight_kg": 10,
+    "cue": "Hüft-Hinge, kein Squat: Kraft kommt explosiv aus der Hüfte, Arme sind nur Seile, bis Brusthöhe schwingen",
+    "video_query": "kettlebell swing hip hinge form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "gesaess",
+        "hamstrings"
+      ],
+      "secondary": [
+        "unterer_ruecken",
+        "core"
+      ]
+    },
+    "equipment": "kettlebell"
+  },
+  {
+    "id": "stretch-kindhaltung",
+    "name": "Kindhaltung",
+    "muscle": "Rücken · Latissimus",
+    "type": "time",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 45,
+    "default_weight_kg": null,
+    "cue": "Gesäß zu den Fersen, Arme lang, tief in den Rücken atmen.",
+    "video_query": "Kindhaltung Dehnung Technik",
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "schultern"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "pullup",
+    "name": "Klimmzug",
+    "muscle": "Rücken · Bizeps",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "4-10",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Schulterblätter zuerst nach unten ziehen, dann die Arme. Brust zur Stange.",
+    "video_query": "Klimmzug Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "bizeps",
+        "unterarme",
+        "core"
+      ]
+    },
+    "equipment": "klimmzugstange"
+  },
+  {
+    "id": "a-squat",
+    "name": "Kniebeuge (Körpergewicht)",
+    "muscle": "Quadrizeps · Gesäß",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "10-15",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Füße schulterbreit, Knie in Richtung Zehen, Brust aufrecht",
+    "video_query": "bodyweight squat form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "quads",
+        "gesaess"
+      ],
+      "secondary": [
+        "core"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "back-squat",
+    "name": "Kniebeuge (Langhantel)",
+    "muscle": "Quadrizeps · Gesäß",
+    "type": "wt",
+    "sets": 4,
+    "target_reps": "6-10",
+    "target_seconds": null,
+    "default_weight_kg": 40,
+    "cue": "Stange auf dem oberen Rücken, Bauch fest. Hüfte und Knie gleichzeitig beugen, Knie nach außen.",
+    "video_query": "Kniebeuge Langhantel Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "quads",
+        "gesaess"
+      ],
+      "secondary": [
+        "hamstrings",
+        "core",
+        "unterer_ruecken"
+      ]
+    },
+    "equipment": "langhantel"
+  },
+  {
+    "id": "stretch-kobra",
+    "name": "Kobra",
+    "muscle": "Bauch · Hüftbeuger",
+    "type": "time",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 40,
+    "default_weight_kg": null,
+    "cue": "Schambein bleibt am Boden, Schultern weg von den Ohren.",
+    "video_query": "Kobra Dehnung Technik",
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "unterer_ruecken"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "deadlift",
+    "name": "Kreuzheben (Langhantel)",
+    "muscle": "Rücken · Beinbeuger · Gesäß",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "5-8",
+    "target_seconds": null,
+    "default_weight_kg": 60,
+    "cue": "Stange dicht am Schienbein, Rücken neutral. Erst die Beine strecken, dann die Hüfte.",
+    "video_query": "Kreuzheben Langhantel Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "ruecken",
+        "unterer_ruecken",
+        "hamstrings",
+        "gesaess"
+      ],
+      "secondary": [
+        "unterarme",
+        "core",
+        "quads"
+      ]
+    },
+    "equipment": "langhantel"
+  },
+  {
+    "id": "barbell-curl",
+    "name": "Langhantel-Curls",
+    "muscle": "Bizeps",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "8-12",
+    "target_seconds": null,
+    "default_weight_kg": 20,
+    "cue": "Oberkörper still, kein Schwung aus der Hüfte. Unten voll ausstrecken.",
+    "video_query": "Langhantel Curls Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "bizeps"
+      ],
+      "secondary": [
+        "unterarme"
+      ]
+    },
+    "equipment": "langhantel"
+  },
+  {
+    "id": "barbell-row",
+    "name": "Langhantelrudern",
+    "muscle": "Rücken · Bizeps",
+    "type": "wt",
+    "sets": 4,
+    "target_reps": "8-10",
+    "target_seconds": null,
+    "default_weight_kg": 30,
+    "cue": "Oberkörper ~45°, Rücken gerade. Stange zum Bauchnabel, Ellbogen eng am Körper.",
+    "video_query": "Langhantelrudern Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "bizeps",
+        "unterer_ruecken",
+        "unterarme"
+      ]
+    },
+    "equipment": "langhantel"
+  },
+  {
+    "id": "stretch-lat-haengend",
+    "name": "Lat-Dehnung im Hang",
+    "muscle": "Latissimus · Rücken",
+    "type": "time",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 45,
+    "default_weight_kg": null,
+    "cue": "Locker hängen, Schultern lang lassen, ruhig atmen.",
+    "video_query": "Lat-Dehnung im Hang Dehnung Technik",
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "schultern"
+      ]
+    },
+    "equipment": "klimmzugstange"
+  },
+  {
+    "id": "db-lateral-raise",
+    "name": "Seitheben",
+    "muscle": "Schultern",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "12-15",
+    "target_seconds": null,
+    "default_weight_kg": 2.5,
+    "cue": "Pro Hantel. Leicht gebeugte Arme, bis Schulterhöhe, kein Schwung aus dem Oberkörper",
+    "video_query": "dumbbell lateral raise form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "schultern"
+      ],
+      "secondary": []
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "lat-pulldown",
+    "name": "Latzug (Maschine)",
+    "muscle": "Rücken · Bizeps",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "8-12",
+    "target_seconds": null,
+    "default_weight_kg": 35,
+    "cue": "Oberkörper leicht zurück, Stange zur oberen Brust. Nicht in den Nacken ziehen.",
+    "video_query": "Latzug Maschine Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "bizeps"
+      ]
+    },
+    "equipment": "maschine"
+  },
+  {
+    "id": "d-liss-walk",
+    "name": "Laufband LISS (zügiges Gehen mit Steigung)",
+    "muscle": "Ausdauer",
+    "type": "cardio",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 2100,
+    "default_weight_kg": null,
+    "cue": "35 min gleichmäßig zügig, Steigung 3-6%. Puls moderat: reden möglich, singen nicht. Podcast oder Serie an und durchziehen",
+    "video_query": "incline treadmill walking fat loss",
+    "phase": "main",
+    "zones": {
+      "primary": [],
+      "secondary": [
+        "waden",
+        "quads",
+        "gesaess"
+      ]
+    },
+    "equipment": "cardio"
+  },
+  {
+    "id": "a-warmup-walk",
+    "name": "Laufband Warm-up (lockeres Gehen)",
+    "muscle": "Ausdauer",
+    "type": "cardio",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 300,
+    "default_weight_kg": null,
+    "cue": "5 min locker gehen, Tempo langsam steigern. Du solltest dich noch gut unterhalten können",
+    "video_query": "treadmill warm up walk",
+    "phase": "main",
+    "zones": {
+      "primary": [],
+      "secondary": [
+        "waden",
+        "quads"
+      ]
+    },
+    "equipment": "cardio"
+  },
+  {
+    "id": "treadmill-zone2",
+    "name": "Laufband Zone 2",
+    "muscle": "Ausdauer",
+    "type": "cardio",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 1500,
+    "default_weight_kg": null,
+    "cue": "6-7 km/h, Nasenatmung/Unterhaltung muss möglich sein. Jede Woche +2 Min bis 40 Min, erst dann Tempo erhöhen",
+    "video_query": "zone 2 cardio treadmill explained",
+    "phase": "main",
+    "zones": {
+      "primary": [],
+      "secondary": [
+        "quads",
+        "waden",
+        "hamstrings"
+      ]
+    },
+    "equipment": "cardio"
+  },
+  {
+    "id": "treadmill-intervals",
+    "name": "Laufband-Intervalle",
+    "muscle": "Ausdauer",
+    "type": "cardio",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 900,
+    "default_weight_kg": null,
+    "cue": "5 Min locker warm, dann 6x: 1 Min zügig (8-9 km/h) / 1 Min gehen. Zügig = sprechen fällt schwer",
+    "video_query": "treadmill interval training beginner",
+    "phase": "main",
+    "zones": {
+      "primary": [],
+      "secondary": [
+        "quads",
+        "waden",
+        "hamstrings",
+        "gesaess"
+      ]
+    },
+    "equipment": "cardio"
+  },
+  {
+    "id": "a-pushup",
+    "name": "Liegestütze",
+    "muscle": "Brust · Trizeps",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "6-12",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Körper als Linie, Ellbogen ~45°",
+    "video_query": "push up form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "brust"
+      ],
+      "secondary": [
+        "trizeps",
+        "schultern",
+        "core"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "stretch-nacken-seitneige",
+    "name": "Nacken-Seitneige",
+    "muscle": "Nacken · Schulter",
+    "type": "time",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 30,
+    "default_weight_kg": null,
+    "cue": "Ohr zur Schulter, Gegenschulter bewusst tief halten.",
+    "video_query": "Nacken-Seitneige Dehnung Technik",
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "schultern"
+      ],
+      "secondary": []
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "negative-pullup",
+    "name": "Negativ-Klimmzug",
+    "muscle": "Rücken · Bizeps",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "3-5",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Hochspringen oder von Erhöhung starten, Kinn über der Stange, 3-5s kontrolliert ablassen. Der Schlüssel zum ersten Klimmzug",
+    "video_query": "negative pull up eccentric form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "bizeps",
+        "unterarme"
+      ]
+    },
+    "equipment": "klimmzugstange"
+  },
+  {
+    "id": "nordic-curl",
+    "name": "Nordic Hamstring Curl",
+    "muscle": "Beinbeuger",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "4-8",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Füße fixieren, Hüfte gestreckt halten. So langsam wie möglich nach vorne ablassen.",
+    "video_query": "Nordic Hamstring Curl Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [
+        "gesaess",
+        "core"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "one-arm-db-row",
+    "name": "Einarmiges Kurzhantel-Rudern",
+    "muscle": "Rücken · Bizeps",
+    "type": "wt",
+    "sets": 4,
+    "target_reps": "8-12 pro Seite",
+    "target_seconds": null,
+    "default_weight_kg": 10,
+    "cue": "Knie und Hand auf der Bank, Rücken neutral, Ellbogen Richtung Hüfte ziehen, Schulterblatt aktiv bewegen",
+    "video_query": "one arm dumbbell row bench form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "bizeps",
+        "unterarme"
+      ]
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "stretch-piriformis-liegend",
+    "name": "Piriformis-Dehnung liegend",
+    "muscle": "Gesäß · Hüfte",
+    "type": "time",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 45,
+    "default_weight_kg": null,
+    "cue": "Knie zur Gegenschulter ziehen, Schultern bleiben am Boden.",
+    "video_query": "Piriformis-Dehnung liegend Dehnung Technik",
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "gesaess"
+      ],
+      "secondary": []
+    },
+    "equipment": "koerpergewicht"
   },
   {
     "id": "a-plank",
@@ -309,267 +1671,17 @@
     "default_weight_kg": null,
     "cue": "Gesäß anspannen, keine hängende Hüfte",
     "video_query": "plank proper form",
-    "phase": "main"
-  },
-  {
-    "id": "c-reverse-crunch",
-    "name": "Reverse Crunch (auf der Bank)",
-    "muscle": "Core",
-    "type": "bw",
-    "sets": 3,
-    "target_reps": "10-15",
-    "target_seconds": null,
-    "default_weight_kg": null,
-    "cue": "Rücken auf der Bank, Bank hinter dem Kopf greifen. Knie zur Brust ziehen, Becken einrollen, langsam absenken ohne durchzuhängen",
-    "video_query": "reverse crunch bench form",
-    "phase": "main"
-  },
-  {
-    "id": "side-plank",
-    "name": "Side Plank",
-    "muscle": "Core",
-    "type": "time",
-    "sets": 3,
-    "target_reps": null,
-    "target_seconds": 20,
-    "default_weight_kg": null,
-    "cue": "Pro Seite. Hüfte hoch, Körper eine Linie, oberer Arm gestreckt. Wichtig für seitliche Rumpfstabilität",
-    "video_query": "side plank form",
-    "phase": "main"
-  },
-  {
-    "id": "d-bird-dog",
-    "name": "Bird Dog",
-    "muscle": "Core/Rücken",
-    "type": "bw",
-    "sets": 3,
-    "target_reps": "8-10 pro Seite",
-    "target_seconds": null,
-    "default_weight_kg": null,
-    "cue": "Vierfüßlerstand, gegenüberliegenden Arm und Bein strecken, 2s halten, Hüfte bleibt gerade. Kein Hohlkreuz",
-    "video_query": "bird dog exercise form",
-    "phase": "main"
-  },
-  {
-    "id": "stretch-seitneige-stehend",
-    "name": "Seitneige stehend",
-    "muscle": "Flanke",
-    "type": "time",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 30,
-    "default_weight_kg": null,
-    "cue": "Arm über Kopf, seitlich verlängern statt nach vorn kippen.",
-    "video_query": "Seitneige stehend Dehnung Technik",
-    "phase": "cooldown"
-  },
-  {
-    "id": "kb-swing",
-    "name": "Kettlebell Swing",
-    "muscle": "Gesäß",
-    "type": "wt",
-    "sets": 4,
-    "target_reps": "12-15",
-    "target_seconds": null,
-    "default_weight_kg": 10,
-    "cue": "Hüft-Hinge, kein Squat: Kraft kommt explosiv aus der Hüfte, Arme sind nur Seile, bis Brusthöhe schwingen",
-    "video_query": "kettlebell swing hip hinge form",
-    "phase": "main"
-  },
-  {
-    "id": "stretch-piriformis-liegend",
-    "name": "Piriformis-Dehnung liegend",
-    "muscle": "Gesäß",
-    "type": "time",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 45,
-    "default_weight_kg": null,
-    "cue": "Knie zur Gegenschulter ziehen, Schultern bleiben am Boden.",
-    "video_query": "Piriformis-Dehnung liegend Dehnung Technik",
-    "phase": "cooldown"
-  },
-  {
-    "id": "stretch-taube-sitzend",
-    "name": "Taube im Sitzen",
-    "muscle": "Gesäß",
-    "type": "time",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 45,
-    "default_weight_kg": null,
-    "cue": "Knöchel über das Knie, Brust aufrecht, dann nach vorn lehnen.",
-    "video_query": "Taube im Sitzen Dehnung Technik",
-    "phase": "cooldown"
-  },
-  {
-    "id": "stretch-hamstrings-vorbeuge",
-    "name": "Beinrückseite im Sitzen",
-    "muscle": "Hamstrings",
-    "type": "time",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 45,
-    "default_weight_kg": null,
-    "cue": "Aus der Hüfte beugen, Rücken lang, Knie darf minimal weich sein.",
-    "video_query": "Beinrückseite im Sitzen Dehnung Technik",
-    "phase": "cooldown"
-  },
-  {
-    "id": "stretch-hueftbeuger-ausfall",
-    "name": "Hüftbeuger im Ausfallschritt",
-    "muscle": "Hüftbeuger",
-    "type": "time",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 45,
-    "default_weight_kg": null,
-    "cue": "Becken aufrichten, Gesäß anspannen, dann nach vorn schieben.",
-    "video_query": "Hüftbeuger im Ausfallschritt Dehnung Technik",
-    "phase": "cooldown"
-  },
-  {
-    "id": "stretch-hueftbeuger-knie",
-    "name": "Hüftbeuger im Kniestand",
-    "muscle": "Hüftbeuger",
-    "type": "time",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 40,
-    "default_weight_kg": null,
-    "cue": "Becken aufrichten, Bauch leicht anspannen, sanft nach vorn.",
-    "video_query": "Hüftbeuger im Kniestand Dehnung Technik",
-    "phase": "cooldown"
-  },
-  {
-    "id": "stretch-lat-haengend",
-    "name": "Lat-Dehnung im Hang",
-    "muscle": "Latissimus",
-    "type": "time",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 45,
-    "default_weight_kg": null,
-    "cue": "Locker hängen, Schultern lang lassen, ruhig atmen.",
-    "video_query": "Lat-Dehnung im Hang Dehnung Technik",
-    "phase": "cooldown"
-  },
-  {
-    "id": "back-extension",
-    "name": "Back Extension (Hantelbank)",
-    "muscle": "Lendenwirbelbereich",
-    "type": "bw",
-    "sets": 3,
-    "target_reps": "10-15",
-    "target_seconds": null,
-    "default_weight_kg": null,
-    "cue": "Kontrolliert hoch bis Körper gerade (nicht überstrecken), 1s halten, langsam runter. Später Hantel vor der Brust",
-    "video_query": "back extension bench form",
-    "phase": "main"
-  },
-  {
-    "id": "stretch-nacken-seitneige",
-    "name": "Nacken-Seitneige",
-    "muscle": "Nacken",
-    "type": "time",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 30,
-    "default_weight_kg": null,
-    "cue": "Ohr zur Schulter, Gegenschulter bewusst tief halten.",
-    "video_query": "Nacken-Seitneige Dehnung Technik",
-    "phase": "cooldown"
-  },
-  {
-    "id": "db-romanian-deadlift",
-    "name": "Dumbbell Romanian Deadlift",
-    "muscle": "Oberschenkelrückseite",
-    "type": "wt",
-    "sets": 3,
-    "target_reps": "10-12",
-    "target_seconds": null,
-    "default_weight_kg": 10,
-    "cue": "Pro Hantel 10kg. Hüfte nach hinten schieben, Rücken neutral, Dehnung im Beinbizeps spüren, mit Gesäß hochdrücken",
-    "video_query": "dumbbell romanian deadlift form",
-    "phase": "main"
-  },
-  {
-    "id": "c-single-leg-glute-bridge",
-    "name": "Einbeinige Glute Bridge",
-    "muscle": "Po",
-    "type": "bw",
-    "sets": 3,
-    "target_reps": "10-12 pro Bein",
-    "target_seconds": null,
-    "default_weight_kg": null,
-    "cue": "Rücken auf der Matte, ein Bein gestreckt. Hüfte hoch, oben Po 2s anspannen. Hüfte bleibt gerade, nicht kippen",
-    "video_query": "single leg glute bridge form",
-    "phase": "main"
-  },
-  {
-    "id": "b-glute-bridge",
-    "name": "Glute Bridge",
-    "muscle": "Po",
-    "type": "bw",
-    "sets": 3,
-    "target_reps": "12-15",
-    "target_seconds": null,
-    "default_weight_kg": null,
-    "cue": "Oben 2s Po anspannen, kontrolliert absenken",
-    "video_query": "glute bridge form",
-    "phase": "main"
-  },
-  {
-    "id": "a-hip-thrust",
-    "name": "Hip Thrust (Schultern auf Hantelbank)",
-    "muscle": "Po",
-    "type": "wt",
-    "sets": 3,
-    "target_reps": "10-15",
-    "target_seconds": null,
-    "default_weight_kg": 10,
-    "cue": "Schulterblätter auf Bankkante, 10kg-Hantel auf der Hüfte. Oben Po 2s maximal anspannen, Kinn zur Brust. Wichtigste Po-Übung — hier zuerst schwerer werden",
-    "video_query": "dumbbell hip thrust bench form",
-    "phase": "main"
-  },
-  {
-    "id": "a-db-rdl",
-    "name": "Rumänisches Kreuzheben (Kurzhanteln)",
-    "muscle": "Po/Beinbeuger",
-    "type": "wt",
-    "sets": 3,
-    "target_reps": "10-12",
-    "target_seconds": null,
-    "default_weight_kg": 10,
-    "cue": "Pro Hantel 10kg. Hüfte nach hinten schieben, Rücken gerade, Hanteln nah am Bein bis Mitte Schienbein, dann Po anspannen und aufrichten",
-    "video_query": "dumbbell romanian deadlift form",
-    "phase": "main"
-  },
-  {
-    "id": "b-reverse-lunge",
-    "name": "Reverse Lunge (Kurzhanteln)",
-    "muscle": "Po/Beine",
-    "type": "wt",
-    "sets": 3,
-    "target_reps": "8-10 pro Bein",
-    "target_seconds": null,
-    "default_weight_kg": 5,
-    "cue": "Pro Hantel 5kg, seitlich halten. Großer Schritt nach hinten, vorderes Knie über dem Fuß, über die vordere Ferse hochdrücken. Rückwärts ist knieschonender als vorwärts",
-    "video_query": "dumbbell reverse lunge form",
-    "phase": "main"
-  },
-  {
-    "id": "c-step-up",
-    "name": "Step-up auf Hantelbank",
-    "muscle": "Po/Beine",
-    "type": "wt",
-    "sets": 3,
-    "target_reps": "8-10 pro Bein",
-    "target_seconds": null,
-    "default_weight_kg": 5,
-    "cue": "Pro Hantel 5kg. Ganzer Fuß auf die Bank, über die Ferse hochdrücken, oben Hüfte strecken, langsam runter. Bank zu hoch: stabile niedrigere Erhöhung nehmen",
-    "video_query": "dumbbell step up form",
-    "phase": "main"
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "schultern",
+        "gesaess"
+      ]
+    },
+    "equipment": "koerpergewicht"
   },
   {
     "id": "stretch-quadrizeps-stehend",
@@ -582,116 +1694,220 @@
     "default_weight_kg": null,
     "cue": "Ferse zum Gesäß, Knie zeigt nach unten, Becken leicht nach vorn.",
     "video_query": "Quadrizeps-Dehnung stehend Dehnung Technik",
-    "phase": "cooldown"
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "quads"
+      ],
+      "secondary": []
+    },
+    "equipment": "koerpergewicht"
   },
   {
-    "id": "band-assisted-pullup",
-    "name": "Band-assisted Pull-up (20kg Band)",
-    "muscle": "Rücken",
+    "id": "c-reverse-crunch",
+    "name": "Reverse Crunch (auf der Bank)",
+    "muscle": "Core",
     "type": "bw",
     "sets": 3,
-    "target_reps": "3-6",
+    "target_reps": "10-15",
     "target_seconds": null,
     "default_weight_kg": null,
-    "cue": "Fuß oder Knie im Band, Schulterblätter zuerst nach unten ziehen, Kinn über die Stange, 3s ablassen",
-    "video_query": "band assisted pull up form",
-    "phase": "main"
+    "cue": "Rücken auf der Bank, Bank hinter dem Kopf greifen. Knie zur Brust ziehen, Becken einrollen, langsam absenken ohne durchzuhängen",
+    "video_query": "reverse crunch bench form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "core"
+      ],
+      "secondary": []
+    },
+    "equipment": "koerpergewicht"
   },
   {
-    "id": "dead-hang",
-    "name": "Dead Hang",
-    "muscle": "Rücken",
-    "type": "time",
-    "sets": 3,
-    "target_reps": null,
-    "target_seconds": 20,
-    "default_weight_kg": null,
-    "cue": "Aktiv hängen: Schultern weg von den Ohren, Körperspannung. Steigern bis 45s, Fundament für den Klimmzug",
-    "video_query": "active dead hang pull up bar",
-    "phase": "main"
-  },
-  {
-    "id": "b-row",
-    "name": "Einarmiges Kurzhantel-Rudern",
-    "muscle": "Rücken",
+    "id": "reverse-curl",
+    "name": "Reverse Curls",
+    "muscle": "Unterarme · Bizeps",
     "type": "wt",
     "sets": 3,
-    "target_reps": "10-12",
-    "target_seconds": null,
-    "default_weight_kg": 8,
-    "cue": "Rücken parallel zum Boden, Ellbogen eng am Körper",
-    "video_query": "one arm dumbbell row form",
-    "phase": "main"
-  },
-  {
-    "id": "a-db-row",
-    "name": "Einarmiges Rudern (Kurzhantel, Bank)",
-    "muscle": "Rücken",
-    "type": "wt",
-    "sets": 3,
-    "target_reps": "10-12",
+    "target_reps": "10-15",
     "target_seconds": null,
     "default_weight_kg": 10,
-    "cue": "Eine Hand und ein Knie auf der Bank, Rücken gerade. Hantel zur Hüfte ziehen, Schulterblatt zuerst. Pro Seite ein Satz",
-    "video_query": "single arm dumbbell row bench form",
-    "phase": "main"
+    "cue": "Obergriff, Handrücken zeigt nach oben. Leichter als beim normalen Curl wählen.",
+    "video_query": "Reverse Curls Unterarm Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "unterarme",
+        "bizeps"
+      ],
+      "secondary": []
+    },
+    "equipment": "kurzhantel"
   },
   {
-    "id": "stretch-kindhaltung",
-    "name": "Kindhaltung",
-    "muscle": "Rücken",
-    "type": "time",
+    "id": "reverse-fly",
+    "name": "Reverse Flys (vorgebeugt)",
+    "muscle": "Hintere Schulter · Rücken",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "12-15",
+    "target_seconds": null,
+    "default_weight_kg": 6,
+    "cue": "Oberkörper ~45° vorbeugen, Daumen zeigen nach unten. Bewegung endet auf Schulterhöhe.",
+    "video_query": "Reverse Flys Kurzhantel Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "schultern"
+      ],
+      "secondary": [
+        "ruecken"
+      ]
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "db-reverse-lunge",
+    "name": "Rückwärts-Ausfallschritt (Kurzhanteln)",
+    "muscle": "Quadrizeps · Gesäß",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "8-10 pro Bein",
+    "target_seconds": null,
+    "default_weight_kg": 7.5,
+    "cue": "Pro Hantel, seitlich halten. Großer Schritt nach hinten, vorderes Knie über dem Fuß, Oberkörper aufrecht",
+    "video_query": "dumbbell reverse lunge form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "quads",
+        "gesaess"
+      ],
+      "secondary": [
+        "hamstrings",
+        "core"
+      ]
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "b-back-extension",
+    "name": "Rückenstrecker (Hantelbank)",
+    "muscle": "Unterer Rücken · Gesäß",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "10-15",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Kontrolliert hoch bis Körper gerade (nicht überstrecken), oben Po anspannen, 2s halten. Trainiert Po und unteren Rücken",
+    "video_query": "bench back extension form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "unterer_ruecken"
+      ],
+      "secondary": [
+        "gesaess",
+        "hamstrings"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "rowing-erg",
+    "name": "Rudergerät",
+    "muscle": "Ausdauer",
+    "type": "cardio",
     "sets": 1,
     "target_reps": null,
-    "target_seconds": 45,
+    "target_seconds": 900,
     "default_weight_kg": null,
-    "cue": "Gesäß zu den Fersen, Arme lang, tief in den Rücken atmen.",
-    "video_query": "Kindhaltung Dehnung Technik",
-    "phase": "cooldown"
+    "cue": "Reihenfolge: Beine — Rumpf — Arme. Zurück genau umgekehrt. Gleichmäßiger Zug.",
+    "video_query": "Rudergerät Technik Anfänger",
+    "phase": "main",
+    "zones": {
+      "primary": [],
+      "secondary": [
+        "ruecken",
+        "quads",
+        "gesaess",
+        "core"
+      ]
+    },
+    "equipment": "cardio"
   },
   {
-    "id": "c-negative-pullup",
-    "name": "Negativ-Klimmzug",
-    "muscle": "Rücken",
-    "type": "bw",
-    "sets": 3,
-    "target_reps": "3-5",
-    "target_seconds": null,
-    "default_weight_kg": null,
-    "cue": "Mit Sprung oder Stuhl nach oben, dann 3-5s langsam ablassen. Baut die Kraft für echte Klimmzüge auf. Zu schwer: Band nutzen",
-    "video_query": "negative pull up form",
-    "phase": "main"
-  },
-  {
-    "id": "negative-pullup",
-    "name": "Negative Pull-up",
-    "muscle": "Rücken",
-    "type": "bw",
-    "sets": 3,
-    "target_reps": "3-5",
-    "target_seconds": null,
-    "default_weight_kg": null,
-    "cue": "Hochspringen oder von Erhöhung starten, Kinn über der Stange, 3-5s kontrolliert ablassen. Der Schlüssel zum ersten Klimmzug",
-    "video_query": "negative pull up eccentric form",
-    "phase": "main"
-  },
-  {
-    "id": "one-arm-db-row",
-    "name": "One-Arm Dumbbell Row",
+    "id": "seated-cable-row",
+    "name": "Rudern am Kabelzug (sitzend)",
     "muscle": "Rücken",
     "type": "wt",
-    "sets": 4,
-    "target_reps": "8-12 pro Seite",
+    "sets": 3,
+    "target_reps": "10-12",
     "target_seconds": null,
-    "default_weight_kg": 10,
-    "cue": "Knie und Hand auf der Bank, Rücken neutral, Ellbogen Richtung Hüfte ziehen, Schulterblatt aktiv bewegen",
-    "video_query": "one arm dumbbell row bench form",
-    "phase": "main"
+    "default_weight_kg": 35,
+    "cue": "Brust raus, Schultern tief. Griff zum Bauch, hinten kurz zusammendrücken.",
+    "video_query": "Rudern Kabelzug sitzend Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "bizeps",
+        "unterarme"
+      ]
+    },
+    "equipment": "kabelzug"
+  },
+  {
+    "id": "band-row",
+    "name": "Rudern mit Band",
+    "muscle": "Rücken · Bizeps",
+    "type": "bw",
+    "sets": 3,
+    "target_reps": "12-15",
+    "target_seconds": null,
+    "default_weight_kg": null,
+    "cue": "Band auf Bauchhöhe fixieren. Schulterblätter zuerst, dann Ellbogen nach hinten.",
+    "video_query": "Rudern mit Widerstandsband Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "bizeps",
+        "schultern"
+      ]
+    },
+    "equipment": "band"
+  },
+  {
+    "id": "russian-twist",
+    "name": "Russian Twist",
+    "muscle": "Core · Flanke",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "16-24",
+    "target_seconds": null,
+    "default_weight_kg": 8,
+    "cue": "Oberkörper ~45° zurück, Brust offen. Rotation aus dem Rumpf, nicht nur mit den Armen.",
+    "video_query": "Russian Twist Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "unterer_ruecken"
+      ]
+    },
+    "equipment": "kurzhantel"
   },
   {
     "id": "scapular-pullup",
     "name": "Scapular Pull-up",
-    "muscle": "Rücken",
+    "muscle": "Rücken · Schultern",
     "type": "bw",
     "sets": 3,
     "target_reps": "5-8",
@@ -699,20 +1915,59 @@
     "default_weight_kg": null,
     "cue": "Arme gestreckt lassen, nur Schulterblätter nach unten/hinten ziehen — der Körper hebt sich wenige cm",
     "video_query": "scapular pull up form",
-    "phase": "main"
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "schultern"
+      ]
+    },
+    "equipment": "klimmzugstange"
   },
   {
-    "id": "stretch-brustwirbel-rotation",
-    "name": "Brustwirbel-Rotation im Sitzen",
-    "muscle": "Rumpf",
-    "type": "time",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 40,
-    "default_weight_kg": null,
-    "cue": "Aus dem Brustkorb drehen, Becken bleibt still.",
-    "video_query": "Brustwirbel-Rotation im Sitzen Dehnung Technik",
-    "phase": "cooldown"
+    "id": "incline-db-curl",
+    "name": "Schrägbank-Curls",
+    "muscle": "Bizeps (langer Kopf)",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "10-12",
+    "target_seconds": null,
+    "default_weight_kg": 8,
+    "cue": "Bank auf 45-60°, Arme hängen hinter dem Körper. Starke Dehnung unten, langsam ablassen.",
+    "video_query": "Schrägbank Curls Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "bizeps"
+      ],
+      "secondary": []
+    },
+    "equipment": "kurzhantel"
+  },
+  {
+    "id": "incline-db-press",
+    "name": "Schrägbankdrücken (Kurzhanteln)",
+    "muscle": "Obere Brust · Schulter",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "8-12",
+    "target_seconds": null,
+    "default_weight_kg": 14,
+    "cue": "Bank auf 30-45°. Hanteln auf Höhe der oberen Brust ansetzen, oben nicht durchdrücken.",
+    "video_query": "Schrägbankdrücken Kurzhantel Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "brust"
+      ],
+      "secondary": [
+        "schultern",
+        "trizeps"
+      ]
+    },
+    "equipment": "kurzhantel"
   },
   {
     "id": "stretch-schulter-cross-body",
@@ -725,64 +1980,246 @@
     "default_weight_kg": null,
     "cue": "Arm gestreckt vor die Brust ziehen, Schulter unten lassen.",
     "video_query": "Schulterdehnung quer Dehnung Technik",
-    "phase": "cooldown"
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "schultern"
+      ],
+      "secondary": [
+        "ruecken"
+      ]
+    },
+    "equipment": "koerpergewicht"
   },
   {
-    "id": "db-shoulder-press",
-    "name": "Dumbbell Shoulder Press (sitzend)",
-    "muscle": "Schultern",
+    "id": "ohp-lh",
+    "name": "Schulterdrücken (Langhantel, stehend)",
+    "muscle": "Schultern · Trizeps",
+    "type": "wt",
+    "sets": 4,
+    "target_reps": "6-10",
+    "target_seconds": null,
+    "default_weight_kg": 25,
+    "cue": "Po und Bauch fest, Rippen unten halten. Kopf leicht zurück, Stange dicht am Gesicht vorbei.",
+    "video_query": "Overhead Press Langhantel Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "schultern"
+      ],
+      "secondary": [
+        "trizeps",
+        "core"
+      ]
+    },
+    "equipment": "langhantel"
+  },
+  {
+    "id": "jump-rope",
+    "name": "Seilspringen",
+    "muscle": "Ausdauer · Waden",
+    "type": "cardio",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 600,
+    "default_weight_kg": null,
+    "cue": "Kleine Sprünge aus dem Sprunggelenk, Ellbogen am Körper. Bei Fehlern einfach weiter.",
+    "video_query": "Seilspringen Technik Anfänger",
+    "phase": "main",
+    "zones": {
+      "primary": [],
+      "secondary": [
+        "waden",
+        "schultern",
+        "core"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "stretch-seitneige-stehend",
+    "name": "Seitneige stehend",
+    "muscle": "Flanke · Core",
+    "type": "time",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 30,
+    "default_weight_kg": null,
+    "cue": "Arm über Kopf, seitlich verlängern statt nach vorn kippen.",
+    "video_query": "Seitneige stehend Dehnung Technik",
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "ruecken"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "side-plank",
+    "name": "Seitstütz",
+    "muscle": "Core · Flanke",
+    "type": "time",
+    "sets": 3,
+    "target_reps": null,
+    "target_seconds": 20,
+    "default_weight_kg": null,
+    "cue": "Pro Seite. Hüfte hoch, Körper eine Linie, oberer Arm gestreckt. Wichtig für seitliche Rumpfstabilität",
+    "video_query": "side plank form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "schultern",
+        "gesaess"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "skullcrusher",
+    "name": "Skullcrusher (SZ-Stange)",
+    "muscle": "Trizeps",
     "type": "wt",
     "sets": 3,
     "target_reps": "8-12",
+    "target_seconds": null,
+    "default_weight_kg": 15,
+    "cue": "Oberarme senkrecht halten, Stange zur Stirn oder knapp dahinter ablassen.",
+    "video_query": "Skullcrusher SZ Stange Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "trizeps"
+      ],
+      "secondary": []
+    },
+    "equipment": "langhantel"
+  },
+  {
+    "id": "db-step-up",
+    "name": "Step-up (auf Hantelbank)",
+    "muscle": "Quadrizeps · Gesäß",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "8-10 pro Bein",
     "target_seconds": null,
     "default_weight_kg": 7.5,
-    "cue": "Pro Hantel. Rumpf fest, nicht ins Hohlkreuz ausweichen, volle Streckung oben",
-    "video_query": "seated dumbbell shoulder press form",
-    "phase": "main"
+    "cue": "Pro Hantel. Ganzer Fuß auf der Bank, aus dem vorderen Bein hochdrücken, kontrolliert absteigen",
+    "video_query": "dumbbell step up form",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "quads",
+        "gesaess"
+      ],
+      "secondary": [
+        "hamstrings",
+        "core"
+      ]
+    },
+    "equipment": "kurzhantel"
   },
   {
-    "id": "db-lateral-raise",
-    "name": "Lateral Raise",
-    "muscle": "Schultern",
+    "id": "sumo-deadlift",
+    "name": "Sumo-Kreuzheben",
+    "muscle": "Gesäß · Beinbeuger",
     "type": "wt",
     "sets": 3,
-    "target_reps": "12-15",
+    "target_reps": "6-10",
     "target_seconds": null,
-    "default_weight_kg": 2.5,
-    "cue": "Pro Hantel. Leicht gebeugte Arme, bis Schulterhöhe, kein Schwung aus dem Oberkörper",
-    "video_query": "dumbbell lateral raise form",
-    "phase": "main"
+    "default_weight_kg": 50,
+    "cue": "Breiter Stand, Füße leicht nach außen. Knie nach außen drücken, Brust hoch.",
+    "video_query": "Sumo Kreuzheben Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "gesaess",
+        "hamstrings"
+      ],
+      "secondary": [
+        "quads",
+        "unterer_ruecken",
+        "ruecken"
+      ]
+    },
+    "equipment": "langhantel"
   },
   {
-    "id": "b-shoulder-press",
-    "name": "Schulterdrücken (Kurzhanteln, sitzend)",
-    "muscle": "Schultern",
+    "id": "superman",
+    "name": "Superman",
+    "muscle": "Unterer Rücken · Gesäß",
+    "type": "time",
+    "sets": 3,
+    "target_reps": null,
+    "target_seconds": 30,
+    "default_weight_kg": null,
+    "cue": "Arme und Beine gleichzeitig anheben, Blick zum Boden. Nicht überstrecken.",
+    "video_query": "Superman Übung unterer Rücken",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "unterer_ruecken"
+      ],
+      "secondary": [
+        "gesaess",
+        "ruecken"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "t-bar-row",
+    "name": "T-Bar-Rudern",
+    "muscle": "Rücken",
     "type": "wt",
     "sets": 3,
     "target_reps": "8-12",
     "target_seconds": null,
-    "default_weight_kg": 5,
-    "cue": "Pro Hantel 5kg, auf der Bank sitzend. Rumpf fest, nicht ins Hohlkreuz, volle Streckung oben. Bei 3x12 sauber: 7,5kg",
-    "video_query": "seated dumbbell shoulder press form",
-    "phase": "main"
+    "default_weight_kg": 25,
+    "cue": "Hüfte gebeugt, Brust hoch. Griff zum unteren Brustkorb ziehen.",
+    "video_query": "T-Bar Rudern Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "ruecken"
+      ],
+      "secondary": [
+        "bizeps",
+        "unterer_ruecken"
+      ]
+    },
+    "equipment": "langhantel"
   },
   {
-    "id": "c-shoulder-press",
-    "name": "Schulterdrücken (Kurzhanteln)",
-    "muscle": "Schultern",
-    "type": "wt",
-    "sets": 3,
-    "target_reps": "8-12",
-    "target_seconds": null,
-    "default_weight_kg": 6,
-    "cue": "Rumpf fest, volle Streckung oben",
-    "video_query": "dumbbell shoulder press seated form",
-    "phase": "main"
+    "id": "stretch-taube-sitzend",
+    "name": "Taube im Sitzen",
+    "muscle": "Gesäß · Hüfte",
+    "type": "time",
+    "sets": 1,
+    "target_reps": null,
+    "target_seconds": 45,
+    "default_weight_kg": null,
+    "cue": "Knöchel über das Knie, Brust aufrecht, dann nach vorn lehnen.",
+    "video_query": "Taube im Sitzen Dehnung Technik",
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "gesaess"
+      ],
+      "secondary": []
+    },
+    "equipment": "koerpergewicht"
   },
   {
     "id": "stretch-trizeps-ueberkopf",
     "name": "Trizeps-Dehnung über Kopf",
-    "muscle": "Trizeps",
+    "muscle": "Trizeps · Latissimus",
     "type": "time",
     "sets": 1,
     "target_reps": null,
@@ -790,12 +2227,61 @@
     "default_weight_kg": null,
     "cue": "Ellbogen zur Decke, Hand zwischen die Schulterblätter, sanft nachschieben.",
     "video_query": "Trizeps-Dehnung über Kopf Dehnung Technik",
-    "phase": "cooldown"
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "trizeps"
+      ],
+      "secondary": [
+        "ruecken"
+      ]
+    },
+    "equipment": "koerpergewicht"
+  },
+  {
+    "id": "triceps-pushdown",
+    "name": "Trizepsdrücken am Kabel",
+    "muscle": "Trizeps",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "10-15",
+    "target_seconds": null,
+    "default_weight_kg": 20,
+    "cue": "Ellbogen bleiben fix am Körper, nur der Unterarm bewegt sich. Unten kurz halten.",
+    "video_query": "Trizepsdrücken Kabel Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "trizeps"
+      ],
+      "secondary": []
+    },
+    "equipment": "kabelzug"
+  },
+  {
+    "id": "overhead-triceps-db",
+    "name": "Überkopf-Trizepsdrücken (Kurzhantel)",
+    "muscle": "Trizeps (langer Kopf)",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "10-12",
+    "target_seconds": null,
+    "default_weight_kg": 10,
+    "cue": "Hantel hinter dem Kopf, Ellbogen zeigen nach vorne und bleiben eng.",
+    "video_query": "Überkopf Trizepsdrücken Kurzhantel Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "trizeps"
+      ],
+      "secondary": []
+    },
+    "equipment": "kurzhantel"
   },
   {
     "id": "stretch-unterarm-beuger",
     "name": "Unterarm-Beuger-Dehnung",
-    "muscle": "Unterarm",
+    "muscle": "Unterarme",
     "type": "time",
     "sets": 1,
     "target_reps": null,
@@ -803,38 +2289,19 @@
     "default_weight_kg": null,
     "cue": "Arm gestreckt, Finger nach unten ziehen, Griffkraft entspannen.",
     "video_query": "Unterarm-Beuger-Dehnung Dehnung Technik",
-    "phase": "cooldown"
-  },
-  {
-    "id": "d-back-extension",
-    "name": "Rückenstrecker (Hantelbank, leicht)",
-    "muscle": "Unterer Rücken",
-    "type": "bw",
-    "sets": 2,
-    "target_reps": "12-15",
-    "target_seconds": null,
-    "default_weight_kg": null,
-    "cue": "Lockeres Tempo, nicht bis zum Muskelversagen — heute ist Regenerationsreiz, kein Krafttag",
-    "video_query": "bench back extension form",
-    "phase": "main"
-  },
-  {
-    "id": "b-back-extension",
-    "name": "Rückenstrecker (Hantelbank)",
-    "muscle": "Unterer Rücken",
-    "type": "bw",
-    "sets": 3,
-    "target_reps": "10-15",
-    "target_seconds": null,
-    "default_weight_kg": null,
-    "cue": "Kontrolliert hoch bis Körper gerade (nicht überstrecken), oben Po anspannen, 2s halten. Trainiert Po und unteren Rücken",
-    "video_query": "bench back extension form",
-    "phase": "main"
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "unterarme"
+      ],
+      "secondary": []
+    },
+    "equipment": "koerpergewicht"
   },
   {
     "id": "stretch-wade-wand",
     "name": "Wadendehnung an der Wand",
-    "muscle": "Wade",
+    "muscle": "Waden",
     "type": "time",
     "sets": 1,
     "target_reps": null,
@@ -842,19 +2309,53 @@
     "default_weight_kg": null,
     "cue": "Hintere Ferse am Boden, Bein gestreckt, Hüfte nach vorn.",
     "video_query": "Wadendehnung an der Wand Dehnung Technik",
-    "phase": "cooldown"
+    "phase": "cooldown",
+    "zones": {
+      "primary": [
+        "waden"
+      ],
+      "secondary": []
+    },
+    "equipment": "koerpergewicht"
   },
   {
-    "id": "stretch-katze-kuh",
-    "name": "Katze-Kuh",
-    "muscle": "Wirbelsäule",
-    "type": "time",
-    "sets": 1,
-    "target_reps": null,
-    "target_seconds": 40,
-    "default_weight_kg": null,
-    "cue": "Langsam Wirbel für Wirbel bewegen, mit dem Atem koppeln.",
-    "video_query": "Katze-Kuh Dehnung Technik",
-    "phase": "cooldown"
+    "id": "seated-calf-raise",
+    "name": "Wadenheben sitzend (Maschine)",
+    "muscle": "Waden (Soleus)",
+    "type": "wt",
+    "sets": 3,
+    "target_reps": "15-20",
+    "target_seconds": null,
+    "default_weight_kg": 30,
+    "cue": "Knie gebeugt trifft den flachen Wadenmuskel. Volle Bewegungsamplitude.",
+    "video_query": "Wadenheben sitzend Maschine Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "waden"
+      ],
+      "secondary": []
+    },
+    "equipment": "maschine"
+  },
+  {
+    "id": "standing-calf-raise",
+    "name": "Wadenheben stehend",
+    "muscle": "Waden",
+    "type": "wt",
+    "sets": 4,
+    "target_reps": "12-20",
+    "target_seconds": null,
+    "default_weight_kg": 20,
+    "cue": "Vorfuß auf einer Erhöhung, ganz tief ablassen und oben 1 Sekunde halten.",
+    "video_query": "Wadenheben stehend Technik",
+    "phase": "main",
+    "zones": {
+      "primary": [
+        "waden"
+      ],
+      "secondary": []
+    },
+    "equipment": "kurzhantel"
   }
 ]

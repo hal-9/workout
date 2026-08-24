@@ -8,7 +8,8 @@
     "./exerciseProgress": "./exerciseProgress.js",
     "./duration": "./duration.js",
     "./records": "./records.js",
-    "./progression": "./progression.js"
+    "./progression": "./progression.js",
+    "./muscles": "./muscles.js"
   },
   "dependencies": {
     "zod": "^3.23.8"
