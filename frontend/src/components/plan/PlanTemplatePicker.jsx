@@ -82,7 +82,7 @@ export default function PlanTemplatePicker({ templates, onSelect, onBlank }) {
             padding: 0,
           }}
         >
-          Abbrechen
+          Zurück zum Assistenten
         </button>
       )}
     </div>

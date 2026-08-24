@@ -5,11 +5,13 @@ import { PLAN_TEMPLATES } from '../data/templates/index.js';
 import { clonePlan } from '../lib/planDefaults.js';
 import PlanTemplatePicker from '../components/plan/PlanTemplatePicker.jsx';
 import PlanEditor from '../components/plan/PlanEditor.jsx';
+import PlanWizard from '../components/plan/PlanWizard.jsx';
 import PlanOverview from '../components/plan/PlanOverview.jsx';
 import PlanAdvancedImport from '../components/plan/PlanAdvancedImport.jsx';
 
 const MODES = {
   overview: 'overview',
+  wizard: 'wizard',
   picker: 'picker',
   editor: 'editor',
 };
@@ -30,7 +32,7 @@ export default function Plan() {
   const [successMessage, setSuccessMessage] = useState(null);
 
   const hasActivePlan = Boolean(plan);
-  const activeMode = mode ?? (hasActivePlan ? MODES.overview : MODES.picker);
+  const activeMode = mode ?? (hasActivePlan ? MODES.overview : MODES.wizard);
 
   const handleSavePlan = async (planPayload) => {
     setSaving(true);
@@ -69,7 +71,7 @@ export default function Plan() {
   };
 
   const handleStartNew = () => {
-    setMode(MODES.picker);
+    setMode(MODES.wizard);
     setEditorPlan(null);
     setIsEditingExisting(false);
     setSuccessMessage(null);
@@ -84,7 +86,13 @@ export default function Plan() {
   const handleCancelEditor = () => {
     setEditorPlan(null);
     setIsEditingExisting(false);
-    setMode(hasActivePlan ? MODES.overview : MODES.picker);
+    setMode(hasActivePlan ? MODES.overview : MODES.wizard);
+  };
+
+  const handleRefineInEditor = (planPayload) => {
+    setEditorPlan(planPayload);
+    setIsEditingExisting(false);
+    setMode(MODES.editor);
   };
 
   return (
@@ -115,17 +123,27 @@ export default function Plan() {
         </div>
       )}
 
-      {activeMode === MODES.picker && (
+      {activeMode === MODES.wizard && (
         <>
           {!hasActivePlan && (
-            <p style={{ color: 'var(--muted)' }}>Noch kein aktiver Plan — wähle eine Vorlage zum Start.</p>
+            <p style={{ color: 'var(--muted)' }}>Noch kein aktiver Plan — bau dir in ein paar Schritten einen.</p>
           )}
-          <PlanTemplatePicker
-            templates={PLAN_TEMPLATES}
-            onSelect={handleSelectTemplate}
-            onBlank={hasActivePlan ? () => setMode(MODES.overview) : undefined}
+          <PlanWizard
+            onSave={handleSavePlan}
+            onRefine={handleRefineInEditor}
+            onUseTemplate={() => setMode(MODES.picker)}
+            onCancel={hasActivePlan ? () => setMode(MODES.overview) : undefined}
+            saving={saving}
           />
         </>
+      )}
+
+      {activeMode === MODES.picker && (
+        <PlanTemplatePicker
+          templates={PLAN_TEMPLATES}
+          onSelect={handleSelectTemplate}
+          onBlank={() => setMode(MODES.wizard)}
+        />
       )}
 
       {activeMode === MODES.editor && editorPlan && (
@@ -143,7 +161,7 @@ export default function Plan() {
         <PlanOverview plan={plan} onEdit={handleStartEdit} onNewPlan={handleStartNew} />
       )}
 
-      {(activeMode === MODES.overview || activeMode === MODES.picker) && (
+      {(activeMode === MODES.overview || activeMode === MODES.wizard) && (
         <PlanAdvancedImport
           hasActivePlan={hasActivePlan}
           onImport={handleImportPlan}

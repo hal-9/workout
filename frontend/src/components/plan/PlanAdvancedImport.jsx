@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { planSchema } from 'shared';
 import { formatZodDetails } from '../../lib/planValidation.js';
+import PlanPromptExport from './PlanPromptExport.jsx';
 
 const textareaStyle = {
   width: '100%',
@@ -121,13 +122,15 @@ export default function PlanAdvancedImport({ hasActivePlan, onImport, importing 
         }}
         aria-expanded={open}
       >
-        Erweitert: JSON importieren {open ? '▾' : '▸'}
+        Plan von KI erstellen & importieren {open ? '▾' : '▸'}
       </button>
 
       {open && (
         <form onSubmit={handleImport} style={{ marginTop: 12 }}>
+          <PlanPromptExport />
+
           <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 0 }}>
-            Für KI-generierte Pläne oder Power-User: JSON einfügen oder .json-Datei hochladen.
+            Antwort der KI hier einfügen — oder eine .json-Datei hochladen.
           </p>
 
           <label
