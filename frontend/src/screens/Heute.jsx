@@ -5,6 +5,13 @@ import { api } from '../api.js';
 import { cancelQueuedSet, enqueueDelete, enqueueSet } from '../offlineQueue.js';
 import { parseUtc, mondayStart } from '../lib/dates.js';
 import { compareExercise } from '../lib/exerciseCompare.js';
+import { isCooldownExercise, splitPhases } from '../lib/cooldown.js';
+import { bestsByExerciseId, formatRecordValue, livePreviewRecord } from '../lib/records.js';
+import { summarizeSession } from '../lib/completion.js';
+import { deloadMessage } from '../lib/progressionView.js';
+import WorkoutCompleteOverlay from '../components/WorkoutCompleteOverlay.jsx';
+import ExerciseDetailSheet from '../components/ExerciseDetailSheet.jsx';
+import { durationUnitLabel, formatDuration, fromInputValue, toInputValue } from 'shared/duration';
 import {
   WEEKDAY_LABELS,
   getMissedDays,
@@ -38,7 +45,11 @@ function buildInitialSets(exercise, prefillSets, resumedSets) {
       set_number: i,
       reps: fromSource?.reps ?? '',
       weight_kg: fromSource?.weight_kg ?? defaultWeight,
-      duration_s: fromSource?.duration_s ?? '',
+      duration: toInputValue(
+        // Cooldown-Stretches werden mit einem Tap abgehakt, deshalb steht die Zieldauer schon drin.
+        fromSource?.duration_s ?? (isCooldownExercise(exercise) ? exercise.target_seconds : null),
+        exercise.type
+      ),
       logged: Boolean(isResumed),
     });
   }
@@ -49,6 +60,8 @@ function formatElapsed(ms) {
   const mins = Math.floor(ms / 60000);
   return `${mins} min`;
 }
+
+const RPE_VALUES = [6, 7, 8, 9, 10];
 
 const TREND_LABELS = {
   up: { text: '↑ besser', color: 'var(--success)' },
@@ -63,6 +76,13 @@ export default function Heute() {
   const { data: recent } = useQuery({
     queryKey: ['sessions-recent'],
     queryFn: () => api.get('/sessions/recent'),
+  });
+  // Bestwerte vor dieser Session — für die Rekord-Vorschau in der Übungskarte.
+  const { data: stats } = useQuery({ queryKey: ['stats'], queryFn: () => api.get('/stats'), retry: false });
+  const { data: progression } = useQuery({
+    queryKey: ['progression-proposals'],
+    queryFn: () => api.get('/progression/proposals'),
+    retry: false,
   });
 
   const [dayKey, setDayKey] = useState(null);
@@ -92,6 +112,12 @@ export default function Heute() {
     };
   }, []);
   const [timerSeconds, setTimerSeconds] = useState(null);
+  const [completion, setCompletion] = useState(null);
+  const [detailExercise, setDetailExercise] = useState(null);
+  const [rpeByExercise, setRpeByExercise] = useState({});
+  const [note, setNote] = useState('');
+  const [noteOpen, setNoteOpen] = useState(false);
+  const noteSaveRef = useRef(null);
 
   // Wochen-Status: jüngste finished Session je day_key innerhalb der lokalen Kalenderwoche (Mo–So)
   const weekStart = mondayStart();
@@ -151,6 +177,11 @@ export default function Heute() {
         initial[ex.id] = buildInitialSets(ex, historyRes.prefill[ex.id], resumedByExercise[ex.id]);
       }
       setSetsByExercise(initial);
+      setRpeByExercise(
+        Object.fromEntries((resumed?.rpe ?? []).map((entry) => [entry.exercise_id, entry.rpe]))
+      );
+      setNote(resumed?.note ?? '');
+      setNoteOpen(Boolean(resumed?.note));
       if (resumed?.started_at) {
         setSessionStartedAt(parseUtc(resumed.started_at).getTime());
       } else {
@@ -187,7 +218,7 @@ export default function Heute() {
     if (!plan || !dayKey) return;
     const dayPlan = plan.days.find((d) => d.key === dayKey);
     if (!dayPlan) return;
-    for (const ex of dayPlan.exercises) {
+    for (const ex of splitPhases(dayPlan.exercises).main) {
       const rows = setsByExercise[ex.id] ?? [];
       const nextIndex = rows.findIndex((r) => !r.logged);
       if (nextIndex >= 0) {
@@ -263,7 +294,10 @@ export default function Heute() {
         ...setKey,
         reps: exercise.type === 'bw' || exercise.type === 'wt' ? Number(row.reps) || null : null,
         weight_kg: exercise.type === 'wt' ? Number(row.weight_kg) || null : null,
-        duration_s: exercise.type === 'time' || exercise.type === 'cardio' ? Number(row.duration_s) || null : null,
+        duration_s:
+          exercise.type === 'time' || exercise.type === 'cardio'
+            ? fromInputValue(row.duration, exercise.type)
+            : null,
       };
 
       try {
@@ -307,7 +341,7 @@ export default function Heute() {
             set_number: nextNumber,
             reps: '',
             weight_kg: exercise.default_weight_kg ?? '',
-            duration_s: '',
+            duration: '',
             logged: false,
           },
         ],
@@ -315,15 +349,65 @@ export default function Heute() {
     });
   }
 
+  // Notiz verzögert speichern, damit ein Reload mitten im Training sie behält.
+  function updateNote(value) {
+    setNote(value);
+    clearTimeout(noteSaveRef.current);
+    if (!sessionId) return;
+    noteSaveRef.current = setTimeout(() => {
+      api.post(`/sessions/${sessionId}/note`, { note: value.trim() || null }).catch(() => {});
+    }, 800);
+  }
+
+  // RPE ist optionale Zusatzinfo — bei Fehlern wird die Auswahl zurückgerollt.
+  async function toggleRpe(exercise, value) {
+    const current = rpeByExercise[exercise.id] ?? null;
+    const next = current === value ? null : value;
+
+    let sid;
+    try {
+      sid = await ensureSession();
+    } catch {
+      return;
+    }
+
+    setRpeByExercise((prev) => ({ ...prev, [exercise.id]: next }));
+    try {
+      await api.post(`/sessions/${sid}/rpe`, { exercise_id: exercise.id, rpe: next });
+    } catch {
+      setRpeByExercise((prev) => ({ ...prev, [exercise.id]: current }));
+    }
+  }
+
   async function finishWorkout() {
-    const res = await api.post(`/sessions/${sessionId}/finish`);
+    const res = await api.post(`/sessions/${sessionId}/finish`, { note: note.trim() || null });
     queryClient.invalidateQueries({ queryKey: ['history'] });
     queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
     queryClient.invalidateQueries({ queryKey: ['sessions-range'] });
-    navigate(`/session/${res.session_id}/auswertung`, {
-      state: { summary: res.summary, evaluation: res.evaluation },
+    queryClient.invalidateQueries({ queryKey: ['stats'] });
+    queryClient.invalidateQueries({ queryKey: ['progression-proposals'] });
+
+    // Pausen-Timer ausblenden, damit nur der Abschluss-Screen zu sehen ist.
+    clearTimeout(noteSaveRef.current);
+    setTimerSeconds(null);
+    const dayPlan = plan?.days?.find((d) => d.key === dayKey);
+    setCompletion({
+      session_id: res.session_id,
+      summary: res.summary,
+      evaluation: res.evaluation,
+      records: res.new_records ?? [],
+      stats: summarizeSession(dayPlan, res.summary, sessionStartedAt ? Date.now() - sessionStartedAt : null),
     });
   }
+
+  // Identität muss stabil bleiben, sonst startet der Auto-Weiter-Timer im Overlay neu.
+  const leaveCompletion = useCallback(() => {
+    if (!completion) return;
+    setCompletion(null);
+    navigate(`/session/${completion.session_id}/auswertung`, {
+      state: { summary: completion.summary, evaluation: completion.evaluation },
+    });
+  }, [completion, navigate]);
 
   if (!plan) {
     return (
@@ -355,11 +439,19 @@ export default function Heute() {
   const showRestartGate = Boolean(dayDoneAt) && !sessionId;
   const weightOverrides = getAllOverrides();
 
-  const totalPlannedSets =
-    day?.exercises.reduce((sum, ex) => sum + (ex.sets ?? 0), 0) ?? 0;
-  const loggedSetCount = day
-    ? day.exercises.reduce((sum, ex) => sum + (setsByExercise[ex.id]?.filter((r) => r.logged).length ?? 0), 0)
-    : 0;
+  const { main: mainExercises, cooldown: cooldownExercises } = splitPhases(day?.exercises ?? []);
+  const bests = bestsByExerciseId(stats?.records);
+  const deloadHint = deloadMessage(progression?.deload);
+
+  const totalPlannedSets = mainExercises.reduce((sum, ex) => sum + (ex.sets ?? 0), 0);
+  const loggedSetCount = mainExercises.reduce(
+    (sum, ex) => sum + (setsByExercise[ex.id]?.filter((r) => r.logged).length ?? 0),
+    0
+  );
+  const mainDone = mainExercises.length > 0 && loggedSetCount >= totalPlannedSets;
+  const cooldownDone = cooldownExercises.filter(
+    (ex) => setsByExercise[ex.id]?.some((r) => r.logged)
+  ).length;
   const activeOverrides =
     day?.exercises.filter((ex) => weightOverrides[ex.id] != null && ex.type === 'wt') ?? [];
 
@@ -578,15 +670,58 @@ export default function Heute() {
             </div>
           )}
 
-          <div style={{ color: 'var(--muted)', fontSize: 11, textTransform: 'uppercase' }}>{day.focus}</div>
-          <h2>{day.name}</h2>
+          {deloadHint && (
+            <div
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--accent)',
+                borderRadius: 14,
+                padding: '11px 13px',
+                marginBottom: 12,
+                fontSize: 12,
+                color: 'var(--text)',
+              }}
+            >
+              <strong style={{ color: 'var(--accent)' }}>Deload</strong> · {deloadHint}
+            </div>
+          )}
 
-          {day.exercises.map((ex) => {
+          <div style={{ color: 'var(--muted)', fontSize: 11, textTransform: 'uppercase' }}>{day.focus}</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <h2>{day.name}</h2>
+            {plan.music_url && (
+              <a
+                href={plan.music_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  flexShrink: 0,
+                  background: 'var(--surface2)',
+                  border: '1px solid var(--line)',
+                  color: 'var(--text)',
+                  borderRadius: 999,
+                  padding: '7px 13px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12,
+                  textDecoration: 'none',
+                  minHeight: 36,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                ♪ Musik
+              </a>
+            )}
+          </div>
+
+          {mainExercises.map((ex) => {
             const rows = setsByExercise[ex.id] || [];
             const allLogged = rows.length > 0 && rows.every((r) => r.logged);
             const prefillSets = historyRes?.prefill?.[ex.id];
             const compare = compareExercise(ex, rows, prefillSets);
             const trendMeta = compare.trend ? TREND_LABELS[compare.trend] : null;
+            const liveRecord = livePreviewRecord(ex, rows, bests.get(ex.id));
             return (
             <div
               key={ex.id}
@@ -608,14 +743,23 @@ export default function Heute() {
                     {ex.muscle}
                   </div>
                 </div>
-                <a
-                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ex.video_query)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ fontFamily: 'var(--font-mono)', color: 'var(--primary)', fontSize: 12 }}
+                <button
+                  type="button"
+                  onClick={() => setDetailExercise(ex)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--primary)',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    alignSelf: 'flex-start',
+                  }}
                 >
-                  Technik
-                </a>
+                  Details
+                </button>
               </div>
               <p
                 style={{
@@ -645,6 +789,19 @@ export default function Heute() {
                   {compare.lastSummary && <span>Letzte Session: {compare.lastSummary}</span>}
                   {compare.lastSummary && compare.targetLabel && <span>·</span>}
                   {compare.targetLabel && <span>Ziel: {compare.targetLabel}</span>}
+                  {liveRecord && (
+                    <span
+                      style={{
+                        padding: '2px 7px',
+                        borderRadius: 999,
+                        fontSize: 10,
+                        color: 'var(--on-primary)',
+                        background: 'var(--primary-grad)',
+                      }}
+                    >
+                      ★ Rekord {formatRecordValue(liveRecord.kind, liveRecord.value)}
+                    </span>
+                  )}
                   {trendMeta && (
                     <span
                       style={{
@@ -678,7 +835,9 @@ export default function Heute() {
                 )}
                 {ex.type === 'wt' && <div style={{ width: 72, textAlign: 'center', flexShrink: 0 }}>kg</div>}
                 {(ex.type === 'time' || ex.type === 'cardio') && (
-                  <div style={{ width: 72, textAlign: 'center', flexShrink: 0 }}>Sek.</div>
+                  <div style={{ width: 72, textAlign: 'center', flexShrink: 0 }}>
+                    {durationUnitLabel(ex.type)}
+                  </div>
                 )}
               </div>
 
@@ -733,16 +892,65 @@ export default function Heute() {
                     {(ex.type === 'time' || ex.type === 'cardio') && (
                       <input
                         type="number"
-                        inputMode="numeric"
-                        placeholder={String(ex.target_seconds ?? '')}
-                        value={row.duration_s}
-                        onChange={(e) => updateSetField(ex.id, i, 'duration_s', e.target.value)}
+                        inputMode={ex.type === 'cardio' ? 'decimal' : 'numeric'}
+                        placeholder={toInputValue(ex.target_seconds, ex.type)}
+                        value={row.duration}
+                        onChange={(e) => updateSetField(ex.id, i, 'duration', e.target.value)}
                         style={inputStyle}
                       />
                     )}
                   </div>
                 ))}
               </div>
+
+              {allLogged && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    marginTop: 12,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 10,
+                      textTransform: 'uppercase',
+                      color: 'var(--muted)',
+                      marginRight: 2,
+                    }}
+                  >
+                    Anstrengung
+                  </span>
+                  {RPE_VALUES.map((value) => {
+                    const active = rpeByExercise[ex.id] === value;
+                    return (
+                      <button
+                        key={value}
+                        onClick={() => toggleRpe(ex, value)}
+                        disabled={!isOnline && !sessionId}
+                        aria-pressed={active}
+                        aria-label={`Anstrengung ${value} von 10`}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 999,
+                          border: `1px solid ${active ? 'var(--primary)' : 'var(--line)'}`,
+                          background: active ? 'var(--primary-dim)' : 'var(--surface2)',
+                          color: active ? 'var(--primary)' : 'var(--muted)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 13,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {value}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               <button
                 onClick={() => addExtraSet(ex)}
@@ -763,6 +971,164 @@ export default function Heute() {
             </div>
             );
           })}
+
+          {cooldownExercises.length > 0 && (
+            <div
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--line)',
+                borderRadius: 16,
+                padding: 14,
+                marginBottom: 12,
+                opacity: mainDone ? 1 : 0.55,
+                transition: 'opacity 240ms ease',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  marginBottom: 2,
+                }}
+              >
+                <h3 style={{ margin: 0, fontSize: 16 }}>Cooldown</h3>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+                  {cooldownDone}/{cooldownExercises.length}
+                </span>
+              </div>
+              <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--muted)' }}>
+                {mainDone ? 'Ein Tap pro Dehnung.' : 'Nach dem Hauptteil dran.'}
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {cooldownExercises.map((ex) => {
+                  const rows = setsByExercise[ex.id] || [];
+                  const done = rows.some((r) => r.logged);
+                  return (
+                    <div key={ex.id} style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
+                      <button
+                        onClick={() => toggleSet(ex, 0)}
+                        disabled={showRestartGate || (!isOnline && !sessionId) || !rows.length}
+                        style={{
+                          flex: 1,
+                          textAlign: 'left',
+                          background: done ? 'var(--success-dim)' : 'var(--surface2)',
+                          border: `1px solid ${done ? 'var(--success)' : 'var(--line)'}`,
+                          borderRadius: 11,
+                          padding: '10px 12px',
+                          minHeight: 44,
+                          cursor: 'pointer',
+                          color: 'var(--text)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              color: done ? 'var(--success)' : 'var(--muted)',
+                            }}
+                          >
+                            {done ? '✓' : '○'}
+                          </span>
+                          <span style={{ fontSize: 14, fontWeight: 500 }}>{ex.name}</span>
+                          <span
+                            style={{
+                              marginLeft: 'auto',
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: 12,
+                              color: 'var(--muted)',
+                            }}
+                          >
+                            {formatDuration(ex.target_seconds)}
+                          </span>
+                        </div>
+                        {ex.cue && (
+                          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{ex.cue}</div>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setDetailExercise(ex)}
+                        aria-label={`Details zu ${ex.name}`}
+                        style={{
+                          flexShrink: 0,
+                          width: 36,
+                          background: 'var(--surface2)',
+                          border: '1px solid var(--line)',
+                          borderRadius: 11,
+                          color: 'var(--muted)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 12,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        i
+                      </button>
+                      <button
+                        onClick={() => {
+                          unlockAudio();
+                          setTimerSeconds(ex.target_seconds ?? 30);
+                        }}
+                        aria-label={`Halte-Timer für ${ex.name}`}
+                        style={{
+                          flexShrink: 0,
+                          width: 44,
+                          background: 'var(--surface2)',
+                          border: '1px solid var(--line)',
+                          borderRadius: 11,
+                          color: 'var(--muted)',
+                          fontSize: 15,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ⏱
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {noteOpen ? (
+            <textarea
+              value={note}
+              onChange={(e) => updateNote(e.target.value)}
+              rows={2}
+              maxLength={1000}
+              placeholder="Notiz zur Session (optional) — z. B. Schlaf, Schmerzen, Tagesform"
+              style={{
+                width: '100%',
+                background: 'var(--surface)',
+                border: '1px solid var(--line)',
+                color: 'var(--text)',
+                borderRadius: 12,
+                padding: '10px 12px',
+                fontSize: 14,
+                resize: 'vertical',
+                marginBottom: 10,
+              }}
+            />
+          ) : (
+            <button
+              onClick={() => setNoteOpen(true)}
+              style={{
+                width: '100%',
+                background: 'var(--surface2)',
+                border: '1px solid var(--line)',
+                color: 'var(--muted)',
+                borderRadius: 12,
+                padding: '10px 12px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 12,
+                cursor: 'pointer',
+                marginBottom: 10,
+              }}
+            >
+              + Notiz zur Session
+            </button>
+          )}
 
           <button
             onClick={finishWorkout}
@@ -883,6 +1249,22 @@ export default function Heute() {
             </button>
           </div>
         </div>
+      )}
+
+      {detailExercise && (
+        <ExerciseDetailSheet
+          exercise={detailExercise}
+          best={bests.get(detailExercise.id)}
+          onClose={() => setDetailExercise(null)}
+        />
+      )}
+
+      {completion && (
+        <WorkoutCompleteOverlay
+          stats={completion.stats}
+          records={completion.records}
+          onDone={leaveCompletion}
+        />
       )}
     </div>
   );

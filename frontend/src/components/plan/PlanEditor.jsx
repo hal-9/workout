@@ -7,6 +7,7 @@ import {
   plansEqual,
 } from '../../lib/planDefaults.js';
 import { validatePlan } from '../../lib/planValidation.js';
+import { planDeloadWeeks, withPlanDeload } from '../../lib/progressionEdit.js';
 
 const inputStyle = {
   width: '100%',
@@ -131,6 +132,38 @@ export default function PlanEditor({
         placeholder="z. B. Mein 4-Tage Plan"
         required
       />
+
+      <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', margin: '10px 0 4px' }}>
+        Deload alle … Wochen (optional)
+      </label>
+      <input
+        type="number"
+        min={2}
+        max={52}
+        step={1}
+        value={planDeloadWeeks(draft) ?? ''}
+        onChange={(e) => setDraft((prev) => withPlanDeload(prev, e.target.value || null))}
+        style={inputStyle}
+        placeholder="z. B. 6 — leer lassen für keinen Deload"
+      />
+      <p style={{ color: 'var(--muted)', fontSize: 12, margin: '4px 0 0' }}>
+        Zeigt in der gewählten Woche einen Hinweis auf Heute, Gewichte etwa 10 % zurückzunehmen.
+      </p>
+
+      <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', margin: '10px 0 4px' }}>
+        Musik-Playlist (optional)
+      </label>
+      <input
+        type="url"
+        inputMode="url"
+        value={draft.music_url ?? ''}
+        onChange={(e) => setDraft((prev) => ({ ...prev, music_url: e.target.value }))}
+        style={inputStyle}
+        placeholder="https://music.apple.com/… oder https://open.spotify.com/…"
+      />
+      <p style={{ color: 'var(--muted)', fontSize: 12, margin: '4px 0 0' }}>
+        Öffnet beim Training die native Musik-App — dort läuft die Wiedergabe auch im Hintergrund weiter.
+      </p>
 
       <p style={{ color: 'var(--muted)', fontSize: 13, margin: '16px 0 8px' }}>
         {allHaveWeekday

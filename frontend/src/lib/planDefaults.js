@@ -1,3 +1,5 @@
+import { formatDuration } from 'shared/duration';
+
 export function slugify(text) {
   return String(text)
     .toLowerCase()
@@ -44,6 +46,7 @@ export function createEmptyExercise(existingIds = new Set()) {
     default_weight_kg: null,
     cue: '',
     video_query: '',
+    phase: 'main',
   };
 }
 
@@ -64,6 +67,7 @@ export function createEmptyPlan() {
   return {
     schema_version: 1,
     name: 'Mein Trainingsplan',
+    music_url: null,
     days: [createEmptyDay(dayKeys)],
   };
 }
@@ -96,10 +100,16 @@ export function normalizeExerciseForType(ex) {
   };
 }
 
+function normalizeMusicUrl(value) {
+  const trimmed = typeof value === 'string' ? value.trim() : '';
+  return trimmed === '' ? null : trimmed;
+}
+
 export function preparePlanForSave(plan) {
   return {
     schema_version: 1,
     name: plan.name.trim(),
+    music_url: normalizeMusicUrl(plan.music_url),
     days: plan.days.map((day) => ({
       key: day.key,
       name: day.name.trim(),
@@ -113,6 +123,8 @@ export function preparePlanForSave(plan) {
           muscle: ex.muscle.trim(),
           cue: ex.cue ?? '',
           video_query: ex.video_query ?? '',
+          phase: ex.phase === 'cooldown' ? 'cooldown' : 'main',
+          progression: ex.progression === undefined ? undefined : ex.progression,
           sets: Number(ex.sets),
           default_weight_kg:
             ex.default_weight_kg != null && ex.default_weight_kg !== ''
@@ -130,7 +142,7 @@ export function preparePlanForSave(plan) {
 
 export function formatExercisePrescription(ex) {
   if (ex.type === 'time' || ex.type === 'cardio') {
-    return `${ex.sets} × ${ex.target_seconds ?? 0}s`;
+    return `${ex.sets} × ${formatDuration(ex.target_seconds ?? 0)}`;
   }
   if (ex.type === 'wt' && ex.default_weight_kg) {
     return `${ex.sets} × ${ex.target_reps} @ ${ex.default_weight_kg} kg`;

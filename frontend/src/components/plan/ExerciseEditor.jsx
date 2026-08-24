@@ -1,3 +1,9 @@
+import { durationUnitLabel, fromInputValue, toInputValue } from 'shared/duration';
+import {
+  effectiveProgression,
+  supportsProgression,
+  withProgression,
+} from '../../lib/progressionEdit.js';
 import { EXERCISE_TYPES } from '../../lib/planDefaults.js';
 
 const inputStyle = {
@@ -40,12 +46,16 @@ export default function ExerciseEditor({
   const showReps = exercise.type === 'bw' || exercise.type === 'wt';
   const showWeight = exercise.type === 'wt';
   const showSeconds = exercise.type === 'time' || exercise.type === 'cardio';
+  const isCooldown = exercise.phase === 'cooldown';
+  const progression = effectiveProgression(exercise);
+  const showProgression = supportsProgression(exercise);
+  const incrementUnit = progression.type === 'weight' ? 'kg' : progression.type === 'duration' ? 'Sek.' : 'Wdh.';
 
   const handleTypeChange = (type) => {
     const next = { ...exercise, type };
     if (type === 'time' || type === 'cardio') {
       next.target_reps = null;
-      next.target_seconds = next.target_seconds ?? 30;
+      next.target_seconds = next.target_seconds ?? (type === 'cardio' ? 1200 : 30);
       next.default_weight_kg = null;
     } else if (type === 'wt') {
       next.target_reps = next.target_reps ?? '8-12';
@@ -69,7 +79,9 @@ export default function ExerciseEditor({
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <strong style={{ fontSize: 14 }}>Übung {index + 1}</strong>
+        <strong style={{ fontSize: 14 }}>
+          {isCooldown ? 'Cooldown' : 'Übung'} {index + 1}
+        </strong>
         <div style={{ display: 'flex', gap: 6 }}>
           <button
             type="button"
@@ -132,6 +144,23 @@ export default function ExerciseEditor({
         ))}
       </select>
 
+      <label
+        style={{
+          ...labelStyle,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          cursor: 'pointer',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={isCooldown}
+          onChange={(e) => onChange({ ...exercise, phase: e.target.checked ? 'cooldown' : 'main' })}
+        />
+        Cooldown / Dehnung (zählt nicht in Fortschritt und Progression)
+      </label>
+
       <label style={labelStyle}>Sätze</label>
       <input
         type="number"
@@ -177,21 +206,86 @@ export default function ExerciseEditor({
 
       {showSeconds && (
         <>
-          <label style={labelStyle}>Sekunden</label>
+          <label style={labelStyle}>Zieldauer ({durationUnitLabel(exercise.type)})</label>
           <input
             type="number"
-            min={1}
-            value={exercise.target_seconds ?? ''}
+            min={exercise.type === 'cardio' ? 0.5 : 1}
+            step={exercise.type === 'cardio' ? 0.5 : 1}
+            value={toInputValue(exercise.target_seconds, exercise.type)}
             onChange={(e) =>
               onChange({
                 ...exercise,
-                target_seconds: e.target.value === '' ? null : e.target.value,
+                target_seconds: fromInputValue(e.target.value, exercise.type),
               })
             }
             style={inputStyle}
-            placeholder="z. B. 30"
+            placeholder={exercise.type === 'cardio' ? 'z. B. 25' : 'z. B. 30'}
           />
         </>
+      )}
+
+      {showProgression && (
+        <div
+          style={{
+            border: '1px solid var(--line)',
+            borderRadius: 10,
+            padding: '10px 11px',
+            marginTop: 12,
+          }}
+        >
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 12,
+              color: 'var(--text)',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={progression.enabled}
+              onChange={(e) => onChange(withProgression(exercise, { enabled: e.target.checked }))}
+            />
+            Automatisch steigern
+          </label>
+
+          {progression.enabled && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ ...labelStyle, marginTop: 0 }}>Schritt ({incrementUnit})</label>
+                <input
+                  type="number"
+                  min={0.5}
+                  step={progression.type === 'weight' ? 0.5 : 1}
+                  value={progression.increment ?? ''}
+                  onChange={(e) =>
+                    onChange(withProgression(exercise, { increment: e.target.value || 1 }))
+                  }
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ ...labelStyle, marginTop: 0 }}>Nach … Sessions</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  step={1}
+                  value={progression.after_success ?? ''}
+                  onChange={(e) =>
+                    onChange(withProgression(exercise, { after_success: e.target.value || 1 }))
+                  }
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+          )}
+          <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--muted)' }}>
+            Vorschlag erscheint in der Auswertung — der Plan ändert sich erst nach Bestätigung.
+          </p>
+        </div>
       )}
 
       <label style={labelStyle}>Technik-Hinweis (optional)</label>

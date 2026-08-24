@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { WEEKDAYS, WEEKDAY_LABELS } from '../../lib/schedule.js';
+import { suggestCooldownForDay } from '../../lib/cooldown.js';
 import {
   createEmptyExercise,
 } from '../../lib/planDefaults.js';
 import ExerciseEditor from './ExerciseEditor.jsx';
+import ExerciseLibraryPicker from './ExerciseLibraryPicker.jsx';
+import { libraryEntryToExercise } from '../../lib/exerciseLibrary.js';
 
 const inputStyle = {
   width: '100%',
@@ -51,6 +54,8 @@ export default function DayEditor({
   onMoveDown,
 }) {
   const [open, setOpen] = useState(index === 0);
+  const firstCooldownIndex = day.exercises.findIndex((ex) => ex.phase === 'cooldown');
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   const handleNameChange = (name) => {
     onChange({ ...day, name });
@@ -67,6 +72,28 @@ export default function DayEditor({
       ...day,
       exercises: [...day.exercises, createEmptyExercise(existingIds)],
     });
+  };
+
+  // Cooldown-Einträge hinten anhängen, Hauptübungen vor dem Cooldown einsortieren.
+  const handlePickFromLibrary = (entry) => {
+    const existingIds = new Set(day.exercises.map((ex) => ex.id));
+    const exercise = libraryEntryToExercise(entry, existingIds);
+
+    if (exercise.phase === 'cooldown' || firstCooldownIndex === -1) {
+      onChange({ ...day, exercises: [...day.exercises, exercise] });
+      return;
+    }
+
+    const next = [...day.exercises];
+    next.splice(firstCooldownIndex, 0, exercise);
+    onChange({ ...day, exercises: next });
+  };
+
+  const handleAddCooldown = () => {
+    const existingIds = new Set(day.exercises.map((ex) => ex.id));
+    const stretches = suggestCooldownForDay(day, existingIds);
+    if (!stretches.length) return;
+    onChange({ ...day, exercises: [...day.exercises, ...stretches] });
   };
 
   const handleRemoveExercise = (exIndex) => {
@@ -170,35 +197,79 @@ export default function DayEditor({
       <div style={{ marginTop: 16 }}>
         <strong style={{ fontSize: 14 }}>Übungen</strong>
         {day.exercises.map((exercise, exIndex) => (
-          <ExerciseEditor
-            key={exercise.id}
-            exercise={exercise}
-            index={exIndex}
-            total={day.exercises.length}
-            onChange={(next) => handleExerciseChange(exIndex, next)}
-            onRemove={() => handleRemoveExercise(exIndex)}
-            onMoveUp={() => {
-              const exercises = moveItem(day.exercises, exIndex, exIndex - 1);
-              onChange({ ...day, exercises });
-            }}
-            onMoveDown={() => {
-              const exercises = moveItem(day.exercises, exIndex, exIndex + 1);
-              onChange({ ...day, exercises });
-            }}
-          />
+          <Fragment key={exercise.id}>
+            {exIndex === firstCooldownIndex && (
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  textTransform: 'uppercase',
+                  color: 'var(--muted)',
+                  borderTop: '1px solid var(--line)',
+                  paddingTop: 10,
+                  marginTop: 6,
+                  marginBottom: 8,
+                }}
+              >
+                Cooldown
+              </div>
+            )}
+            <ExerciseEditor
+              exercise={exercise}
+              index={exIndex}
+              total={day.exercises.length}
+              onChange={(next) => handleExerciseChange(exIndex, next)}
+              onRemove={() => handleRemoveExercise(exIndex)}
+              onMoveUp={() => {
+                const exercises = moveItem(day.exercises, exIndex, exIndex - 1);
+                onChange({ ...day, exercises });
+              }}
+              onMoveDown={() => {
+                const exercises = moveItem(day.exercises, exIndex, exIndex + 1);
+                onChange({ ...day, exercises });
+              }}
+            />
+          </Fragment>
         ))}
-        <button
-          type="button"
-          onClick={handleAddExercise}
-          style={{
-            ...smallBtnStyle,
-            width: '100%',
-            padding: '10px',
-            marginTop: 4,
-          }}
-        >
-          + Übung hinzufügen
-        </button>
+        <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setLibraryOpen((open) => !open)}
+            style={{
+              ...smallBtnStyle,
+              flex: '1 1 100%',
+              padding: '10px',
+              borderColor: libraryOpen ? 'var(--primary)' : 'var(--line)',
+              color: libraryOpen ? 'var(--primary)' : 'var(--text)',
+            }}
+          >
+            {libraryOpen ? 'Bibliothek schließen' : 'Übung aus Bibliothek'}
+          </button>
+          <button
+            type="button"
+            onClick={handleAddExercise}
+            style={{ ...smallBtnStyle, flex: 1, padding: '10px' }}
+          >
+            + Leere Übung
+          </button>
+          {firstCooldownIndex === -1 && (
+            <button
+              type="button"
+              onClick={handleAddCooldown}
+              style={{ ...smallBtnStyle, flex: 1, padding: '10px' }}
+            >
+              + Cooldown vorschlagen
+            </button>
+          )}
+        </div>
+
+        {libraryOpen && (
+          <ExerciseLibraryPicker
+            onPick={handlePickFromLibrary}
+            onClose={() => setLibraryOpen(false)}
+            usedNames={new Set(day.exercises.map((ex) => ex.name.toLowerCase()))}
+          />
+        )}
       </div>
     </details>
   );

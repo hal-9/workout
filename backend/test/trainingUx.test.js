@@ -148,7 +148,7 @@ describe('weekRecap', () => {
   });
 
   it('groupSessionsByWeek buckets by local week', () => {
-    const weekStart = new Date(2026, 6, 6);
+    const weekStart = new Date();
     while (weekStart.getDay() !== 1) {
       weekStart.setDate(weekStart.getDate() - 1);
     }

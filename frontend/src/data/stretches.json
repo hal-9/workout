@@ -1,0 +1,38 @@
+{
+  "push": [
+    { "id": "stretch-brust-tuerrahmen", "name": "Brustdehnung am Türrahmen", "muscle": "Brust", "target_seconds": 45, "cue": "Ellbogen auf Schulterhöhe, Brust öffnen, nicht ins Hohlkreuz fallen." },
+    { "id": "stretch-trizeps-ueberkopf", "name": "Trizeps-Dehnung über Kopf", "muscle": "Trizeps", "target_seconds": 30, "cue": "Ellbogen zur Decke, Hand zwischen die Schulterblätter, sanft nachschieben." },
+    { "id": "stretch-schulter-cross-body", "name": "Schulterdehnung quer", "muscle": "Schulter", "target_seconds": 30, "cue": "Arm gestreckt vor die Brust ziehen, Schulter unten lassen." },
+    { "id": "stretch-nacken-seitneige", "name": "Nacken-Seitneige", "muscle": "Nacken", "target_seconds": 30, "cue": "Ohr zur Schulter, Gegenschulter bewusst tief halten." }
+  ],
+  "pull": [
+    { "id": "stretch-lat-haengend", "name": "Lat-Dehnung im Hang", "muscle": "Latissimus", "target_seconds": 45, "cue": "Locker hängen, Schultern lang lassen, ruhig atmen." },
+    { "id": "stretch-bizeps-wand", "name": "Bizeps-Dehnung an der Wand", "muscle": "Bizeps", "target_seconds": 30, "cue": "Handfläche an die Wand, Körper langsam wegdrehen." },
+    { "id": "stretch-brustwirbel-rotation", "name": "Brustwirbel-Rotation im Sitzen", "muscle": "Rumpf", "target_seconds": 40, "cue": "Aus dem Brustkorb drehen, Becken bleibt still." },
+    { "id": "stretch-unterarm-beuger", "name": "Unterarm-Beuger-Dehnung", "muscle": "Unterarm", "target_seconds": 30, "cue": "Arm gestreckt, Finger nach unten ziehen, Griffkraft entspannen." }
+  ],
+  "legs": [
+    { "id": "stretch-quadrizeps-stehend", "name": "Quadrizeps-Dehnung stehend", "muscle": "Quadrizeps", "target_seconds": 40, "cue": "Ferse zum Gesäß, Knie zeigt nach unten, Becken leicht nach vorn." },
+    { "id": "stretch-hamstrings-vorbeuge", "name": "Beinrückseite im Sitzen", "muscle": "Hamstrings", "target_seconds": 45, "cue": "Aus der Hüfte beugen, Rücken lang, Knie darf minimal weich sein." },
+    { "id": "stretch-hueftbeuger-ausfall", "name": "Hüftbeuger im Ausfallschritt", "muscle": "Hüftbeuger", "target_seconds": 45, "cue": "Becken aufrichten, Gesäß anspannen, dann nach vorn schieben." },
+    { "id": "stretch-wade-wand", "name": "Wadendehnung an der Wand", "muscle": "Wade", "target_seconds": 40, "cue": "Hintere Ferse am Boden, Bein gestreckt, Hüfte nach vorn." }
+  ],
+  "glutes": [
+    { "id": "stretch-taube-sitzend", "name": "Taube im Sitzen", "muscle": "Gesäß", "target_seconds": 45, "cue": "Knöchel über das Knie, Brust aufrecht, dann nach vorn lehnen." },
+    { "id": "stretch-piriformis-liegend", "name": "Piriformis-Dehnung liegend", "muscle": "Gesäß", "target_seconds": 45, "cue": "Knie zur Gegenschulter ziehen, Schultern bleiben am Boden." },
+    { "id": "stretch-adduktoren-frosch", "name": "Adduktoren-Dehnung im Sitzen", "muscle": "Adduktoren", "target_seconds": 40, "cue": "Fußsohlen zusammen, Knie sinken lassen, nicht drücken." },
+    { "id": "stretch-hueftbeuger-knie", "name": "Hüftbeuger im Kniestand", "muscle": "Hüftbeuger", "target_seconds": 40, "cue": "Becken aufrichten, Bauch leicht anspannen, sanft nach vorn." }
+  ],
+  "core": [
+    { "id": "stretch-kobra", "name": "Kobra", "muscle": "Bauch", "target_seconds": 40, "cue": "Schambein bleibt am Boden, Schultern weg von den Ohren." },
+    { "id": "stretch-kindhaltung", "name": "Kindhaltung", "muscle": "Rücken", "target_seconds": 45, "cue": "Gesäß zu den Fersen, Arme lang, tief in den Rücken atmen." },
+    { "id": "stretch-seitneige-stehend", "name": "Seitneige stehend", "muscle": "Flanke", "target_seconds": 30, "cue": "Arm über Kopf, seitlich verlängern statt nach vorn kippen." },
+    { "id": "stretch-katze-kuh", "name": "Katze-Kuh", "muscle": "Wirbelsäule", "target_seconds": 40, "cue": "Langsam Wirbel für Wirbel bewegen, mit dem Atem koppeln." }
+  ],
+  "full": [
+    { "id": "stretch-kindhaltung-full", "name": "Kindhaltung", "muscle": "Rücken", "target_seconds": 45, "cue": "Gesäß zu den Fersen, Arme lang, tief in den Rücken atmen." },
+    { "id": "stretch-hueftbeuger-ausfall-full", "name": "Hüftbeuger im Ausfallschritt", "muscle": "Hüftbeuger", "target_seconds": 40, "cue": "Becken aufrichten, Gesäß anspannen, dann nach vorn schieben." },
+    { "id": "stretch-hamstrings-vorbeuge-full", "name": "Beinrückseite im Sitzen", "muscle": "Hamstrings", "target_seconds": 45, "cue": "Aus der Hüfte beugen, Rücken lang, Knie darf minimal weich sein." },
+    { "id": "stretch-brust-tuerrahmen-full", "name": "Brustdehnung am Türrahmen", "muscle": "Brust", "target_seconds": 40, "cue": "Ellbogen auf Schulterhöhe, Brust öffnen, nicht ins Hohlkreuz fallen." }
+  ]
+}

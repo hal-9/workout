@@ -7,6 +7,8 @@ import { historyRouter } from './routes/history.js';
 import { maxTestsRouter } from './routes/maxTests.js';
 import { partnerRouter } from './routes/partner.js';
 import { progressRouter } from './routes/progress.js';
+import { progressionRouter } from './routes/progression.js';
+import { statsRouter } from './routes/stats.js';
 
 export function createApp(db) {
   const app = express();
@@ -25,6 +27,8 @@ export function createApp(db) {
   app.use('/api', maxTestsRouter(db));
   app.use('/api', partnerRouter(db));
   app.use('/api', progressRouter(db));
+  app.use('/api', statsRouter(db));
+  app.use('/api', progressionRouter(db));
 
   app.use('/api', (req, res) => {
     res.status(404).json({ error: 'not found' });

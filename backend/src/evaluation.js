@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { formatDuration } from 'shared/duration';
 
 const MODEL = 'gemini-2.5-flash';
 const MAX_OUTPUT_TOKENS = 600;
@@ -7,13 +8,17 @@ const TIMEOUT_MS = 30000;
 const SYSTEM_PROMPT = `Du bist ein sachlicher Krafttrainings-Coach. Du bekommst Trainingsdaten als JSON:
 die aktuelle Session und die letzten Sessions desselben Trainingstags.
 Optional kann ein Körpergewichts-Verlauf enthalten sein.
+Dauern haben ein Feld duration_display — nutze diese Schreibweise (z.B. "25 Min"), nicht die Sekunden.
 
 Aufgabe:
 1. Vergleiche die aktuelle Session pro Übung mit den vorherigen Sessions
    (Wiederholungen, Gewicht, Volumen). Benenne Fortschritt und Rückschritt konkret.
 2. Beziehe den Körpergewichts-Trend ein, falls bodyweight_log vorhanden und relevant
    (z.B. bei Körpergewichtsübungen).
-3. Gib 2–3 konkrete, umsetzbare Empfehlungen für die nächste Session.
+3. Nutze rpe (subjektive Anstrengung 1–10, optional pro Übung): hohes Volumen bei
+   niedrigem RPE heißt Luft nach oben, stagnierendes Volumen bei RPE 9–10 heißt zu schwer.
+4. Wenn note gesetzt ist, gehe kurz darauf ein.
+5. Gib 2–3 konkrete, umsetzbare Empfehlungen für die nächste Session.
 
 Antworte knapp auf Deutsch in Markdown. Struktur: kurze Gesamteinschätzung,
 dann pro Übung eine Zeile, dann "**Empfehlungen:**" als Liste.
@@ -27,19 +32,34 @@ function formatExerciseSets(db, sessionId, exerciseMeta) {
     )
     .all(sessionId);
 
+  const rpeByExercise = new Map(
+    db
+      .prepare('SELECT exercise_id, rpe FROM exercise_rpe WHERE session_id = ?')
+      .all(sessionId)
+      .map((row) => [row.exercise_id, row.rpe])
+  );
+
   const byExercise = new Map();
   for (const log of logs) {
     if (!byExercise.has(log.exercise_id)) byExercise.set(log.exercise_id, []);
     const set = { set: log.set_number };
     if (log.reps !== null) set.reps = log.reps;
     if (log.weight_kg !== null) set.weight_kg = log.weight_kg;
-    if (log.duration_s !== null) set.duration_s = log.duration_s;
+    if (log.duration_s !== null) {
+      set.duration_s = log.duration_s;
+      // Menschenlesbar, damit das Modell nicht "1500 Sekunden" schreibt.
+      set.duration_display = formatDuration(log.duration_s);
+    }
     byExercise.get(log.exercise_id).push(set);
   }
 
   return [...byExercise.entries()].map(([exerciseId, sets]) => {
     const meta = exerciseMeta.get(exerciseId);
-    return { id: exerciseId, name: meta?.name ?? exerciseId, type: meta?.type ?? 'bw', sets };
+    const entry = { id: exerciseId, name: meta?.name ?? exerciseId, type: meta?.type ?? 'bw', sets };
+    if (meta?.phase === 'cooldown') entry.phase = 'cooldown';
+    const rpe = rpeByExercise.get(exerciseId);
+    if (rpe != null) entry.rpe = rpe;
+    return entry;
   });
 }
 
@@ -49,7 +69,7 @@ export function buildAggregate(db, session, plan) {
 
   const previousSessions = db
     .prepare(
-      `SELECT id, started_at FROM sessions
+      `SELECT id, started_at, note FROM sessions
        WHERE user_id = ? AND day_key = ? AND status = 'finished' AND id != ?
        ORDER BY finished_at DESC LIMIT 5`
     )
@@ -71,8 +91,13 @@ export function buildAggregate(db, session, plan) {
     previous_sessions: previousSessions.map((s) => ({
       date: s.started_at.slice(0, 10),
       exercises: formatExerciseSets(db, s.id, exerciseMeta),
+      note: s.note || undefined,
     })),
   };
+
+  if (session.note) {
+    aggregate.current_session.note = session.note;
+  }
 
   if (bodyweightLog.length > 0) {
     aggregate.bodyweight_log = bodyweightLog.reverse().map((b) => ({ date: b.date, kg: b.value }));

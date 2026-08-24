@@ -20,7 +20,7 @@ export default function ExerciseChart({ points, target, metricLabel }) {
   }
 
   const hasRepTarget = target?.min != null && target?.max != null;
-  const hasTimeTarget = target?.seconds != null;
+  const hasTimeTarget = target?.duration != null;
 
   return (
     <ResponsiveContainer width="100%" height={140}>
@@ -48,7 +48,7 @@ export default function ExerciseChart({ points, target, metricLabel }) {
         )}
         {hasTimeTarget && (
           <ReferenceLine
-            y={target.seconds}
+            y={target.duration}
             stroke="var(--primary)"
             strokeDasharray="4 4"
             strokeOpacity={0.5}

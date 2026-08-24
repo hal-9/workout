@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../auth.js';
+import { detectNewRecords } from 'shared/records';
 import { runEvaluation } from '../evaluation.js';
 
 function getActivePlan(db, userId) {
@@ -17,6 +18,41 @@ function setLogsForSession(db, sessionId) {
       'SELECT exercise_id, set_number, reps, weight_kg, duration_s FROM set_logs WHERE session_id = ? ORDER BY set_number'
     )
     .all(sessionId);
+}
+
+function rpeForSession(db, sessionId) {
+  return db
+    .prepare('SELECT exercise_id, rpe FROM exercise_rpe WHERE session_id = ?')
+    .all(sessionId);
+}
+
+// Alle früheren beendeten Sessions des Nutzers, gruppiert für die Rekord-Erkennung.
+function previousSessionsForRecords(db, userId, currentSessionId) {
+  const rows = db
+    .prepare(
+      `SELECT s.id AS session_id, sl.exercise_id, sl.set_number, sl.reps, sl.weight_kg, sl.duration_s
+       FROM sessions s
+       JOIN set_logs sl ON sl.session_id = s.id
+       WHERE s.user_id = ? AND s.status = 'finished' AND s.id != ?
+       ORDER BY s.finished_at ASC`
+    )
+    .all(userId, currentSessionId);
+
+  const sessions = new Map();
+  for (const row of rows) {
+    if (!sessions.has(row.session_id)) {
+      sessions.set(row.session_id, { session_id: row.session_id, setsByExercise: new Map() });
+    }
+    const bucket = sessions.get(row.session_id).setsByExercise;
+    if (!bucket.has(row.exercise_id)) bucket.set(row.exercise_id, []);
+    bucket.get(row.exercise_id).push({
+      set_number: row.set_number,
+      reps: row.reps,
+      weight_kg: row.weight_kg,
+      duration_s: row.duration_s,
+    });
+  }
+  return [...sessions.values()];
 }
 
 function makeDayNameResolver(db) {
@@ -40,6 +76,19 @@ const rangeSchema = z.object({
 const setKeySchema = z.object({
   exercise_id: z.string().min(1),
   set_number: z.number().int().min(1),
+});
+
+const rpeSchema = z.object({
+  exercise_id: z.string().min(1),
+  rpe: z.number().int().min(1).max(10).nullable(),
+});
+
+const finishSchema = z.object({
+  note: z.string().max(1000).nullable().optional(),
+});
+
+const noteSchema = z.object({
+  note: z.string().max(1000).nullable(),
 });
 
 const setSchema = setKeySchema
@@ -93,7 +142,7 @@ export function sessionsRouter(db) {
 
     const activeRow = db
       .prepare(
-        `SELECT id, day_key, started_at FROM sessions
+        `SELECT id, day_key, started_at, note FROM sessions
          WHERE user_id = ? AND status = 'active'
          ORDER BY started_at DESC LIMIT 1`
       )
@@ -105,6 +154,8 @@ export function sessionsRouter(db) {
           day_key: activeRow.day_key,
           started_at: activeRow.started_at,
           set_logs: setLogsForSession(db, activeRow.id),
+          rpe: rpeForSession(db, activeRow.id),
+          note: activeRow.note ?? null,
         }
       : null;
 
@@ -199,6 +250,8 @@ export function sessionsRouter(db) {
         session_id: existing.id,
         resumed: true,
         set_logs: setLogsForSession(db, existing.id),
+        rpe: rpeForSession(db, existing.id),
+        note: existing.note ?? null,
       });
     }
 
@@ -215,7 +268,7 @@ export function sessionsRouter(db) {
       return info.lastInsertRowid;
     })();
 
-    res.status(201).json({ session_id: sessionId, resumed: false, set_logs: [] });
+    res.status(201).json({ session_id: sessionId, resumed: false, set_logs: [], rpe: [], note: null });
   });
 
   router.post('/sessions/:id/sets', (req, res) => {
@@ -272,6 +325,64 @@ export function sessionsRouter(db) {
     res.json({ ok: true });
   });
 
+  router.post('/sessions/:id/rpe', (req, res) => {
+    const session = db
+      .prepare('SELECT * FROM sessions WHERE id = ? AND user_id = ?')
+      .get(req.params.id, req.user.id);
+
+    if (!session) {
+      return res.status(404).json({ error: 'not found' });
+    }
+    if (session.status !== 'active') {
+      return res.status(409).json({ error: 'session finished' });
+    }
+
+    const result = rpeSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(422).json({ error: 'validation failed', details: result.error.issues });
+    }
+    const { exercise_id, rpe } = result.data;
+
+    if (rpe === null) {
+      db.prepare('DELETE FROM exercise_rpe WHERE session_id = ? AND exercise_id = ?').run(
+        session.id,
+        exercise_id
+      );
+      return res.json({ ok: true, rpe: null });
+    }
+
+    db.prepare(
+      `INSERT INTO exercise_rpe (session_id, exercise_id, rpe) VALUES (?, ?, ?)
+       ON CONFLICT (session_id, exercise_id)
+       DO UPDATE SET rpe = excluded.rpe, updated_at = datetime('now')`
+    ).run(session.id, exercise_id, rpe);
+
+    res.json({ ok: true, rpe });
+  });
+
+  // Notiz wird schon während der Session gespeichert, damit ein Reload sie nicht verliert.
+  router.post('/sessions/:id/note', (req, res) => {
+    const session = db
+      .prepare('SELECT * FROM sessions WHERE id = ? AND user_id = ?')
+      .get(req.params.id, req.user.id);
+
+    if (!session) {
+      return res.status(404).json({ error: 'not found' });
+    }
+    if (session.status !== 'active') {
+      return res.status(409).json({ error: 'session finished' });
+    }
+
+    const result = noteSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(422).json({ error: 'validation failed', details: result.error.issues });
+    }
+
+    const note = result.data.note?.trim() || null;
+    db.prepare('UPDATE sessions SET note = ? WHERE id = ?').run(note, session.id);
+    res.json({ ok: true, note });
+  });
+
   router.post('/sessions/:id/finish', (req, res) => {
     const session = db
       .prepare('SELECT * FROM sessions WHERE id = ? AND user_id = ?')
@@ -284,12 +395,21 @@ export function sessionsRouter(db) {
       return res.status(409).json({ error: 'session finished' });
     }
 
+    const parsedFinish = finishSchema.safeParse(req.body ?? {});
+    if (!parsedFinish.success) {
+      return res.status(422).json({ error: 'validation failed', details: parsedFinish.error.issues });
+    }
+    const note = parsedFinish.data.note?.trim() || null;
+
     const logs = setLogsForSession(db, session.id);
+    const plan = getActivePlan(db, req.user.id);
+    // Vor dem Statuswechsel lesen, damit die aktuelle Session nicht mit sich selbst verglichen wird.
+    const previousSessions = previousSessionsForRecords(db, req.user.id, session.id);
 
     db.transaction(() => {
       db.prepare(
-        "UPDATE sessions SET status = 'finished', finished_at = datetime('now') WHERE id = ?"
-      ).run(session.id);
+        "UPDATE sessions SET status = 'finished', finished_at = datetime('now'), note = ? WHERE id = ?"
+      ).run(note, session.id);
 
       if (logs.length > 0) {
         db.prepare(
@@ -302,14 +422,17 @@ export function sessionsRouter(db) {
       runEvaluation(db, session.id).catch(() => {});
     }
 
+    const currentSets = groupSetsByExercise(logs);
     const summary = {
-      exercises: [...groupSetsByExercise(logs).entries()].map(([exercise_id, sets]) => ({
+      exercises: [...currentSets.entries()].map(([exercise_id, sets]) => ({
         exercise_id,
         sets,
       })),
     };
 
-    res.json({ session_id: session.id, summary, evaluation: logs.length > 0 });
+    const new_records = plan ? detectNewRecords(plan, currentSets, previousSessions) : [];
+
+    res.json({ session_id: session.id, summary, evaluation: logs.length > 0, new_records });
   });
 
   router.post('/sessions/:id/discard', (req, res) => {

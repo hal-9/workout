@@ -100,7 +100,13 @@ describe('sessions', () => {
       await request(app).post('/api/plan').set('Cookie', cookie).send(plan());
       const res = await request(app).post('/api/sessions').set('Cookie', cookie).send({ day_key: 'push' });
       expect(res.status).toBe(201);
-      expect(res.body).toEqual({ session_id: expect.any(Number), resumed: false, set_logs: [] });
+      expect(res.body).toEqual({
+        session_id: expect.any(Number),
+        resumed: false,
+        set_logs: [],
+        rpe: [],
+        note: null,
+      });
     });
 
     it('zweiter Aufruf gleicher day_key < 24h -> 200 resumed:true mit set_logs', async () => {

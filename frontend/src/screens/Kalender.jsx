@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { addDays, formatWeekLabel, localDateKey, mondayStart, parseUtc, toSqlUtc } from '../lib/dates.js';
+import { formatDuration } from 'shared/duration';
 import { WEEKDAYS, WEEKDAY_LABELS, assignWeekdays, getMissedDays, nextDueDayKey, weekProgress } from '../lib/schedule.js';
 
 const pagerBtnStyle = {
@@ -299,7 +300,7 @@ export default function Kalender() {
                     Satz {s.set_number}
                     {s.reps != null && ` · ${s.reps} Wdh.`}
                     {s.weight_kg != null && ` · ${s.weight_kg} kg`}
-                    {s.duration_s != null && ` · ${s.duration_s} s`}
+                    {s.duration_s != null && ` · ${formatDuration(s.duration_s)}`}
                   </div>
                 ))}
               </div>

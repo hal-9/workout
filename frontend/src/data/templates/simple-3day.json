@@ -17,7 +17,8 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Füße schulterbreit, Knie in Richtung Zehen, Brust aufrecht",
-          "video_query": "bodyweight squat form"
+          "video_query": "bodyweight squat form",
+          "phase": "main"
         },
         {
           "id": "a-pushup",
@@ -29,7 +30,8 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Körper als Linie, Ellbogen ~45°",
-          "video_query": "push up form"
+          "video_query": "push up form",
+          "phase": "main"
         },
         {
           "id": "a-plank",
@@ -41,7 +43,60 @@
           "target_seconds": 30,
           "default_weight_kg": null,
           "cue": "Gesäß anspannen, keine hängende Hüfte",
-          "video_query": "plank proper form"
+          "video_query": "plank proper form",
+          "phase": "main"
+        },
+        {
+          "id": "stretch-brust-tuerrahmen",
+          "name": "Brustdehnung am Türrahmen",
+          "muscle": "Brust",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Ellbogen auf Schulterhöhe, Brust öffnen, nicht ins Hohlkreuz fallen.",
+          "video_query": "Brustdehnung am Türrahmen Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-quadrizeps-stehend",
+          "name": "Quadrizeps-Dehnung stehend",
+          "muscle": "Quadrizeps",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 40,
+          "default_weight_kg": null,
+          "cue": "Ferse zum Gesäß, Knie zeigt nach unten, Becken leicht nach vorn.",
+          "video_query": "Quadrizeps-Dehnung stehend Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-trizeps-ueberkopf",
+          "name": "Trizeps-Dehnung über Kopf",
+          "muscle": "Trizeps",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 30,
+          "default_weight_kg": null,
+          "cue": "Ellbogen zur Decke, Hand zwischen die Schulterblätter, sanft nachschieben.",
+          "video_query": "Trizeps-Dehnung über Kopf Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-hamstrings-vorbeuge",
+          "name": "Beinrückseite im Sitzen",
+          "muscle": "Hamstrings",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Aus der Hüfte beugen, Rücken lang, Knie darf minimal weich sein.",
+          "video_query": "Beinrückseite im Sitzen Dehnung Technik",
+          "phase": "cooldown"
         }
       ]
     },
@@ -60,7 +115,8 @@
           "target_seconds": null,
           "default_weight_kg": 8,
           "cue": "Rücken parallel zum Boden, Ellbogen eng am Körper",
-          "video_query": "one arm dumbbell row form"
+          "video_query": "one arm dumbbell row form",
+          "phase": "main"
         },
         {
           "id": "b-glute-bridge",
@@ -72,7 +128,8 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Oben 2s Po anspannen, kontrolliert absenken",
-          "video_query": "glute bridge form"
+          "video_query": "glute bridge form",
+          "phase": "main"
         },
         {
           "id": "b-dead-bug",
@@ -84,7 +141,60 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Rücken am Boden drücken, langsam gegenüber Arm/Bein strecken",
-          "video_query": "dead bug exercise form"
+          "video_query": "dead bug exercise form",
+          "phase": "main"
+        },
+        {
+          "id": "stretch-taube-sitzend",
+          "name": "Taube im Sitzen",
+          "muscle": "Gesäß",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Knöchel über das Knie, Brust aufrecht, dann nach vorn lehnen.",
+          "video_query": "Taube im Sitzen Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-lat-haengend",
+          "name": "Lat-Dehnung im Hang",
+          "muscle": "Latissimus",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Locker hängen, Schultern lang lassen, ruhig atmen.",
+          "video_query": "Lat-Dehnung im Hang Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-piriformis-liegend",
+          "name": "Piriformis-Dehnung liegend",
+          "muscle": "Gesäß",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Knie zur Gegenschulter ziehen, Schultern bleiben am Boden.",
+          "video_query": "Piriformis-Dehnung liegend Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-bizeps-wand",
+          "name": "Bizeps-Dehnung an der Wand",
+          "muscle": "Bizeps",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 30,
+          "default_weight_kg": null,
+          "cue": "Handfläche an die Wand, Körper langsam wegdrehen.",
+          "video_query": "Bizeps-Dehnung an der Wand Dehnung Technik",
+          "phase": "cooldown"
         }
       ]
     },
@@ -103,7 +213,8 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Oberkörper aufrecht, Knie nicht über die Zehen",
-          "video_query": "walking lunge form"
+          "video_query": "walking lunge form",
+          "phase": "main"
         },
         {
           "id": "c-shoulder-press",
@@ -115,7 +226,8 @@
           "target_seconds": null,
           "default_weight_kg": 6,
           "cue": "Rumpf fest, volle Streckung oben",
-          "video_query": "dumbbell shoulder press seated form"
+          "video_query": "dumbbell shoulder press seated form",
+          "phase": "main"
         },
         {
           "id": "c-cardio",
@@ -127,7 +239,60 @@
           "target_seconds": 600,
           "default_weight_kg": null,
           "cue": "10 min locker, du solltest dich noch unterhalten können",
-          "video_query": "treadmill brisk walk"
+          "video_query": "treadmill brisk walk",
+          "phase": "main"
+        },
+        {
+          "id": "stretch-brust-tuerrahmen-2",
+          "name": "Brustdehnung am Türrahmen",
+          "muscle": "Brust",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Ellbogen auf Schulterhöhe, Brust öffnen, nicht ins Hohlkreuz fallen.",
+          "video_query": "Brustdehnung am Türrahmen Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-quadrizeps-stehend-2",
+          "name": "Quadrizeps-Dehnung stehend",
+          "muscle": "Quadrizeps",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 40,
+          "default_weight_kg": null,
+          "cue": "Ferse zum Gesäß, Knie zeigt nach unten, Becken leicht nach vorn.",
+          "video_query": "Quadrizeps-Dehnung stehend Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-trizeps-ueberkopf-2",
+          "name": "Trizeps-Dehnung über Kopf",
+          "muscle": "Trizeps",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 30,
+          "default_weight_kg": null,
+          "cue": "Ellbogen zur Decke, Hand zwischen die Schulterblätter, sanft nachschieben.",
+          "video_query": "Trizeps-Dehnung über Kopf Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-hamstrings-vorbeuge-2",
+          "name": "Beinrückseite im Sitzen",
+          "muscle": "Hamstrings",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Aus der Hüfte beugen, Rücken lang, Knie darf minimal weich sein.",
+          "video_query": "Beinrückseite im Sitzen Dehnung Technik",
+          "phase": "cooldown"
         }
       ]
     }

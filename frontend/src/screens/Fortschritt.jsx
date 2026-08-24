@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api.js';
+import StatsSection from '../components/StatsSection.jsx';
 import { addDays, mondayStart, toSqlUtc } from '../lib/dates.js';
 import { buildWeekRecap, groupSessionsByWeek } from '../lib/weekRecap.js';
 import {
@@ -106,6 +107,12 @@ export default function Fortschritt() {
     retry: false,
     enabled: !viewPartner,
   });
+  const { data: stats } = useQuery({
+    queryKey: ['stats'],
+    queryFn: () => api.get('/stats'),
+    retry: false,
+    enabled: !viewPartner,
+  });
 
   const progress = viewPartner ? partnerData : ownProgress;
   const highlights = progress?.highlights ?? [];
@@ -170,6 +177,8 @@ export default function Fortschritt() {
           </div>
         </div>
       )}
+
+      {!viewPartner && <StatsSection stats={stats} />}
 
       {progress && (
         <div style={{ marginBottom: 12 }}>

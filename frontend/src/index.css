@@ -105,3 +105,94 @@ body::after {
   left: -120px;
   background: radial-gradient(circle, rgba(236, 72, 153, 0.28), transparent 70%);
 }
+
+/* ---- Workout-Abschluss ---- */
+
+@keyframes wc-backdrop {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes wc-card {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes wc-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes wc-bloom {
+  from { opacity: 0.5; transform: scale(0.55); }
+  to   { opacity: 0; transform: scale(1.7); }
+}
+
+/* Zwei Phasen: erst raus, dann sinken lassen — wirkt wie Schwerkraft. */
+@keyframes wc-particle {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  22%  { opacity: 1; transform: translate(calc(var(--dx) * 0.55), calc(var(--dy) * 0.55)) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 34px)) scale(0.7); }
+}
+
+.wc-backdrop {
+  animation: wc-backdrop 200ms ease-out both;
+}
+
+.wc-card {
+  animation: wc-card 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.wc-ring,
+.wc-check {
+  animation: wc-draw 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.wc-check {
+  animation-duration: 340ms;
+  animation-delay: 260ms;
+}
+
+.wc-bloom {
+  animation: wc-bloom 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 220ms;
+}
+
+.wc-particle {
+  animation: wc-particle 1100ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wc-card,
+  .wc-backdrop {
+    animation-duration: 150ms;
+    animation-timing-function: ease-out;
+  }
+
+  .wc-ring,
+  .wc-check {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .wc-bloom,
+  .wc-particle {
+    display: none;
+  }
+}
+
+/* ---- Übungs-Detail-Sheet ---- */
+
+@keyframes ed-sheet {
+  from { transform: translateY(14px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.ed-sheet {
+  animation: ed-sheet 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ed-sheet {
+    animation-duration: 120ms;
+  }
+}

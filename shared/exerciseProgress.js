@@ -1,3 +1,12 @@
+// Pläne aus der Zeit vor der Cooldown-Phase haben kein phase-Feld.
+export function exercisePhase(exercise) {
+  return exercise?.phase === 'cooldown' ? 'cooldown' : 'main';
+}
+
+export function isCooldown(exercise) {
+  return exercisePhase(exercise) === 'cooldown';
+}
+
 export function parseTargetReps(targetReps) {
   if (!targetReps) return null;
   const range = String(targetReps).match(/(\d+)\s*[-–]\s*(\d+)/);
@@ -12,9 +21,18 @@ export function parseTargetReps(targetReps) {
   return null;
 }
 
+// Cardio wird in Minuten dargestellt, time-Übungen in Sekunden.
+export function toMetricUnit(type, seconds) {
+  if (seconds === null || seconds === undefined) return null;
+  if (type !== 'cardio') return seconds;
+  return Math.round((seconds / 60) * 10) / 10;
+}
+
 export function parseExerciseTarget(exercise) {
   if (exercise.type === 'time' || exercise.type === 'cardio') {
-    return exercise.target_seconds ? { seconds: exercise.target_seconds } : {};
+    return exercise.target_seconds
+      ? { duration: toMetricUnit(exercise.type, exercise.target_seconds) }
+      : {};
   }
   const parsed = parseTargetReps(exercise.target_reps);
   if (!parsed) return {};
@@ -23,7 +41,8 @@ export function parseExerciseTarget(exercise) {
 
 export function metricLabelForType(type) {
   if (type === 'wt') return 'kg';
-  if (type === 'time' || type === 'cardio') return 's';
+  if (type === 'cardio') return 'Min.';
+  if (type === 'time') return 's';
   return 'Wdh.';
 }
 
@@ -32,7 +51,7 @@ export function sessionMetric(exercise, sets) {
 
   if (exercise.type === 'time' || exercise.type === 'cardio') {
     const durations = sets.map((s) => Number(s.duration_s)).filter((v) => !Number.isNaN(v) && v > 0);
-    return durations.length ? Math.max(...durations) : null;
+    return durations.length ? toMetricUnit(exercise.type, Math.max(...durations)) : null;
   }
 
   if (exercise.type === 'wt') {
@@ -98,6 +117,8 @@ export function buildExerciseProgressList(plan, sessionLogs) {
   const exerciseById = new Map();
   for (const day of plan.days ?? []) {
     for (const ex of day.exercises ?? []) {
+      // Cooldown-Stretches sind keine Fortschritts-Metrik.
+      if (isCooldown(ex)) continue;
       exerciseById.set(ex.id, ex);
     }
   }

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
 import { api } from '../api.js';
-import { suggestionsFromSummary } from '../lib/progression.js';
-import { setOverride } from '../lib/weightOverrides.js';
+import { formatDuration } from 'shared/duration';
+import { formatProposalChange, proposalReason } from '../lib/progressionView.js';
+import { clearOverride } from '../lib/weightOverrides.js';
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 60000;
@@ -21,10 +22,17 @@ export default function Auswertung() {
 
   const [evaluation, setEvaluation] = useState(null);
   const [pollKey, setPollKey] = useState(0);
-  const [appliedIds, setAppliedIds] = useState(new Set());
   const startedAtRef = useRef(Date.now());
+  const queryClient = useQueryClient();
 
-  const { data: plan } = useQuery({ queryKey: ['plan'], queryFn: () => api.get('/plan'), retry: false });
+  const [selectedIds, setSelectedIds] = useState(null);
+  const [applyState, setApplyState] = useState({ status: 'idle', error: null, count: 0 });
+
+  const { data: progression } = useQuery({
+    queryKey: ['progression-proposals'],
+    queryFn: () => api.get('/progression/proposals'),
+    retry: false,
+  });
 
   useEffect(() => {
     if (location.state) return;
@@ -82,14 +90,34 @@ export default function Auswertung() {
     setPollKey((k) => k + 1);
   }
 
-  function handleApplySuggestion(suggestion) {
-    if (suggestion.type === 'weight' && suggestion.nextValue != null) {
-      setOverride(suggestion.exerciseId, suggestion.nextValue);
-      setAppliedIds((prev) => new Set(prev).add(suggestion.exerciseId));
-    }
+  const proposals = progression?.proposals ?? [];
+  // Vorauswahl: alle Vorschläge angehakt, bis der Nutzer etwas abwählt.
+  const selected = selectedIds ?? new Set(proposals.map((p) => p.exercise_id));
+
+  function toggleProposal(exerciseId) {
+    const next = new Set(selected);
+    if (next.has(exerciseId)) next.delete(exerciseId);
+    else next.add(exerciseId);
+    setSelectedIds(next);
   }
 
-  const progressionSuggestions = summary ? suggestionsFromSummary(plan, summary) : [];
+  async function applyProposals() {
+    const exerciseIds = [...selected];
+    if (!exerciseIds.length) return;
+
+    setApplyState({ status: 'saving', error: null, count: 0 });
+    try {
+      const res = await api.post('/progression/apply', { exercise_ids: exerciseIds });
+      // Lokale Gewichts-Overrides sind jetzt überholt — der Plan führt.
+      for (const applied of res.applied ?? []) clearOverride(applied.exercise_id);
+      queryClient.invalidateQueries({ queryKey: ['plan'] });
+      queryClient.invalidateQueries({ queryKey: ['progression-proposals'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      setApplyState({ status: 'done', error: null, count: res.applied?.length ?? 0 });
+    } catch (err) {
+      setApplyState({ status: 'error', error: err.message || 'Fehler beim Speichern', count: 0 });
+    }
+  }
 
   return (
     <div className="wrap">
@@ -140,7 +168,24 @@ export default function Auswertung() {
         </div>
       )}
 
-      {progressionSuggestions.length > 0 && (
+      {applyState.status === 'done' && (
+        <div
+          style={{
+            background: 'var(--success-dim)',
+            border: '1px solid var(--success)',
+            borderRadius: 14,
+            padding: '12px 14px',
+            marginBottom: 20,
+            fontSize: 13,
+            color: 'var(--success)',
+          }}
+        >
+          Plan aktualisiert — {applyState.count} Übung{applyState.count === 1 ? '' : 'en'} angepasst.
+          Die alte Version bleibt als Historie erhalten.
+        </div>
+      )}
+
+      {applyState.status !== 'done' && proposals.length > 0 && (
         <div
           style={{
             background: 'var(--surface)',
@@ -150,41 +195,74 @@ export default function Auswertung() {
             marginBottom: 20,
           }}
         >
-          <h3 style={{ marginTop: 0 }}>Nächstes Mal</h3>
-          {progressionSuggestions.map((s) => (
-            <div
-              key={s.exerciseId}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 12,
-                marginTop: 10,
-              }}
-            >
-              <div style={{ fontSize: 13, color: 'var(--text)' }}>{s.message}</div>
-              {s.type === 'weight' && s.nextValue != null && (
-                <button
-                  type="button"
-                  onClick={() => handleApplySuggestion(s)}
-                  disabled={appliedIds.has(s.exerciseId)}
+          <h3 style={{ marginTop: 0, marginBottom: 4 }}>Plan anpassen?</h3>
+          <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--muted)' }}>
+            Ziel mehrfach erreicht. Übernehmen legt eine neue Plan-Version an.
+          </p>
+
+          {proposals.map((proposal) => {
+            const checked = selected.has(proposal.exercise_id);
+            return (
+              <label
+                key={proposal.exercise_id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '9px 0',
+                  borderTop: '1px solid var(--line)',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleProposal(proposal.exercise_id)}
+                />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: 14, display: 'block' }}>{proposal.name}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+                    {proposalReason(proposal)}
+                  </span>
+                </span>
+                <span
                   style={{
-                    flex: '0 0 auto',
-                    background: appliedIds.has(s.exerciseId) ? 'var(--success-dim)' : 'var(--surface2)',
-                    border: `1px solid ${appliedIds.has(s.exerciseId) ? 'var(--success)' : 'var(--line)'}`,
-                    color: appliedIds.has(s.exerciseId) ? 'var(--success)' : 'var(--text)',
-                    borderRadius: 9,
-                    padding: '7px 11px',
                     fontFamily: 'var(--font-mono)',
                     fontSize: 12,
-                    cursor: appliedIds.has(s.exerciseId) ? 'default' : 'pointer',
+                    color: 'var(--primary)',
+                    flexShrink: 0,
                   }}
                 >
-                  {appliedIds.has(s.exerciseId) ? 'Übernommen' : 'Übernehmen'}
-                </button>
-              )}
-            </div>
-          ))}
+                  {formatProposalChange(proposal)}
+                </span>
+              </label>
+            );
+          })}
+
+          {applyState.error && (
+            <p style={{ color: 'var(--danger)', fontSize: 12, margin: '10px 0 0' }}>{applyState.error}</p>
+          )}
+
+          <button
+            type="button"
+            onClick={applyProposals}
+            disabled={applyState.status === 'saving' || selected.size === 0}
+            className="btn primary"
+            style={{
+              width: '100%',
+              marginTop: 14,
+              border: 'none',
+              borderRadius: 13,
+              padding: 13,
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: selected.size === 0 ? 'not-allowed' : 'pointer',
+              background: selected.size === 0 ? 'var(--surface2)' : 'var(--primary-grad)',
+              color: selected.size === 0 ? 'var(--muted)' : 'var(--on-primary)',
+            }}
+          >
+            {applyState.status === 'saving' ? 'Wird gespeichert…' : 'Plan anpassen'}
+          </button>
         </div>
       )}
 
@@ -204,7 +282,12 @@ export default function Auswertung() {
             >
               <strong>{ex.name ?? ex.exercise_id}</strong>
               <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-                {ex.sets.map((s) => `Satz ${s.set_number}: ${s.reps ?? s.duration_s ?? '-'}`).join(' · ')}
+                {ex.sets
+                  .map(
+                    (s) =>
+                      `Satz ${s.set_number}: ${s.reps ?? (s.duration_s != null ? formatDuration(s.duration_s) : '-')}`
+                  )
+                  .join(' · ')}
               </div>
             </div>
           ))}

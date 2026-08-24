@@ -58,3 +58,10 @@ export function playRestEnd() {
   playTone(660, 120, 0.14);
   setTimeout(() => playTone(880, 160, 0.16), 140);
 }
+
+// Abschluss-Chime: drei weiche Töne, aufsteigend, kurz gehalten.
+export function playWorkoutComplete() {
+  playTone(659.25, 220, 0.1);
+  setTimeout(() => playTone(830.61, 240, 0.1), 130);
+  setTimeout(() => playTone(987.77, 420, 0.09), 280);
+}

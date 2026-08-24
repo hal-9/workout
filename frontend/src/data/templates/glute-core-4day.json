@@ -18,7 +18,8 @@
           "target_seconds": 300,
           "default_weight_kg": null,
           "cue": "5 min locker gehen, Tempo langsam steigern. Du solltest dich noch gut unterhalten können",
-          "video_query": "treadmill warm up walk"
+          "video_query": "treadmill warm up walk",
+          "phase": "main"
         },
         {
           "id": "a-goblet-squat",
@@ -30,7 +31,8 @@
           "target_seconds": null,
           "default_weight_kg": 10,
           "cue": "10kg Kettlebell vor der Brust. Füße schulterbreit, tief setzen bis Oberschenkel parallel, Fersen bleiben am Boden. Bei 3x12 sauber: langsamer absenken (3s)",
-          "video_query": "goblet squat kettlebell form"
+          "video_query": "goblet squat kettlebell form",
+          "phase": "main"
         },
         {
           "id": "a-db-rdl",
@@ -42,7 +44,8 @@
           "target_seconds": null,
           "default_weight_kg": 10,
           "cue": "Pro Hantel 10kg. Hüfte nach hinten schieben, Rücken gerade, Hanteln nah am Bein bis Mitte Schienbein, dann Po anspannen und aufrichten",
-          "video_query": "dumbbell romanian deadlift form"
+          "video_query": "dumbbell romanian deadlift form",
+          "phase": "main"
         },
         {
           "id": "a-hip-thrust",
@@ -54,7 +57,8 @@
           "target_seconds": null,
           "default_weight_kg": 10,
           "cue": "Schulterblätter auf Bankkante, 10kg-Hantel auf der Hüfte. Oben Po 2s maximal anspannen, Kinn zur Brust. Wichtigste Po-Übung — hier zuerst schwerer werden",
-          "video_query": "dumbbell hip thrust bench form"
+          "video_query": "dumbbell hip thrust bench form",
+          "phase": "main"
         },
         {
           "id": "a-incline-pushup",
@@ -66,7 +70,8 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Körper wie ein Brett, Ellbogen ~45°, 2s runter. Bei 3x12 sauber: flachere Erhöhung oder Boden-Liegestütze",
-          "video_query": "incline push up bench form"
+          "video_query": "incline push up bench form",
+          "phase": "main"
         },
         {
           "id": "a-db-row",
@@ -78,7 +83,8 @@
           "target_seconds": null,
           "default_weight_kg": 10,
           "cue": "Eine Hand und ein Knie auf der Bank, Rücken gerade. Hantel zur Hüfte ziehen, Schulterblatt zuerst. Pro Seite ein Satz",
-          "video_query": "single arm dumbbell row bench form"
+          "video_query": "single arm dumbbell row bench form",
+          "phase": "main"
         },
         {
           "id": "a-plank",
@@ -90,7 +96,8 @@
           "target_seconds": 30,
           "default_weight_kg": null,
           "cue": "Gesäß anspannen, Becken leicht einrollen, keine hängende Hüfte. Steigern bis 60s",
-          "video_query": "plank proper form"
+          "video_query": "plank proper form",
+          "phase": "main"
         },
         {
           "id": "a-cardio-finisher",
@@ -102,7 +109,60 @@
           "target_seconds": 900,
           "default_weight_kg": null,
           "cue": "15 min zügig gehen mit Steigung (Puls: reden noch möglich, singen nicht). Gelenkschonender als Laufen — bei 88kg ideal für Fettverbrennung",
-          "video_query": "incline treadmill walking benefits"
+          "video_query": "incline treadmill walking benefits",
+          "phase": "main"
+        },
+        {
+          "id": "stretch-taube-sitzend",
+          "name": "Taube im Sitzen",
+          "muscle": "Gesäß",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Knöchel über das Knie, Brust aufrecht, dann nach vorn lehnen.",
+          "video_query": "Taube im Sitzen Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-quadrizeps-stehend",
+          "name": "Quadrizeps-Dehnung stehend",
+          "muscle": "Quadrizeps",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 40,
+          "default_weight_kg": null,
+          "cue": "Ferse zum Gesäß, Knie zeigt nach unten, Becken leicht nach vorn.",
+          "video_query": "Quadrizeps-Dehnung stehend Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-piriformis-liegend",
+          "name": "Piriformis-Dehnung liegend",
+          "muscle": "Gesäß",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Knie zur Gegenschulter ziehen, Schultern bleiben am Boden.",
+          "video_query": "Piriformis-Dehnung liegend Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-hamstrings-vorbeuge",
+          "name": "Beinrückseite im Sitzen",
+          "muscle": "Hamstrings",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Aus der Hüfte beugen, Rücken lang, Knie darf minimal weich sein.",
+          "video_query": "Beinrückseite im Sitzen Dehnung Technik",
+          "phase": "cooldown"
         }
       ]
     },
@@ -122,7 +182,8 @@
           "target_seconds": 300,
           "default_weight_kg": null,
           "cue": "5 min locker gehen, Tempo langsam steigern",
-          "video_query": "treadmill warm up walk"
+          "video_query": "treadmill warm up walk",
+          "phase": "main"
         },
         {
           "id": "b-reverse-lunge",
@@ -134,7 +195,8 @@
           "target_seconds": null,
           "default_weight_kg": 5,
           "cue": "Pro Hantel 5kg, seitlich halten. Großer Schritt nach hinten, vorderes Knie über dem Fuß, über die vordere Ferse hochdrücken. Rückwärts ist knieschonender als vorwärts",
-          "video_query": "dumbbell reverse lunge form"
+          "video_query": "dumbbell reverse lunge form",
+          "phase": "main"
         },
         {
           "id": "b-kb-swing",
@@ -146,7 +208,8 @@
           "target_seconds": null,
           "default_weight_kg": 10,
           "cue": "Hüftschwung, kein Heben mit den Armen — Kraft kommt aus dem Po. Rücken gerade, oben Po anspannen. Kraft + Cardio in einem",
-          "video_query": "kettlebell swing proper form"
+          "video_query": "kettlebell swing proper form",
+          "phase": "main"
         },
         {
           "id": "b-band-pullup",
@@ -158,7 +221,8 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Fuß oder Knie im Band, Schulterblätter zuerst nach unten ziehen, Kinn über die Stange, 3s ablassen",
-          "video_query": "band assisted pull up form"
+          "video_query": "band assisted pull up form",
+          "phase": "main"
         },
         {
           "id": "b-shoulder-press",
@@ -170,7 +234,8 @@
           "target_seconds": null,
           "default_weight_kg": 5,
           "cue": "Pro Hantel 5kg, auf der Bank sitzend. Rumpf fest, nicht ins Hohlkreuz, volle Streckung oben. Bei 3x12 sauber: 7,5kg",
-          "video_query": "seated dumbbell shoulder press form"
+          "video_query": "seated dumbbell shoulder press form",
+          "phase": "main"
         },
         {
           "id": "b-back-extension",
@@ -182,7 +247,8 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Kontrolliert hoch bis Körper gerade (nicht überstrecken), oben Po anspannen, 2s halten. Trainiert Po und unteren Rücken",
-          "video_query": "bench back extension form"
+          "video_query": "bench back extension form",
+          "phase": "main"
         },
         {
           "id": "b-side-plank",
@@ -194,7 +260,8 @@
           "target_seconds": 20,
           "default_weight_kg": null,
           "cue": "Pro Seite ein Satz. Hüfte hoch, Körper gerade Linie. Zu schwer: Knie unten lassen. Steigern bis 45s",
-          "video_query": "side plank proper form"
+          "video_query": "side plank proper form",
+          "phase": "main"
         },
         {
           "id": "b-cardio-finisher",
@@ -206,7 +273,60 @@
           "target_seconds": 900,
           "default_weight_kg": null,
           "cue": "15 min zügig mit Steigung. Alternativ 10 min flott + 5 min locker ausgehen",
-          "video_query": "incline treadmill walking benefits"
+          "video_query": "incline treadmill walking benefits",
+          "phase": "main"
+        },
+        {
+          "id": "stretch-lat-haengend",
+          "name": "Lat-Dehnung im Hang",
+          "muscle": "Latissimus",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Locker hängen, Schultern lang lassen, ruhig atmen.",
+          "video_query": "Lat-Dehnung im Hang Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-taube-sitzend-2",
+          "name": "Taube im Sitzen",
+          "muscle": "Gesäß",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Knöchel über das Knie, Brust aufrecht, dann nach vorn lehnen.",
+          "video_query": "Taube im Sitzen Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-bizeps-wand",
+          "name": "Bizeps-Dehnung an der Wand",
+          "muscle": "Bizeps",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 30,
+          "default_weight_kg": null,
+          "cue": "Handfläche an die Wand, Körper langsam wegdrehen.",
+          "video_query": "Bizeps-Dehnung an der Wand Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-piriformis-liegend-2",
+          "name": "Piriformis-Dehnung liegend",
+          "muscle": "Gesäß",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Knie zur Gegenschulter ziehen, Schultern bleiben am Boden.",
+          "video_query": "Piriformis-Dehnung liegend Dehnung Technik",
+          "phase": "cooldown"
         }
       ]
     },
@@ -226,7 +346,8 @@
           "target_seconds": 300,
           "default_weight_kg": null,
           "cue": "5 min locker gehen, Tempo langsam steigern",
-          "video_query": "treadmill warm up walk"
+          "video_query": "treadmill warm up walk",
+          "phase": "main"
         },
         {
           "id": "c-step-up",
@@ -238,7 +359,8 @@
           "target_seconds": null,
           "default_weight_kg": 5,
           "cue": "Pro Hantel 5kg. Ganzer Fuß auf die Bank, über die Ferse hochdrücken, oben Hüfte strecken, langsam runter. Bank zu hoch: stabile niedrigere Erhöhung nehmen",
-          "video_query": "dumbbell step up form"
+          "video_query": "dumbbell step up form",
+          "phase": "main"
         },
         {
           "id": "c-single-leg-glute-bridge",
@@ -250,7 +372,8 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Rücken auf der Matte, ein Bein gestreckt. Hüfte hoch, oben Po 2s anspannen. Hüfte bleibt gerade, nicht kippen",
-          "video_query": "single leg glute bridge form"
+          "video_query": "single leg glute bridge form",
+          "phase": "main"
         },
         {
           "id": "c-floor-press",
@@ -262,7 +385,8 @@
           "target_seconds": null,
           "default_weight_kg": 7.5,
           "cue": "Pro Hantel 7,5kg. Kontrolliert absenken bis Trizeps den Boden berührt, kurz pausieren, drücken. Bei 3x12 sauber: 10kg",
-          "video_query": "dumbbell floor press form"
+          "video_query": "dumbbell floor press form",
+          "phase": "main"
         },
         {
           "id": "c-negative-pullup",
@@ -274,7 +398,8 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Mit Sprung oder Stuhl nach oben, dann 3-5s langsam ablassen. Baut die Kraft für echte Klimmzüge auf. Zu schwer: Band nutzen",
-          "video_query": "negative pull up form"
+          "video_query": "negative pull up form",
+          "phase": "main"
         },
         {
           "id": "c-lateral-raise",
@@ -286,7 +411,8 @@
           "target_seconds": null,
           "default_weight_kg": 2.5,
           "cue": "Pro Hantel 2,5kg. Leicht gebeugte Arme, bis Schulterhöhe, kein Schwung aus dem Oberkörper",
-          "video_query": "dumbbell lateral raise form"
+          "video_query": "dumbbell lateral raise form",
+          "phase": "main"
         },
         {
           "id": "c-reverse-crunch",
@@ -298,7 +424,8 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Rücken auf der Bank, Bank hinter dem Kopf greifen. Knie zur Brust ziehen, Becken einrollen, langsam absenken ohne durchzuhängen",
-          "video_query": "reverse crunch bench form"
+          "video_query": "reverse crunch bench form",
+          "phase": "main"
         },
         {
           "id": "c-cardio-finisher",
@@ -310,7 +437,60 @@
           "target_seconds": 900,
           "default_weight_kg": null,
           "cue": "15 min zügig mit Steigung. Wochenende steht an — ruhig etwas flotter",
-          "video_query": "incline treadmill walking benefits"
+          "video_query": "incline treadmill walking benefits",
+          "phase": "main"
+        },
+        {
+          "id": "stretch-taube-sitzend-3",
+          "name": "Taube im Sitzen",
+          "muscle": "Gesäß",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Knöchel über das Knie, Brust aufrecht, dann nach vorn lehnen.",
+          "video_query": "Taube im Sitzen Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-brust-tuerrahmen",
+          "name": "Brustdehnung am Türrahmen",
+          "muscle": "Brust",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Ellbogen auf Schulterhöhe, Brust öffnen, nicht ins Hohlkreuz fallen.",
+          "video_query": "Brustdehnung am Türrahmen Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-piriformis-liegend-3",
+          "name": "Piriformis-Dehnung liegend",
+          "muscle": "Gesäß",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Knie zur Gegenschulter ziehen, Schultern bleiben am Boden.",
+          "video_query": "Piriformis-Dehnung liegend Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-trizeps-ueberkopf",
+          "name": "Trizeps-Dehnung über Kopf",
+          "muscle": "Trizeps",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 30,
+          "default_weight_kg": null,
+          "cue": "Ellbogen zur Decke, Hand zwischen die Schulterblätter, sanft nachschieben.",
+          "video_query": "Trizeps-Dehnung über Kopf Dehnung Technik",
+          "phase": "cooldown"
         }
       ]
     },
@@ -330,7 +510,8 @@
           "target_seconds": 2100,
           "default_weight_kg": null,
           "cue": "35 min gleichmäßig zügig, Steigung 3-6%. Puls moderat: reden möglich, singen nicht. Podcast oder Serie an und durchziehen",
-          "video_query": "incline treadmill walking fat loss"
+          "video_query": "incline treadmill walking fat loss",
+          "phase": "main"
         },
         {
           "id": "d-dead-bug",
@@ -342,7 +523,8 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Unterer Rücken bleibt fest auf der Matte. Gegenüberliegenden Arm und Bein langsam strecken, ausatmen, zurück",
-          "video_query": "dead bug exercise form"
+          "video_query": "dead bug exercise form",
+          "phase": "main"
         },
         {
           "id": "d-bird-dog",
@@ -354,7 +536,8 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Vierfüßlerstand, gegenüberliegenden Arm und Bein strecken, 2s halten, Hüfte bleibt gerade. Kein Hohlkreuz",
-          "video_query": "bird dog exercise form"
+          "video_query": "bird dog exercise form",
+          "phase": "main"
         },
         {
           "id": "d-back-extension",
@@ -366,7 +549,60 @@
           "target_seconds": null,
           "default_weight_kg": null,
           "cue": "Lockeres Tempo, nicht bis zum Muskelversagen — heute ist Regenerationsreiz, kein Krafttag",
-          "video_query": "bench back extension form"
+          "video_query": "bench back extension form",
+          "phase": "main"
+        },
+        {
+          "id": "stretch-kobra",
+          "name": "Kobra",
+          "muscle": "Bauch",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 40,
+          "default_weight_kg": null,
+          "cue": "Schambein bleibt am Boden, Schultern weg von den Ohren.",
+          "video_query": "Kobra Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-lat-haengend-2",
+          "name": "Lat-Dehnung im Hang",
+          "muscle": "Latissimus",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Locker hängen, Schultern lang lassen, ruhig atmen.",
+          "video_query": "Lat-Dehnung im Hang Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-kindhaltung",
+          "name": "Kindhaltung",
+          "muscle": "Rücken",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 45,
+          "default_weight_kg": null,
+          "cue": "Gesäß zu den Fersen, Arme lang, tief in den Rücken atmen.",
+          "video_query": "Kindhaltung Dehnung Technik",
+          "phase": "cooldown"
+        },
+        {
+          "id": "stretch-bizeps-wand-2",
+          "name": "Bizeps-Dehnung an der Wand",
+          "muscle": "Bizeps",
+          "type": "time",
+          "sets": 1,
+          "target_reps": null,
+          "target_seconds": 30,
+          "default_weight_kg": null,
+          "cue": "Handfläche an die Wand, Körper langsam wegdrehen.",
+          "video_query": "Bizeps-Dehnung an der Wand Dehnung Technik",
+          "phase": "cooldown"
         }
       ]
     }

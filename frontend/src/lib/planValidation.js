@@ -8,7 +8,7 @@ const FIELD_LABELS = {
   type: 'Typ',
   sets: 'Sätze',
   target_reps: 'Wiederholungen',
-  target_seconds: 'Sekunden',
+  target_seconds: 'Dauer',
   default_weight_kg: 'Startgewicht',
   cue: 'Technik-Hinweis',
   video_query: 'Video-Suche',
@@ -18,6 +18,8 @@ const FIELD_LABELS = {
   schema_version: 'Schema-Version',
   key: 'Tag-Schlüssel',
   id: 'Übungs-ID',
+  phase: 'Phase',
+  music_url: 'Musik-Playlist',
 };
 
 function pathToGerman(path) {
@@ -68,6 +70,9 @@ function messageToGerman(issue) {
   }
   if (code === 'too_small' && issue.type === 'array') {
     return `${location}: Mindestens ein Eintrag erforderlich.`;
+  }
+  if (code === 'invalid_string' && issue.validation === 'url') {
+    return `${location}: Bitte eine vollständige URL angeben (mit https://).`;
   }
   if (code === 'invalid_type') {
     return `${location}: Ungültiger Wert.`;

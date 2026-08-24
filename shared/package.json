@@ -5,7 +5,10 @@
   "type": "module",
   "exports": {
     ".": "./planSchema.js",
-    "./exerciseProgress": "./exerciseProgress.js"
+    "./exerciseProgress": "./exerciseProgress.js",
+    "./duration": "./duration.js",
+    "./records": "./records.js",
+    "./progression": "./progression.js"
   },
   "dependencies": {
     "zod": "^3.23.8"

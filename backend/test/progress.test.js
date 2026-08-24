@@ -154,7 +154,7 @@ describe('progress', () => {
       const plank = res.body.exercises.find((e) => e.exercise_id === 'plank');
       expect(plank.metric_label).toBe('s');
       expect(plank.points[0].value).toBe(35);
-      expect(plank.target).toEqual({ seconds: 30 });
+      expect(plank.target).toEqual({ duration: 30 });
     });
 
     it('gewichtete Übung rankt in Highlights höher', async () => {

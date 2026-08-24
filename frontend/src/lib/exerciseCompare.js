@@ -1,3 +1,5 @@
+import { formatDuration, fromInputValue } from 'shared/duration';
+
 export function parseTargetReps(targetReps) {
   if (!targetReps) return null;
   const range = String(targetReps).match(/(\d+)\s*[-–]\s*(\d+)/);
@@ -14,7 +16,7 @@ export function parseTargetReps(targetReps) {
 
 export function formatTargetLabel(exercise) {
   if (exercise.type === 'time' || exercise.type === 'cardio') {
-    return exercise.target_seconds ? `${exercise.target_seconds} s` : null;
+    return exercise.target_seconds ? formatDuration(exercise.target_seconds) : null;
   }
   if (!exercise.target_reps) return null;
   const parsed = parseTargetReps(exercise.target_reps);
@@ -30,7 +32,7 @@ export function formatLastSummary(exercise, prefillSets) {
     const durations = prefillSets.map((s) => s.duration_s).filter((v) => v != null);
     if (!durations.length) return null;
     const avg = Math.round(durations.reduce((a, b) => a + b, 0) / durations.length);
-    return `${prefillSets.length}×${avg} s`;
+    return `${prefillSets.length}× ${formatDuration(avg)}`;
   }
 
   const reps = prefillSets.map((s) => s.reps).filter((v) => v != null);
@@ -74,7 +76,7 @@ export function compareExercise(exercise, currentRows, prefillSets) {
     .map((r) => ({
       reps: r.reps !== '' ? Number(r.reps) : null,
       weight_kg: r.weight_kg !== '' ? Number(r.weight_kg) : null,
-      duration_s: r.duration_s !== '' ? Number(r.duration_s) : null,
+      duration_s: fromInputValue(r.duration, exercise.type),
     }));
 
   const lastVol = exerciseVolume(exercise, prefillSets);
