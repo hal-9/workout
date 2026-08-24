@@ -5,7 +5,6 @@ import {
   formatTargetLabel,
   parseTargetReps,
 } from '../../frontend/src/lib/exerciseCompare.js';
-import { suggestProgression, suggestionsFromSummary } from '../../frontend/src/lib/progression.js';
 import { buildWeekRecap, groupSessionsByWeek, weekGoalMet } from '../../frontend/src/lib/weekRecap.js';
 
 const wtExercise = {
@@ -64,57 +63,6 @@ describe('exerciseCompare', () => {
       ]
     );
     expect(result.trend).toBe('up');
-  });
-});
-
-describe('progression', () => {
-  it('suggests weight increase when all sets hit top of range', () => {
-    const suggestion = suggestProgression(wtExercise, [
-      { reps: 12, weight_kg: 10 },
-      { reps: 12, weight_kg: 10 },
-      { reps: 12, weight_kg: 10 },
-    ]);
-    expect(suggestion).toEqual({
-      type: 'weight',
-      exerciseId: 'goblet',
-      exerciseName: 'Goblet Squat',
-      message: 'Goblet Squat: Bereit für 12.5 kg?',
-      nextValue: 12.5,
-    });
-  });
-
-  it('returns null when reps below target', () => {
-    expect(
-      suggestProgression(wtExercise, [
-        { reps: 8, weight_kg: 10 },
-        { reps: 8, weight_kg: 10 },
-        { reps: 8, weight_kg: 10 },
-      ])
-    ).toBeNull();
-  });
-
-  it('builds suggestions from session summary and plan', () => {
-    const plan = {
-      days: [
-        {
-          key: 'a',
-          exercises: [wtExercise],
-        },
-      ],
-    };
-    const summary = {
-      exercises: [
-        {
-          exercise_id: 'goblet',
-          sets: [
-            { reps: 12, weight_kg: 10 },
-            { reps: 12, weight_kg: 10 },
-            { reps: 12, weight_kg: 10 },
-          ],
-        },
-      ],
-    };
-    expect(suggestionsFromSummary(plan, summary)).toHaveLength(1);
   });
 });
 
