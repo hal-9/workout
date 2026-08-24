@@ -37,22 +37,25 @@ export const EQUIPMENT_KEYS = EQUIPMENT.map((item) => item.key);
 export const EQUIPMENT_LABELS = Object.fromEntries(EQUIPMENT.map(({ key, label }) => [key, label]));
 
 // Fallback für handgeschriebene/importierte Übungen ohne `zones`: aus dem
-// freien `muscle`-Text raten. Reihenfolge zählt — spezifisch vor allgemein.
+// freien `muscle`-Text raten. Deutsche und englische Begriffe, weil ältere und
+// KI-erzeugte Pläne beides enthalten. Reihenfolge zählt — spezifisch vor
+// allgemein, damit "lower back" nicht als "back" durchrutscht.
 const TEXT_RULES = [
-  [/unterer?\s*r(ü|ue)cken|lendenwirbel|wirbels(ä|ae)ule/, ['unterer_ruecken']],
-  [/latissimus|r(ü|ue)cken|\blat\b|trapez|rudern|klimmzug|latzug/, ['ruecken']],
-  [/brust|pect|bankdr(ü|ue)cken/, ['brust']],
-  [/schulter|delt|nacken/, ['schultern']],
+  [/unterer?\s*r(ü|ue)cken|lower\s*back|lendenwirbel|wirbels(ä|ae)ule|erector/, ['unterer_ruecken']],
+  [/latissimus|r(ü|ue)cken|\blats?\b|\bback\b|trapez|\btraps?\b|rudern|\brow\b|klimmzug|pull-?up|latzug/, ['ruecken']],
+  [/brust|chest|pect|bankdr(ü|ue)cken/, ['brust']],
+  [/schulter|shoulder|delt|nacken/, ['schultern']],
   [/bizeps|bicep/, ['bizeps']],
   [/trizeps|tricep/, ['trizeps']],
-  [/unterarm|forearm|griff/, ['unterarme']],
-  [/core|bauch|rumpf|flanke|abs|plank/, ['core']],
-  [/\bpo\b|ges(ä|ae)(ß|ss)|glute|h(ü|ue)ft|adduktor|abduktor/, ['gesaess']],
+  [/unterarm|forearm|griff|\bgrip\b/, ['unterarme']],
+  [/core|bauch|rumpf|flanke|abs\b|abdomin|oblique|plank/, ['core']],
+  [/\bpo\b|ges(ä|ae)(ß|ss)|glute|h(ü|ue)ft|\bhips?\b|adduktor|abduktor|adductor|abductor/, ['gesaess']],
   [/quadrizeps|quad/, ['quads']],
   [/oberschenkelr(ü|ue)ckseite|hamstring|beinbeuger/, ['hamstrings']],
   [/wade|calf|calves|soleus/, ['waden']],
-  [/oberschenkel/, ['quads']],
-  [/\bbein/, ['quads', 'hamstrings', 'gesaess']],
+  [/oberschenkel|\bthigh/, ['quads']],
+  [/\bbein|\blegs?\b/, ['quads', 'hamstrings', 'gesaess']],
+  [/ganzk(ö|oe)rper|full\s*body|total\s*body/, ['brust', 'ruecken', 'schultern', 'core', 'quads', 'gesaess']],
 ];
 
 function fromText(input) {
@@ -71,6 +74,17 @@ function fromText(input) {
   return [...out];
 }
 
+// Laufen, Radfahren & Co. haben keinen gezielten Muskel, arbeiten aber klar
+// über die Beine. Ohne das bliebe jede Cardio-Übung ohne Markierung.
+const CARDIO_TEXT = /cardio|ausdauer|laufband|treadmill|fahrrad|rad\b|ergometer|crosstrainer|rudergerät|liss|hiit|zone\s*2|seilspringen/;
+const CARDIO_ZONES = ['quads', 'hamstrings', 'waden', 'gesaess'];
+
+function looksLikeCardio(exercise) {
+  if (exercise?.type === 'cardio') return true;
+  const text = [exercise?.muscle, exercise?.name].map((v) => String(v ?? '').toLowerCase()).join(' ');
+  return CARDIO_TEXT.test(text);
+}
+
 /**
  * Zonen einer Übung — bevorzugt die gepflegten `zones`, sonst geraten aus `muscle`.
  * Sekundäre Zonen, die schon primär sind, fallen raus.
@@ -84,7 +98,11 @@ export function exerciseZones(exercise) {
     ? declared.secondary.filter((key) => MUSCLE_ZONES.includes(key))
     : [];
   const primarySet = new Set(primary);
-  return { primary, secondary: secondarySource.filter((key) => !primarySet.has(key)) };
+  const secondary = secondarySource.filter((key) => !primarySet.has(key));
+  if (!primary.length && !secondary.length && looksLikeCardio(exercise)) {
+    return { primary: [], secondary: CARDIO_ZONES };
+  }
+  return { primary, secondary };
 }
 
 export function zoneLabels(keys) {
