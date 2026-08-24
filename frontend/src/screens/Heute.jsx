@@ -11,6 +11,7 @@ import { summarizeSession } from '../lib/completion.js';
 import { deloadMessage } from '../lib/progressionView.js';
 import WorkoutCompleteOverlay from '../components/WorkoutCompleteOverlay.jsx';
 import ExerciseDetailSheet from '../components/ExerciseDetailSheet.jsx';
+import MuscleModal from '../components/MuscleModal.jsx';
 import { durationUnitLabel, formatDuration, fromInputValue, toInputValue } from 'shared/duration';
 import {
   WEEKDAY_LABELS,
@@ -114,6 +115,7 @@ export default function Heute() {
   const [timerSeconds, setTimerSeconds] = useState(null);
   const [completion, setCompletion] = useState(null);
   const [detailExercise, setDetailExercise] = useState(null);
+  const [muscleExercise, setMuscleExercise] = useState(null);
   const [rpeByExercise, setRpeByExercise] = useState({});
   const [note, setNote] = useState('');
   const [noteOpen, setNoteOpen] = useState(false);
@@ -743,23 +745,19 @@ export default function Heute() {
                     {ex.muscle}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setDetailExercise(ex)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--primary)',
-                    fontSize: 12,
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                    alignSelf: 'flex-start',
-                  }}
-                >
-                  Details
-                </button>
+                <div style={{ display: 'flex', gap: 12, flexShrink: 0, alignSelf: 'flex-start' }}>
+                  <button
+                    type="button"
+                    onClick={() => setMuscleExercise(ex)}
+                    aria-label={`Muskelgruppen zu ${ex.name}`}
+                    style={cardLinkStyle}
+                  >
+                    Muskeln
+                  </button>
+                  <button type="button" onClick={() => setDetailExercise(ex)} style={cardLinkStyle}>
+                    Details
+                  </button>
+                </div>
               </div>
               <p
                 style={{
@@ -1251,6 +1249,10 @@ export default function Heute() {
         </div>
       )}
 
+      {muscleExercise && (
+        <MuscleModal exercise={muscleExercise} onClose={() => setMuscleExercise(null)} />
+      )}
+
       {detailExercise && (
         <ExerciseDetailSheet
           exercise={detailExercise}
@@ -1269,6 +1271,16 @@ export default function Heute() {
     </div>
   );
 }
+
+const cardLinkStyle = {
+  background: 'none',
+  border: 'none',
+  padding: 0,
+  fontFamily: 'var(--font-mono)',
+  color: 'var(--primary)',
+  fontSize: 12,
+  cursor: 'pointer',
+};
 
 const inputStyle = {
   width: 72,
