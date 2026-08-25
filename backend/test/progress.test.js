@@ -69,8 +69,8 @@ function plan(overrides = {}) {
   };
 }
 
-async function login(app, name = 'tuncay', password = 'password1') {
-  const res = await request(app).post('/api/login').send({ name, password });
+async function login(app, email = 'tuncay@example.com', password = 'password1') {
+  const res = await request(app).post('/api/login').send({ email, password });
   return res.headers['set-cookie'][0];
 }
 
@@ -221,7 +221,7 @@ describe('progress', () => {
         { exercise_id: 'pu', set_number: 1, reps: 10, weight_kg: null, duration_s: null },
       ]);
 
-      const partnerCookie = await login(app, 'partnerin', 'password2');
+      const partnerCookie = await login(app, 'partnerin@example.com', 'password2');
       const res = await request(app).get('/api/progress').set('Cookie', partnerCookie);
       expect(res.status).toBe(404);
     });

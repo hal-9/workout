@@ -60,14 +60,14 @@ function plan(overrides = {}) {
 async function login(app) {
   const res = await request(app)
     .post('/api/login')
-    .send({ name: 'tuncay', password: 'password1' });
+    .send({ email: 'tuncay@example.com', password: 'password1' });
   return res.headers['set-cookie'][0];
 }
 
 async function loginPartner(app) {
   const res = await request(app)
     .post('/api/login')
-    .send({ name: 'partnerin', password: 'password2' });
+    .send({ email: 'partnerin@example.com', password: 'password2' });
   return res.headers['set-cookie'][0];
 }
 

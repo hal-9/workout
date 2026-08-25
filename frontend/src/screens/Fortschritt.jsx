@@ -72,6 +72,10 @@ export default function Fortschritt() {
   const { data: others } = useQuery({ queryKey: ['users'], queryFn: () => api.get('/users') });
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [showAllExercises, setShowAllExercises] = useState(false);
+  // Entfernte Freunde verschwinden aus der Liste — dann zurueck auf die eigene Ansicht.
+  if (selectedUserId !== null && others && !others.some((u) => u.id === selectedUserId)) {
+    setSelectedUserId(null);
+  }
   const viewPartner = selectedUserId !== null;
 
   const { data: ownProgress } = useQuery({
@@ -143,6 +147,9 @@ export default function Fortschritt() {
             {u.name}
           </button>
         ))}
+        <Link to="/freunde" style={{ ...tabButtonStyle(false), textDecoration: 'none' }}>
+          + Freunde
+        </Link>
       </div>
 
       {!viewPartner && weekRecap && weekRecap.weeks.length > 0 && (

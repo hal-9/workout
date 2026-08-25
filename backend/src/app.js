@@ -5,6 +5,7 @@ import { planRouter } from './routes/plan.js';
 import { sessionsRouter } from './routes/sessions.js';
 import { historyRouter } from './routes/history.js';
 import { maxTestsRouter } from './routes/maxTests.js';
+import { friendsRouter } from './routes/friends.js';
 import { partnerRouter } from './routes/partner.js';
 import { progressRouter } from './routes/progress.js';
 import { progressionRouter } from './routes/progression.js';
@@ -25,6 +26,7 @@ export function createApp(db) {
   app.use('/api', sessionsRouter(db));
   app.use('/api', historyRouter(db));
   app.use('/api', maxTestsRouter(db));
+  app.use('/api', friendsRouter(db));
   app.use('/api', partnerRouter(db));
   app.use('/api', progressRouter(db));
   app.use('/api', statsRouter(db));

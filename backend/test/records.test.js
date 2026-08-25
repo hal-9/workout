@@ -232,7 +232,7 @@ function apiPlan() {
 }
 
 async function login(app) {
-  const res = await request(app).post('/api/login').send({ name: 'tuncay', password: 'password1' });
+  const res = await request(app).post('/api/login').send({ email: 'tuncay@example.com', password: 'password1' });
   return res.headers['set-cookie'][0];
 }
 
@@ -340,7 +340,7 @@ describe('GET /api/stats', () => {
       { exercise_id: 'bench', set_number: 1, reps: 10, weight_kg: 40, duration_s: null },
     ]);
 
-    const otherRes = await request(app).post('/api/login').send({ name: 'partnerin', password: 'password2' });
+    const otherRes = await request(app).post('/api/login').send({ email: 'partnerin@example.com', password: 'password2' });
     const otherCookie = otherRes.headers['set-cookie'][0];
     const res = await request(app).get('/api/stats').set('Cookie', otherCookie);
     expect(res.status).toBe(404);

@@ -73,7 +73,7 @@ function planB() {
 async function login(app) {
   const res = await request(app)
     .post('/api/login')
-    .send({ name: 'tuncay', password: 'password1' });
+    .send({ email: 'tuncay@example.com', password: 'password1' });
   return res.headers['set-cookie'][0];
 }
 

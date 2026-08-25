@@ -2,17 +2,18 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { setupTestApp } from './helpers.js';
 
-async function login(app, name = 'tuncay', password = 'password1') {
-  const res = await request(app).post('/api/login').send({ name, password });
+async function login(app, email = 'tuncay@example.com', password = 'password1') {
+  const res = await request(app).post('/api/login').send({ email, password });
   return res.headers['set-cookie'][0];
 }
 
 describe('max-tests', () => {
   let app;
+  let db;
   let cookie;
 
   beforeEach(async () => {
-    ({ app } = setupTestApp());
+    ({ app, db } = setupTestApp());
     cookie = await login(app);
   });
 
@@ -61,14 +62,14 @@ describe('max-tests', () => {
 
     it('Nutzer sieht nur eigene Einträge', async () => {
       await request(app).post('/api/max-tests').set('Cookie', cookie).send({ kind: 'pushups', value: 20 });
-      const partnerCookie = await login(app, 'partnerin', 'password2');
+      const partnerCookie = await login(app, 'partnerin@example.com', 'password2');
       const res = await request(app).get('/api/max-tests').set('Cookie', partnerCookie);
       expect(res.body).toHaveLength(0);
     });
   });
 
   describe('GET /api/users', () => {
-    it('liefert alle anderen Nutzer, nicht sich selbst', async () => {
+    it('liefert nur befreundete Nutzer', async () => {
       const res = await request(app).get('/api/users').set('Cookie', cookie);
       expect(res.status).toBe(200);
       expect(res.body.map((u) => u.name)).toEqual(['partnerin']);
@@ -110,7 +111,7 @@ describe('max-tests', () => {
         .send({ exercise_id: 'pu', set_number: 1, reps: 20, weight_kg: null, duration_s: null });
       await request(app).post(`/api/sessions/${sessionRes.body.session_id}/finish`).set('Cookie', cookie);
 
-      const partnerCookie = await login(app, 'partnerin', 'password2');
+      const partnerCookie = await login(app, 'partnerin@example.com', 'password2');
       const others = await request(app).get('/api/users').set('Cookie', partnerCookie);
       const tuncayId = others.body.find((u) => u.name === 'tuncay').id;
 
@@ -132,9 +133,19 @@ describe('max-tests', () => {
       expect(res.status).toBe(422);
     });
 
-    it('unbekannter user_id -> 404', async () => {
+    // 403 vor 404: ob eine user_id existiert, soll die Antwort nicht verraten.
+    it('unbekannter user_id -> 403', async () => {
       const res = await request(app).get('/api/partner/progress?user_id=999').set('Cookie', cookie);
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(403);
+    });
+
+    it('nicht befreundeter Nutzer -> 403', async () => {
+      const fremdeCookie = await login(app, 'fremde@example.com', 'password3');
+      const tuncayId = db.prepare("SELECT id FROM users WHERE name = 'tuncay'").get().id;
+      const res = await request(app)
+        .get(`/api/partner/progress?user_id=${tuncayId}`)
+        .set('Cookie', fremdeCookie);
+      expect(res.status).toBe(403);
     });
   });
 });

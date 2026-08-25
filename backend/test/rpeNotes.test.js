@@ -21,8 +21,8 @@ function plan() {
   };
 }
 
-async function login(app, name = 'tuncay', password = 'password1') {
-  const res = await request(app).post('/api/login').send({ name, password });
+async function login(app, email = 'tuncay@example.com', password = 'password1') {
+  const res = await request(app).post('/api/login').send({ email, password });
   return res.headers['set-cookie'][0];
 }
 
@@ -99,7 +99,7 @@ describe('RPE und Notizen', () => {
         .send({ exercise_id: 'bench', rpe: 8 });
       expect(finished.status).toBe(409);
 
-      const otherCookie = await login(app, 'partnerin', 'password2');
+      const otherCookie = await login(app, 'partnerin@example.com', 'password2');
       const foreign = await request(app)
         .post(`/api/sessions/${sessionId}/rpe`)
         .set('Cookie', otherCookie)
@@ -215,7 +215,7 @@ describe('POST /api/sessions/:id/note', () => {
   });
 
   it('beendete Session -> 409, fremde Session -> 404, zu lang -> 422', async () => {
-    const foreignCookie = await login(app, 'partnerin', 'password2');
+    const foreignCookie = await login(app, 'partnerin@example.com', 'password2');
     expect(
       (await request(app).post(`/api/sessions/${sessionId}/note`).set('Cookie', foreignCookie).send({ note: 'x' })).status
     ).toBe(404);

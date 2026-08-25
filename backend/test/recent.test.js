@@ -57,8 +57,8 @@ function plan(overrides = {}) {
   };
 }
 
-async function login(app, name = 'tuncay', password = 'password1') {
-  const res = await request(app).post('/api/login').send({ name, password });
+async function login(app, email = 'tuncay@example.com', password = 'password1') {
+  const res = await request(app).post('/api/login').send({ email, password });
   return res.headers['set-cookie'][0];
 }
 
@@ -166,7 +166,7 @@ describe('GET /api/sessions/recent + /api/sessions/:id/summary', () => {
 
     it('fremde Sessions sind unsichtbar', async () => {
       await finishedSession('push');
-      const partnerCookie = await login(app, 'partnerin', 'password2');
+      const partnerCookie = await login(app, 'partnerin@example.com', 'password2');
 
       const res = await request(app).get('/api/sessions/recent').set('Cookie', partnerCookie);
       expect(res.body.sessions).toHaveLength(0);
@@ -197,7 +197,7 @@ describe('GET /api/sessions/recent + /api/sessions/:id/summary', () => {
 
     it('fremde Session -> 404, unbekannte id -> 404', async () => {
       const id = await finishedSession('push');
-      const partnerCookie = await login(app, 'partnerin', 'password2');
+      const partnerCookie = await login(app, 'partnerin@example.com', 'password2');
 
       const foreign = await request(app).get(`/api/sessions/${id}/summary`).set('Cookie', partnerCookie);
       expect(foreign.status).toBe(404);

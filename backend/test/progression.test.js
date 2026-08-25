@@ -209,8 +209,8 @@ function apiPlan(overrides = {}) {
   };
 }
 
-async function login(app, name = 'tuncay', password = 'password1') {
-  const res = await request(app).post('/api/login').send({ name, password });
+async function login(app, email = 'tuncay@example.com', password = 'password1') {
+  const res = await request(app).post('/api/login').send({ email, password });
   return res.headers['set-cookie'][0];
 }
 
@@ -324,7 +324,7 @@ describe('Progression API', () => {
     await finishSession(app, cookie, topApiSets());
     await finishSession(app, cookie, topApiSets());
 
-    const otherCookie = await login(app, 'partnerin', 'password2');
+    const otherCookie = await login(app, 'partnerin@example.com', 'password2');
     expect((await request(app).get('/api/progression/proposals').set('Cookie', otherCookie)).status).toBe(404);
     expect(
       (await request(app).post('/api/progression/apply').set('Cookie', otherCookie).send({ exercise_ids: ['bench'] })).status

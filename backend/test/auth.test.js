@@ -14,24 +14,29 @@ describe('auth', () => {
     it('returns 200 and sets cookie on correct credentials', async () => {
       const res = await request(app)
         .post('/api/login')
-        .send({ name: 'tuncay', password: 'password1' });
+        .send({ email: 'tuncay@example.com', password: 'password1' });
 
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ id: expect.any(Number), name: 'tuncay' });
+      expect(res.body).toEqual({
+        id: expect.any(Number),
+        name: 'tuncay',
+        email: 'tuncay@example.com',
+        onboarded: true,
+      });
       expect(res.headers['set-cookie'][0]).toMatch(/^session=/);
     });
 
     it('returns 401 on wrong password', async () => {
       const res = await request(app)
         .post('/api/login')
-        .send({ name: 'tuncay', password: 'wrong' });
+        .send({ email: 'tuncay@example.com', password: 'wrong' });
       expect(res.status).toBe(401);
     });
 
     it('returns 401 on unknown user', async () => {
       const res = await request(app)
         .post('/api/login')
-        .send({ name: 'nobody', password: 'password1' });
+        .send({ email: 'nobody@example.com', password: 'password1' });
       expect(res.status).toBe(401);
     });
   });
@@ -40,12 +45,17 @@ describe('auth', () => {
     it('returns user data with valid cookie', async () => {
       const login = await request(app)
         .post('/api/login')
-        .send({ name: 'tuncay', password: 'password1' });
+        .send({ email: 'tuncay@example.com', password: 'password1' });
       const cookie = login.headers['set-cookie'][0];
 
       const res = await request(app).get('/api/me').set('Cookie', cookie);
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ id: expect.any(Number), name: 'tuncay' });
+      expect(res.body).toEqual({
+        id: expect.any(Number),
+        name: 'tuncay',
+        email: 'tuncay@example.com',
+        onboarded: true,
+      });
     });
 
     it('returns 401 without cookie', async () => {
@@ -56,7 +66,7 @@ describe('auth', () => {
     it('returns 401 with expired token', async () => {
       const login = await request(app)
         .post('/api/login')
-        .send({ name: 'tuncay', password: 'password1' });
+        .send({ email: 'tuncay@example.com', password: 'password1' });
       const cookie = login.headers['set-cookie'][0];
       const token = cookie.match(/session=([^;]+)/)[1];
 
@@ -73,7 +83,7 @@ describe('auth', () => {
     it('extends expires_at on valid request', async () => {
       const login = await request(app)
         .post('/api/login')
-        .send({ name: 'tuncay', password: 'password1' });
+        .send({ email: 'tuncay@example.com', password: 'password1' });
       const cookie = login.headers['set-cookie'][0];
       const token = cookie.match(/session=([^;]+)/)[1];
 
@@ -99,7 +109,7 @@ describe('auth', () => {
     it('returns 204 and invalidates token', async () => {
       const login = await request(app)
         .post('/api/login')
-        .send({ name: 'tuncay', password: 'password1' });
+        .send({ email: 'tuncay@example.com', password: 'password1' });
       const cookie = login.headers['set-cookie'][0];
 
       const logoutRes = await request(app).post('/api/logout').set('Cookie', cookie);
