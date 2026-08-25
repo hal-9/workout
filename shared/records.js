@@ -1,4 +1,5 @@
 import { isCooldown } from './exerciseProgress.js';
+import { workingSets } from './setTypes.js';
 
 // Epley-Formel — Schätzung des Einer-Maximums aus einem Arbeitssatz.
 export function estimateOneRepMax(weightKg, reps) {
@@ -20,13 +21,14 @@ export function sessionTonnage(exercise, sets = []) {
 
 // Kennzahlen einer einzelnen Session für eine Übung.
 export function sessionMetrics(exercise, sets = []) {
-  const numbers = (pick) => sets.map(pick).map(Number).filter((v) => Number.isFinite(v) && v > 0);
+  const workSets = workingSets(sets);
+  const numbers = (pick) => workSets.map(pick).map(Number).filter((v) => Number.isFinite(v) && v > 0);
 
   const reps = numbers((s) => s.reps);
   const weights = numbers((s) => s.weight_kg);
   const durations = numbers((s) => s.duration_s);
 
-  const e1rms = sets
+  const e1rms = workSets
     .map((s) => estimateOneRepMax(Number(s.weight_kg), Number(s.reps)))
     .filter((v) => v != null);
 
@@ -35,7 +37,7 @@ export function sessionMetrics(exercise, sets = []) {
     max_reps: reps.length ? Math.max(...reps) : null,
     max_duration: durations.length ? Math.max(...durations) : null,
     max_e1rm: e1rms.length ? Math.max(...e1rms) : null,
-    volume: exercise?.type === 'wt' ? sessionTonnage(exercise, sets) : null,
+    volume: exercise?.type === 'wt' ? sessionTonnage(exercise, workSets) : null,
   };
 }
 

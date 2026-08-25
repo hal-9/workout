@@ -5,6 +5,7 @@ import { api } from './api.js';
 import BottomNav from './components/BottomNav.jsx';
 import Header from './components/Header.jsx';
 import OfflineIndicator from './components/OfflineIndicator.jsx';
+import LoadingScreen from './components/ui/LoadingScreen.jsx';
 import Login from './screens/Login.jsx';
 import Register from './screens/Register.jsx';
 import Onboarding from './screens/Onboarding.jsx';
@@ -26,28 +27,37 @@ function useMe() {
 function AuthGuard({ children }) {
   const { data: me, isLoading, isError } = useMe();
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <main>
+        <LoadingScreen label="Session wird geladen…" />
+      </main>
+    );
+  }
   if (isError || !me) return <Navigate to="/login" replace />;
   if (!me.onboarded) return <Navigate to="/willkommen" replace />;
 
   return (
-    <>
-      <Header />
-      <OfflineIndicator />
-      <div className="app-shell">{children}</div>
-      <BottomNav />
-    </>
+  <>
+    <Header />
+    <OfflineIndicator />
+    <main className="app-shell">{children}</main>
+    <BottomNav />
+  </>
   );
 }
 
-// Eigener Guard ohne Onboarding-Weiterleitung, sonst zeigt /willkommen auf sich selbst.
 function OnboardingRoute() {
   const { data: me, isLoading, isError } = useMe();
-  // Nur der Stand beim Betreten zaehlt: sonst wirft dieser Guard den Nutzer
-  // in dem Moment raus, in dem das Tutorial das Flag setzt.
   const wasOnboarded = useRef(null);
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <main>
+        <LoadingScreen />
+      </main>
+    );
+  }
   if (isError || !me) return <Navigate to="/login" replace />;
   if (wasOnboarded.current === null) wasOnboarded.current = me.onboarded;
   if (wasOnboarded.current) return <Navigate to="/heute" replace />;

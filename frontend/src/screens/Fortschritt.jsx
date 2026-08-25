@@ -12,6 +12,11 @@ import {
   exercisesBeyondHighlights,
 } from '../lib/exerciseProgress.js';
 import ExerciseChart from '../components/ExerciseChart.jsx';
+import MaxTestsSection from '../components/MaxTestsSection.jsx';
+import ConsistencyHeatmap, { buildConsistencyHeatmap } from '../components/ConsistencyHeatmap.jsx';
+import ProgressionProposals from '../components/ProgressionProposals.jsx';
+import PageHeader from '../components/ui/PageHeader.jsx';
+import Button from '../components/ui/Button.jsx';
 
 const cardStyle = {
   background: 'var(--surface)',
@@ -117,6 +122,21 @@ export default function Fortschritt() {
     retry: false,
     enabled: !viewPartner,
   });
+  const { data: progression } = useQuery({
+    queryKey: ['progression-proposals'],
+    queryFn: () => api.get('/progression/proposals'),
+    retry: false,
+    enabled: !viewPartner,
+  });
+  const heatmapFrom = mondayStart(11);
+  const { data: heatmapRange } = useQuery({
+    queryKey: ['sessions-heatmap'],
+    queryFn: () =>
+      api.get(
+        `/sessions?from=${encodeURIComponent(toSqlUtc(heatmapFrom))}&to=${encodeURIComponent(toSqlUtc(addDays(mondayStart(0), 7)))}`
+      ),
+    enabled: !viewPartner,
+  });
 
   const progress = viewPartner ? partnerData : ownProgress;
   const highlights = progress?.highlights ?? [];
@@ -129,9 +149,51 @@ export default function Fortschritt() {
       ? buildWeekRecap(plan, groupSessionsByWeek(recapRange.sessions, 4))
       : null;
 
+  const heatmapData =
+    plan && heatmapRange ? buildConsistencyHeatmap(plan, heatmapRange.sessions, 12) : null;
+
+  const handleExportJson = async () => {
+    const data = await api.get('/export');
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'lilief-backup.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="wrap">
-      <h2>Fortschritt</h2>
+      <PageHeader
+        title="Fortschritt"
+        action={
+          !viewPartner && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button variant="secondary" onClick={handleExportJson} style={{ padding: '8px 12px', fontSize: 12, minHeight: 36 }}>
+                JSON
+              </Button>
+              <a
+                href="/api/export.csv"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '8px 12px',
+                  fontSize: 12,
+                  borderRadius: 13,
+                  background: 'var(--surface2)',
+                  border: '1px solid var(--line)',
+                  color: 'var(--text)',
+                  textDecoration: 'none',
+                  minHeight: 36,
+                }}
+              >
+                CSV
+              </a>
+            </div>
+          )
+        }
+      />
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', margin: '0 0 16px' }}>
         <button type="button" onClick={() => setSelectedUserId(null)} style={tabButtonStyle(!viewPartner)}>
@@ -151,6 +213,19 @@ export default function Fortschritt() {
           + Freunde
         </Link>
       </div>
+
+      {!viewPartner && progression?.proposals?.length > 0 && (
+        <ProgressionProposals proposals={progression.proposals} deload={progression.deload} />
+      )}
+
+      {!viewPartner && heatmapData && (
+        <div style={cardStyle}>
+          <h3 style={{ marginTop: 0 }}>Konsistenz (12 Wochen)</h3>
+          <ConsistencyHeatmap data={heatmapData} />
+        </div>
+      )}
+
+      {!viewPartner && <MaxTestsSection />}
 
       {!viewPartner && weekRecap && weekRecap.weeks.length > 0 && (
         <div style={cardStyle}>

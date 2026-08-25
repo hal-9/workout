@@ -1,5 +1,6 @@
 import { isCooldown } from 'shared/exerciseProgress';
 import { sessionTonnage } from 'shared/records';
+import { isWarmupSet } from 'shared/setTypes';
 
 /**
  * Kennzahlen für den Abschluss-Screen. Cooldown-Sätze werden getrennt gezählt,
@@ -15,7 +16,7 @@ export function summarizeSession(day, summary, elapsedMs) {
 
   for (const item of summary?.exercises ?? []) {
     const exercise = byId.get(item.exercise_id);
-    const count = item.sets?.length ?? 0;
+    const count = (item.sets ?? []).filter((s) => !isWarmupSet(s)).length;
     if (!count) continue;
 
     if (exercise && isCooldown(exercise)) {
@@ -25,7 +26,7 @@ export function summarizeSession(day, summary, elapsedMs) {
 
     sets += count;
     exercises += 1;
-    if (exercise) tonnage += sessionTonnage(exercise, item.sets ?? []);
+    if (exercise) tonnage += sessionTonnage(exercise, (item.sets ?? []).filter((s) => !isWarmupSet(s)));
   }
 
   return {

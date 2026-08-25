@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
-import { cancelQueuedSet, enqueueDelete, enqueueSet } from '../offlineQueue.js';
+import { cancelQueuedSet, enqueueDelete, enqueueFinish, enqueueSet } from '../offlineQueue.js';
 import { parseUtc, mondayStart } from '../lib/dates.js';
 import { compareExercise } from '../lib/exerciseCompare.js';
 import { isCooldownExercise, splitPhases } from '../lib/cooldown.js';
@@ -12,9 +12,23 @@ import { deloadMessage } from '../lib/progressionView.js';
 import WorkoutCompleteOverlay from '../components/WorkoutCompleteOverlay.jsx';
 import ExerciseDetailSheet from '../components/ExerciseDetailSheet.jsx';
 import MuscleModal from '../components/MuscleModal.jsx';
-import { durationUnitLabel, formatDuration, fromInputValue, toInputValue } from 'shared/duration';
+import { formatDuration, toInputValue } from 'shared/duration';
 import { WEEKDAYS, WEEKDAY_LABELS, projectWeek, weekProgress } from '../lib/schedule.js';
-import { getAllOverrides, getOverride } from '../lib/weightOverrides.js';
+import { getAllOverrides, getOverride, setOverride } from '../lib/weightOverrides.js';
+import SetRow, { buildSetPayload } from '../components/SetRow.jsx';
+import RestTimerBar from '../components/RestTimerBar.jsx';
+import ReadinessDialog, { readinessAdaptations } from '../components/ReadinessDialog.jsx';
+import ProgressionProposals from '../components/ProgressionProposals.jsx';
+import PlateCalculator from '../components/PlateCalculator.jsx';
+import WarmupCalculator from '../components/WarmupCalculator.jsx';
+import PageHeader from '../components/ui/PageHeader.jsx';
+import Button from '../components/ui/Button.jsx';
+import LoadingScreen from '../components/ui/LoadingScreen.jsx';
+import {
+  startRestTimer,
+  remainingSeconds,
+  isRestTimerActive,
+} from '../lib/restTimer.js';
 import {
   isSoundEnabled,
   playRestEnd,
@@ -41,10 +55,11 @@ function buildInitialSets(exercise, prefillSets, resumedSets) {
       reps: fromSource?.reps ?? '',
       weight_kg: fromSource?.weight_kg ?? defaultWeight,
       duration: toInputValue(
-        // Cooldown-Stretches werden mit einem Tap abgehakt, deshalb steht die Zieldauer schon drin.
         fromSource?.duration_s ?? (isCooldownExercise(exercise) ? exercise.target_seconds : null),
         exercise.type
       ),
+      set_type: fromSource?.set_type ?? 'working',
+      superset_group: fromSource?.superset_group ?? null,
       logged: Boolean(isResumed),
     });
   }
@@ -67,7 +82,7 @@ const TREND_LABELS = {
 export default function Heute() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: plan } = useQuery({ queryKey: ['plan'], queryFn: () => api.get('/plan'), retry: false });
+  const { data: plan, isLoading: planLoading, isError: planError, refetch: refetchPlan } = useQuery({ queryKey: ['plan'], queryFn: () => api.get('/plan'), retry: false });
   const { data: recent } = useQuery({
     queryKey: ['sessions-recent'],
     queryFn: () => api.get('/sessions/recent'),
@@ -106,7 +121,15 @@ export default function Heute() {
       window.removeEventListener('offline', goOffline);
     };
   }, []);
-  const [timerSeconds, setTimerSeconds] = useState(null);
+  const [restTimerState, setRestTimerState] = useState(null);
+  const [focusMode, setFocusMode] = useState(false);
+  const [finishPending, setFinishPending] = useState(false);
+  const [finishError, setFinishError] = useState(null);
+  const [undoStack, setUndoStack] = useState([]);
+  const [readinessOpen, setReadinessOpen] = useState(false);
+  const [plateCalcOpen, setPlateCalcOpen] = useState(false);
+  const [warmupCalcOpen, setWarmupCalcOpen] = useState(false);
+  const [readinessHints, setReadinessHints] = useState(null);
   const [completion, setCompletion] = useState(null);
   const [detailExercise, setDetailExercise] = useState(null);
   const [muscleExercise, setMuscleExercise] = useState(null);
@@ -124,10 +147,10 @@ export default function Heute() {
       doneThisWeek.set(s.day_key, finished);
     }
   }
-  const projection = projectWeek(plan, doneThisWeek);
+  const projection = plan ? projectWeek(plan, doneThisWeek) : { days: [], nextKey: null, todayEntry: null, trainedToday: false };
   const nextDayKey = projection.nextKey;
   const projectionByKey = new Map(projection.days.map((e) => [e.key, e]));
-  const progress = weekProgress(plan, doneThisWeek);
+  const progress = plan ? weekProgress(plan, doneThisWeek) : { done: 0, total: 0 };
   // Pausentag: heute ist kein Workout projiziert, aber es steht noch eines an.
   const nextOpenEntry = projection.days.find((e) => e.projectedIdx != null);
   const isRestToday = !projection.todayEntry && !projection.trainedToday && Boolean(nextOpenEntry);
@@ -236,22 +259,23 @@ export default function Heute() {
   }, [sessionStartedAt]);
 
   useEffect(() => {
-    if (timerSeconds === null) return;
+    if (!restTimerState || restTimerState.pausedAtMs) return;
 
-    if (timerSeconds === 0) {
-      playRestEnd();
-      setTimerSeconds(null);
-      scrollToNextSet();
-      return;
-    }
+    const tick = () => {
+      const left = remainingSeconds(restTimerState);
+      if (left <= 0) {
+        playRestEnd();
+        setRestTimerState(null);
+        scrollToNextSet();
+        return;
+      }
+      if (left <= 5) playTick();
+    };
 
-    if (timerSeconds <= 5) {
-      playTick();
-    }
-
-    const id = setTimeout(() => setTimerSeconds((s) => s - 1), 1000);
-    return () => clearTimeout(id);
-  }, [timerSeconds, scrollToNextSet]);
+    tick();
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+  }, [restTimerState, scrollToNextSet]);
 
   function handleToggleSound() {
     const next = !soundOn;
@@ -289,15 +313,7 @@ export default function Heute() {
     }
 
     if (nextLogged) {
-      const payload = {
-        ...setKey,
-        reps: exercise.type === 'bw' || exercise.type === 'wt' ? Number(row.reps) || null : null,
-        weight_kg: exercise.type === 'wt' ? Number(row.weight_kg) || null : null,
-        duration_s:
-          exercise.type === 'time' || exercise.type === 'cardio'
-            ? fromInputValue(row.duration, exercise.type)
-            : null,
-      };
+      const payload = buildSetPayload(exercise, row);
 
       try {
         await api.post(`/sessions/${sid}/sets`, payload);
@@ -324,7 +340,121 @@ export default function Heute() {
     if (nextLogged) {
       unlockAudio();
       if (!sessionStartedAt) setSessionStartedAt(Date.now());
-      setTimerSeconds(pauseDuration);
+      if (!focusMode && loggedSetCount === 0) setFocusMode(true);
+      setRestTimerState(startRestTimer(pauseDuration));
+      setUndoStack((prev) => [...prev, { exerciseId: exercise.id, index }]);
+    }
+  }
+
+  function copyPrevSet(exerciseId, index) {
+    setSetsByExercise((prev) => {
+      const rows = prev[exerciseId];
+      const prevRow = rows[index - 1];
+      if (!prevRow) return prev;
+      return {
+        ...prev,
+        [exerciseId]: rows.map((s, i) =>
+          i === index
+            ? {
+                ...s,
+                reps: prevRow.reps,
+                weight_kg: prevRow.weight_kg,
+                duration: prevRow.duration,
+                set_type: prevRow.set_type ?? 'working',
+              }
+            : s
+        ),
+      };
+    });
+  }
+
+  function adjustWeight(exerciseId, index, delta) {
+    setSetsByExercise((prev) => {
+      const rows = prev[exerciseId];
+      return {
+        ...prev,
+        [exerciseId]: rows.map((s, i) => {
+          if (i !== index) return s;
+          const current = Number(s.weight_kg) || 0;
+          const next = Math.max(0, Math.round((current + delta) * 10) / 10);
+          return { ...s, weight_kg: next };
+        }),
+      };
+    });
+  }
+
+  function updateSetType(exerciseId, index, setType) {
+    setSetsByExercise((prev) => ({
+      ...prev,
+      [exerciseId]: prev[exerciseId].map((s, i) => (i === index ? { ...s, set_type: setType } : s)),
+    }));
+  }
+
+  async function undoLastSet() {
+    const last = undoStack[undoStack.length - 1];
+    if (!last || !plan) return;
+    let exercise = null;
+    for (const d of plan.days ?? []) {
+      exercise = d.exercises?.find((e) => e.id === last.exerciseId);
+      if (exercise) break;
+    }
+    if (!exercise) return;
+    setUndoStack((prev) => prev.slice(0, -1));
+    await toggleSet(exercise, last.index);
+  }
+
+  async function handleReadiness(readiness) {
+    let sid = sessionId;
+    if (!sid) {
+      try {
+        sid = await ensureSession();
+      } catch {
+        return;
+      }
+    }
+    try {
+      await api.post(`/sessions/${sid}/readiness`, readiness);
+      setReadinessHints(readinessAdaptations(readiness));
+    } catch {
+      /* optional */
+    }
+  }
+
+  async function finishWorkout() {
+    if (finishPending) return;
+    setFinishPending(true);
+    setFinishError(null);
+    try {
+      const res = await api.post(`/sessions/${sessionId}/finish`, { note: note.trim() || null });
+      queryClient.invalidateQueries({ queryKey: ['history'] });
+      queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
+      queryClient.invalidateQueries({ queryKey: ['sessions-range'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['progression-proposals'] });
+
+      clearTimeout(noteSaveRef.current);
+      setRestTimerState(null);
+      const dayPlan = plan?.days?.find((d) => d.key === dayKey);
+      setCompletion({
+        session_id: res.session_id,
+        summary: res.summary,
+        evaluation: res.evaluation,
+        records: res.new_records ?? [],
+        stats: summarizeSession(dayPlan, res.summary, sessionStartedAt ? Date.now() - sessionStartedAt : null),
+      });
+    } catch (err) {
+      if (!err.status && sessionId) {
+        try {
+          await enqueueFinish(sessionId, { note: note.trim() || null });
+          setFinishError('Offline gespeichert — Sync beim nächsten Online-Status.');
+        } catch {
+          setFinishError('Abschließen fehlgeschlagen. Bitte erneut versuchen.');
+        }
+      } else {
+        setFinishError('Abschließen fehlgeschlagen. Bitte erneut versuchen.');
+      }
+    } finally {
+      setFinishPending(false);
     }
   }
 
@@ -341,6 +471,7 @@ export default function Heute() {
             reps: '',
             weight_kg: exercise.default_weight_kg ?? '',
             duration: '',
+            set_type: 'working',
             logged: false,
           },
         ],
@@ -378,27 +509,6 @@ export default function Heute() {
     }
   }
 
-  async function finishWorkout() {
-    const res = await api.post(`/sessions/${sessionId}/finish`, { note: note.trim() || null });
-    queryClient.invalidateQueries({ queryKey: ['history'] });
-    queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
-    queryClient.invalidateQueries({ queryKey: ['sessions-range'] });
-    queryClient.invalidateQueries({ queryKey: ['stats'] });
-    queryClient.invalidateQueries({ queryKey: ['progression-proposals'] });
-
-    // Pausen-Timer ausblenden, damit nur der Abschluss-Screen zu sehen ist.
-    clearTimeout(noteSaveRef.current);
-    setTimerSeconds(null);
-    const dayPlan = plan?.days?.find((d) => d.key === dayKey);
-    setCompletion({
-      session_id: res.session_id,
-      summary: res.summary,
-      evaluation: res.evaluation,
-      records: res.new_records ?? [],
-      stats: summarizeSession(dayPlan, res.summary, sessionStartedAt ? Date.now() - sessionStartedAt : null),
-    });
-  }
-
   // Identität muss stabil bleiben, sonst startet der Auto-Weiter-Timer im Overlay neu.
   const leaveCompletion = useCallback(() => {
     if (!completion) return;
@@ -407,6 +517,24 @@ export default function Heute() {
       state: { summary: completion.summary, evaluation: completion.evaluation },
     });
   }, [completion, navigate]);
+
+  if (planLoading) {
+    return (
+      <div className="wrap">
+        <LoadingScreen label="Plan wird geladen…" />
+      </div>
+    );
+  }
+
+  if (planError) {
+    return (
+      <div className="wrap">
+        <PageHeader title="Heute" />
+        <p style={{ color: 'var(--danger)' }}>Plan konnte nicht geladen werden.</p>
+        <Button onClick={() => refetchPlan()}>Erneut versuchen</Button>
+      </div>
+    );
+  }
 
   if (!plan) {
     return (
@@ -454,23 +582,71 @@ export default function Heute() {
   const activeOverrides =
     day?.exercises.filter((ex) => weightOverrides[ex.id] != null && ex.type === 'wt') ?? [];
 
+  const currentExerciseIndex = mainExercises.findIndex(
+    (ex) => !(setsByExercise[ex.id]?.every((r) => r.logged))
+  );
+  const visibleMainExercises = focusMode && sessionId
+    ? mainExercises.map((ex, idx) => ({
+        ex,
+        collapsed: idx < currentExerciseIndex,
+        isCurrent: idx === currentExerciseIndex,
+      }))
+    : mainExercises.map((ex) => ({ ex, collapsed: false, isCurrent: false }));
+
   return (
     <div className="wrap">
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 16, gap: 12 }}>
-        <h2 style={{ margin: 0 }}>Heute</h2>
-        {progress.total > 0 && (
-          <div
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 12,
-              color: progress.done === progress.total ? 'var(--success)' : 'var(--muted)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {progress.done}/{progress.total} diese Woche
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title="Heute"
+        action={
+          progress.total > 0 ? (
+            <div
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 12,
+                color: progress.done === progress.total ? 'var(--success)' : 'var(--muted)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {progress.done}/{progress.total} diese Woche
+            </div>
+          ) : null
+        }
+      />
+
+      {sessionId && !readinessHints && (
+        <Button variant="secondary" onClick={() => setReadinessOpen(true)} style={{ marginBottom: 12, fontSize: 13, minHeight: 40 }}>
+          Tagesform checken
+        </Button>
+      )}
+
+      {readinessHints && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: 12, marginBottom: 12, fontSize: 13 }}>
+          <strong>Hinweise:</strong> {readinessHints.join(' · ')}
+        </div>
+      )}
+
+      {progression?.proposals?.length > 0 && (
+        <ProgressionProposals proposals={progression.proposals.slice(0, 2)} deload={progression.deload} />
+      )}
+
+      {sessionId && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <Button variant="secondary" onClick={() => setFocusMode((f) => !f)} style={{ fontSize: 12, minHeight: 36, padding: '8px 12px' }}>
+            {focusMode ? 'Alle Übungen' : 'Fokus-Modus'}
+          </Button>
+          <Button variant="secondary" onClick={() => setPlateCalcOpen(true)} style={{ fontSize: 12, minHeight: 36, padding: '8px 12px' }}>
+            Scheiben
+          </Button>
+          <Button variant="secondary" onClick={() => setWarmupCalcOpen(true)} style={{ fontSize: 12, minHeight: 36, padding: '8px 12px' }}>
+            Warm-up
+          </Button>
+          {undoStack.length > 0 && (
+            <Button variant="secondary" onClick={undoLastSet} style={{ fontSize: 12, minHeight: 36, padding: '8px 12px' }}>
+              ↶ Rückgängig
+            </Button>
+          )}
+        </div>
+      )}
 
       {isRestToday && (
         <div style={{ fontSize: 13, color: 'var(--muted)', margin: '12px 0 0' }}>
@@ -657,7 +833,25 @@ export default function Heute() {
             )}
           </div>
 
-          {mainExercises.map((ex) => {
+          {visibleMainExercises.map(({ ex, collapsed, isCurrent }) => {
+            if (collapsed) {
+              return (
+                <div
+                  key={ex.id}
+                  style={{
+                    background: 'var(--success-dim)',
+                    border: '1px solid var(--success)',
+                    borderRadius: 12,
+                    padding: '10px 14px',
+                    marginBottom: 8,
+                    fontSize: 13,
+                    color: 'var(--success)',
+                  }}
+                >
+                  ✓ {ex.name}
+                </div>
+              );
+            }
             const rows = setsByExercise[ex.id] || [];
             const allLogged = rows.length > 0 && rows.every((r) => r.logged);
             const prefillSets = historyRes?.prefill?.[ex.id];
@@ -668,8 +862,8 @@ export default function Heute() {
             <div
               key={ex.id}
               style={{
-                background: allLogged ? 'var(--success-dim)' : 'var(--surface)',
-                border: `1px solid ${allLogged ? 'var(--success)' : 'var(--line)'}`,
+                background: allLogged ? 'var(--success-dim)' : isCurrent ? 'var(--primary-dim)' : 'var(--surface)',
+                border: `1px solid ${allLogged ? 'var(--success)' : isCurrent ? 'var(--primary)' : 'var(--line)'}`,
                 borderRadius: 16,
                 padding: 16,
                 marginBottom: 12,
@@ -756,88 +950,32 @@ export default function Heute() {
                 </div>
               )}
 
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 8,
-                  marginTop: 13,
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 10,
-                  textTransform: 'uppercase',
-                  color: 'var(--muted)',
-                }}
-              >
-                <div style={{ width: 44, textAlign: 'center', flexShrink: 0 }}>Satz</div>
-                {(ex.type === 'bw' || ex.type === 'wt') && (
-                  <div style={{ width: 72, textAlign: 'center', flexShrink: 0 }}>Wdh.</div>
-                )}
-                {ex.type === 'wt' && <div style={{ width: 72, textAlign: 'center', flexShrink: 0 }}>kg</div>}
-                {(ex.type === 'time' || ex.type === 'cardio') && (
-                  <div style={{ width: 72, textAlign: 'center', flexShrink: 0 }}>
-                    {durationUnitLabel(ex.type)}
-                  </div>
-                )}
-              </div>
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
                 {rows.map((row, i) => (
-                  <div
+                  <SetRow
                     key={row.set_number}
-                    ref={(el) => {
+                    exercise={ex}
+                    row={row}
+                    index={i}
+                    disabled={showRestartGate || (!isOnline && !sessionId)}
+                    onToggle={() => toggleSet(ex, i)}
+                    onFieldChange={(idx, field, value) => {
+                      updateSetField(ex.id, idx, field, value);
+                      if (field === 'weight_kg' && ex.type === 'wt') {
+                        const kg = Number(value);
+                        if (kg && kg !== Number(ex.default_weight_kg)) setOverride(ex.id, kg);
+                      }
+                    }}
+                    onSetTypeChange={(idx, type) => updateSetType(ex.id, idx, type)}
+                    onCopyPrev={() => copyPrevSet(ex.id, i)}
+                    onAdjustWeight={(idx, delta) => adjustWeight(ex.id, idx, delta)}
+                    onUndo={undoLastSet}
+                    canUndo={undoStack.length > 0}
+                    setRef={(el) => {
                       if (el) setRowRefs.current.set(`${ex.id}-${i}`, el);
                       else setRowRefs.current.delete(`${ex.id}-${i}`);
                     }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                  >
-                    <button
-                      onClick={() => toggleSet(ex, i)}
-                      disabled={showRestartGate || (!isOnline && !sessionId)}
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 9,
-                        border: '1px solid var(--line)',
-                        background: row.logged ? 'var(--success-dim)' : 'var(--surface2)',
-                        color: row.logged ? 'var(--success)' : 'var(--muted)',
-                        fontFamily: 'var(--font-mono)',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {row.logged ? '✓' : row.set_number}
-                    </button>
-
-                    {(ex.type === 'bw' || ex.type === 'wt') && (
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        placeholder={ex.target_reps}
-                        value={row.reps}
-                        onChange={(e) => updateSetField(ex.id, i, 'reps', e.target.value)}
-                        style={inputStyle}
-                      />
-                    )}
-                    {ex.type === 'wt' && (
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        placeholder="kg"
-                        value={row.weight_kg}
-                        onChange={(e) => updateSetField(ex.id, i, 'weight_kg', e.target.value)}
-                        style={inputStyle}
-                      />
-                    )}
-                    {(ex.type === 'time' || ex.type === 'cardio') && (
-                      <input
-                        type="number"
-                        inputMode={ex.type === 'cardio' ? 'decimal' : 'numeric'}
-                        placeholder={toInputValue(ex.target_seconds, ex.type)}
-                        value={row.duration}
-                        onChange={(e) => updateSetField(ex.id, i, 'duration', e.target.value)}
-                        style={inputStyle}
-                      />
-                    )}
-                  </div>
+                  />
                 ))}
               </div>
 
@@ -1006,7 +1144,7 @@ export default function Heute() {
                       <button
                         onClick={() => {
                           unlockAudio();
-                          setTimerSeconds(ex.target_seconds ?? 30);
+                          setRestTimerState(startRestTimer(ex.target_seconds ?? 30));
                         }}
                         aria-label={`Halte-Timer für ${ex.name}`}
                         style={{
@@ -1068,126 +1206,46 @@ export default function Heute() {
             </button>
           )}
 
-          <button
+          <Button
             onClick={finishWorkout}
-            disabled={!isOnline || !sessionId}
-            className="btn primary"
-            style={{
-              width: '100%',
-              border: 'none',
-              borderRadius: 13,
-              padding: 15,
-              fontWeight: 600,
-              fontSize: 15,
-              cursor: isOnline && sessionId ? 'pointer' : 'not-allowed',
-              background: isOnline && sessionId ? 'var(--primary-grad)' : 'var(--surface2)',
-              color: isOnline && sessionId ? 'var(--on-primary)' : 'var(--muted)',
-              margin: '6px 0 4px',
-            }}
+            disabled={finishPending || !sessionId}
+            fullWidth
+            style={{ margin: '6px 0 4px' }}
           >
-            Workout abschließen
-          </button>
-          {!isOnline && (
+            {finishPending ? 'Wird abgeschlossen…' : 'Workout abschließen'}
+          </Button>
+          {finishError && (
+            <p style={{ textAlign: 'center', color: 'var(--danger)', fontSize: 12, margin: '0 0 8px' }}>
+              {finishError}
+            </p>
+          )}
+          {!isOnline && !finishError && (
             <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 12, margin: '0 0 20px' }}>
-              Offline — {sessionId ? 'Abschließen erfordert Verbindung.' : 'Session-Start erfordert Verbindung.'}
+              Offline — Sätze werden lokal gespeichert.
             </p>
           )}
         </>
       )}
 
-      {timerSeconds !== null && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 60,
-            background: 'rgba(46,36,64,.3)',
-            WebkitBackdropFilter: 'blur(6px)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <div
-            className="glass"
-            style={{
-              borderRadius: 22,
-              padding: 30,
-              width: 'min(86vw,330px)',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>Pause</div>
-            <div
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 700,
-                fontSize: 64,
-                color: timerSeconds <= 5 ? 'var(--accent)' : 'var(--primary)',
-              }}
-            >
-              {Math.max(0, timerSeconds)}
-            </div>
-            <button
-              type="button"
-              onClick={handleToggleSound}
-              aria-label={soundOn ? 'Ton aus' : 'Ton an'}
-              style={{
-                margin: '0 auto 12px',
-                display: 'block',
-                background: 'var(--surface2)',
-                border: '1px solid var(--line)',
-                color: 'var(--muted)',
-                borderRadius: 999,
-                padding: '6px 12px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 11,
-                cursor: 'pointer',
-              }}
-            >
-              {soundOn ? '🔊 Ton an' : '🔇 Ton aus'}
-            </button>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', margin: '18px 0' }}>
-              {[60, 90, 120].map((d) => (
-                <button
-                  key={d}
-                  onClick={() => changePauseDuration(d)}
-                  style={{
-                    background: d === pauseDuration ? 'var(--primary-dim)' : 'var(--surface2)',
-                    border: '1px solid var(--line)',
-                    color: d === pauseDuration ? 'var(--primary)' : 'var(--text)',
-                    borderRadius: 10,
-                    padding: '9px 13px',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 13,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {d}s
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setTimerSeconds(null)}
-              className="btn primary"
-              style={{
-                width: '100%',
-                border: 'none',
-                borderRadius: 13,
-                padding: 15,
-                fontWeight: 600,
-                fontSize: 15,
-                cursor: 'pointer',
-                background: 'var(--primary-grad)',
-                color: 'var(--on-primary)',
-              }}
-            >
-              Fertig
-            </button>
-          </div>
-        </div>
+      {isRestTimerActive(restTimerState) && (
+        <RestTimerBar
+          timerState={restTimerState}
+          onSkip={() => setRestTimerState(null)}
+          onChange={setRestTimerState}
+          soundOn={soundOn}
+          onToggleSound={handleToggleSound}
+          defaultDuration={pauseDuration}
+          onChangeDefault={changePauseDuration}
+        />
       )}
+
+      <ReadinessDialog
+        open={readinessOpen}
+        onClose={() => setReadinessOpen(false)}
+        onSubmit={handleReadiness}
+      />
+      <PlateCalculator open={plateCalcOpen} onClose={() => setPlateCalcOpen(false)} />
+      <WarmupCalculator open={warmupCalcOpen} onClose={() => setWarmupCalcOpen(false)} />
 
       {muscleExercise && (
         <MuscleModal exercise={muscleExercise} onClose={() => setMuscleExercise(null)} />
@@ -1220,16 +1278,4 @@ const cardLinkStyle = {
   color: 'var(--primary)',
   fontSize: 12,
   cursor: 'pointer',
-};
-
-const inputStyle = {
-  width: 72,
-  background: 'var(--surface2)',
-  border: '1px solid var(--line)',
-  color: 'var(--text)',
-  borderRadius: 9,
-  padding: '7px 8px',
-  fontFamily: 'var(--font-mono)',
-  fontSize: 16,
-  textAlign: 'center',
 };

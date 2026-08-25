@@ -51,7 +51,7 @@ describe('RPE und Notizen', () => {
         .set('Cookie', cookie)
         .send({ exercise_id: 'bench', rpe: 8 });
       expect(first.status).toBe(200);
-      expect(first.body).toEqual({ ok: true, rpe: 8 });
+      expect(first.body).toEqual({ ok: true, rpe: 8, rir: null });
 
       await request(app)
         .post(`/api/sessions/${sessionId}/rpe`)
@@ -68,7 +68,7 @@ describe('RPE und Notizen', () => {
         .post(`/api/sessions/${sessionId}/rpe`)
         .set('Cookie', cookie)
         .send({ exercise_id: 'bench', rpe: null });
-      expect(res.body).toEqual({ ok: true, rpe: null });
+      expect(res.body).toEqual({ ok: true, rpe: null, rir: null });
       expect(db.prepare('SELECT COUNT(*) c FROM exercise_rpe').get().c).toBe(0);
     });
 
@@ -113,7 +113,7 @@ describe('RPE und Notizen', () => {
       await request(app).post(`/api/sessions/${sessionId}/rpe`).set('Cookie', cookie).send({ exercise_id: 'bench', rpe: 7 });
       const res = await request(app).post('/api/sessions').set('Cookie', cookie).send({ day_key: 'push' });
       expect(res.body.resumed).toBe(true);
-      expect(res.body.rpe).toEqual([{ exercise_id: 'bench', rpe: 7 }]);
+      expect(res.body.rpe).toEqual([{ exercise_id: 'bench', rpe: 7, rir: null }]);
       expect(res.body.note).toBeNull();
     });
   });

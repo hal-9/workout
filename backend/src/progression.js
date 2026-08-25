@@ -13,7 +13,8 @@ function recentSessions(db, userId, planId) {
   const rows = db
     .prepare(
       `SELECT s.id AS session_id, s.finished_at,
-              sl.exercise_id, sl.set_number, sl.reps, sl.weight_kg, sl.duration_s
+              sl.exercise_id, sl.set_number, sl.reps, sl.weight_kg, sl.duration_s,
+              sl.set_type, sl.superset_group
        FROM sessions s
        JOIN set_logs sl ON sl.session_id = s.id
        WHERE s.user_id = ? AND s.plan_id = ? AND s.status = 'finished'
@@ -37,6 +38,8 @@ function recentSessions(db, userId, planId) {
       reps: row.reps,
       weight_kg: row.weight_kg,
       duration_s: row.duration_s,
+      set_type: row.set_type ?? 'working',
+      superset_group: row.superset_group,
     });
   }
 
