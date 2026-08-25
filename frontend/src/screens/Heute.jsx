@@ -13,13 +13,7 @@ import WorkoutCompleteOverlay from '../components/WorkoutCompleteOverlay.jsx';
 import ExerciseDetailSheet from '../components/ExerciseDetailSheet.jsx';
 import MuscleModal from '../components/MuscleModal.jsx';
 import { durationUnitLabel, formatDuration, fromInputValue, toInputValue } from 'shared/duration';
-import {
-  WEEKDAY_LABELS,
-  getMissedDays,
-  missedDayKeys,
-  nextDueDayKey,
-  weekProgress,
-} from '../lib/schedule.js';
+import { WEEKDAYS, WEEKDAY_LABELS, projectWeek, weekProgress } from '../lib/schedule.js';
 import { getAllOverrides, getOverride } from '../lib/weightOverrides.js';
 import {
   isSoundEnabled,
@@ -130,10 +124,13 @@ export default function Heute() {
       doneThisWeek.set(s.day_key, finished);
     }
   }
-  const nextDayKey = nextDueDayKey(plan, doneThisWeek);
-  const missedDays = getMissedDays(plan, doneThisWeek);
-  const missedKeys = missedDayKeys(plan, doneThisWeek);
+  const projection = projectWeek(plan, doneThisWeek);
+  const nextDayKey = projection.nextKey;
+  const projectionByKey = new Map(projection.days.map((e) => [e.key, e]));
   const progress = weekProgress(plan, doneThisWeek);
+  // Pausentag: heute ist kein Workout projiziert, aber es steht noch eines an.
+  const nextOpenEntry = projection.days.find((e) => e.projectedIdx != null);
+  const isRestToday = !projection.todayEntry && !projection.trainedToday && Boolean(nextOpenEntry);
 
   function freshActiveSession() {
     const active = queryClient.getQueryData(['sessions-recent'])?.active;
@@ -475,59 +472,17 @@ export default function Heute() {
         )}
       </div>
 
-      {missedDays.length > 0 && (
-        <div
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--line)',
-            borderRadius: 14,
-            padding: '12px 14px',
-            margin: '12px 0',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 10,
-          }}
-        >
-          {missedDays.map((d) => (
-            <div
-              key={d.key}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
-            >
-              <div style={{ fontSize: 13, color: 'var(--text)', minWidth: 0 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent)', marginRight: 6 }}>
-                  {WEEKDAY_LABELS[d.weekday]}
-                </span>
-                <span style={{ color: 'var(--muted)' }}>{d.name}</span>
-                <span style={{ color: 'var(--muted)' }}> · noch offen</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setDayKey(d.key)}
-                disabled={!isOnline && dayKey !== d.key}
-                style={{
-                  flex: '0 0 auto',
-                  background: dayKey === d.key ? 'var(--primary-dim)' : 'var(--surface2)',
-                  border: `1px solid ${dayKey === d.key ? 'var(--primary)' : 'var(--line)'}`,
-                  color: dayKey === d.key ? 'var(--primary)' : 'var(--text)',
-                  borderRadius: 9,
-                  padding: '7px 11px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 12,
-                  cursor: !isOnline && dayKey !== d.key ? 'not-allowed' : 'pointer',
-                  opacity: !isOnline && dayKey !== d.key ? 0.5 : 1,
-                }}
-              >
-                Nachholen
-              </button>
-            </div>
-          ))}
+      {isRestToday && (
+        <div style={{ fontSize: 13, color: 'var(--muted)', margin: '12px 0 0' }}>
+          Heute Pause · {nextOpenEntry.name} geplant für{' '}
+          {WEEKDAY_LABELS[WEEKDAYS[nextOpenEntry.projectedIdx]]}
         </div>
       )}
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', margin: '16px 0' }}>
         {plan.days.map((d) => {
           const doneAt = doneThisWeek.get(d.key);
-          const isMissed = missedKeys.has(d.key);
+          const entry = projectionByKey.get(d.key);
           const isNext = !doneAt && d.key === nextDayKey;
           const selected = d.key === dayKey;
           return (
@@ -538,15 +493,9 @@ export default function Heute() {
               style={{
                 flex: '0 0 auto',
                 textAlign: 'left',
-                background: selected
-                  ? 'var(--primary-dim)'
-                  : doneAt
-                    ? 'var(--success-dim)'
-                    : isMissed
-                      ? 'rgba(236, 72, 153, 0.08)'
-                      : 'var(--surface)',
-                border: `1px solid ${selected ? 'var(--primary)' : doneAt ? 'var(--success)' : isMissed ? 'var(--accent)' : 'var(--line)'}`,
-                color: selected ? 'var(--primary)' : doneAt ? 'var(--success)' : isMissed ? 'var(--text)' : 'var(--muted)',
+                background: selected ? 'var(--primary-dim)' : doneAt ? 'var(--success-dim)' : 'var(--surface)',
+                border: `1px solid ${selected ? 'var(--primary)' : doneAt ? 'var(--success)' : 'var(--line)'}`,
+                color: selected ? 'var(--primary)' : doneAt ? 'var(--success)' : 'var(--muted)',
                 borderRadius: 11,
                 padding: '9px 13px',
                 fontFamily: 'var(--font-mono)',
@@ -559,21 +508,6 @@ export default function Heute() {
               <span>
                 {doneAt ? '✓ ' : ''}
                 {d.name}
-                {isMissed && (
-                  <span
-                    style={{
-                      marginLeft: 6,
-                      padding: '2px 6px',
-                      borderRadius: 999,
-                      fontSize: 10,
-                      textTransform: 'uppercase',
-                      background: 'rgba(236, 72, 153, 0.12)',
-                      color: 'var(--accent)',
-                    }}
-                  >
-                    Nachholbar
-                  </span>
-                )}
                 {isNext && (
                   <span
                     style={{
@@ -590,10 +524,16 @@ export default function Heute() {
                   </span>
                 )}
               </span>
-              {doneAt && (
+              {doneAt ? (
                 <div style={{ fontSize: 10, marginTop: 3, opacity: 0.8 }}>
                   Erledigt ({doneAt.toLocaleDateString('de-DE', { weekday: 'short' })})
                 </div>
+              ) : entry?.projectedIdx != null ? (
+                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.8 }}>
+                  {WEEKDAY_LABELS[WEEKDAYS[entry.projectedIdx]]}
+                </div>
+              ) : (
+                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.8 }}>diese Woche nicht mehr</div>
               )}
             </button>
           );

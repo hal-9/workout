@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { addDays, formatWeekLabel, localDateKey, mondayStart, parseUtc, toSqlUtc } from '../lib/dates.js';
 import { formatDuration } from 'shared/duration';
-import { WEEKDAYS, WEEKDAY_LABELS, assignWeekdays, getMissedDays, nextDueDayKey, weekProgress } from '../lib/schedule.js';
+import { WEEKDAYS, WEEKDAY_LABELS, assignWeekdays, projectWeek, weekProgress } from '../lib/schedule.js';
 
 const pagerBtnStyle = {
   width: 44,
@@ -43,22 +43,23 @@ export default function Kalender() {
 
   // Erledigte Sessions nach lokalem Datum gruppieren
   const byDate = new Map();
-  const doneKeys = new Map();
+  const doneDates = new Map();
   for (const s of range?.sessions ?? []) {
-    const key = localDateKey(parseUtc(s.finished_at));
+    const finished = parseUtc(s.finished_at);
+    const key = localDateKey(finished);
     if (!byDate.has(key)) byDate.set(key, []);
     byDate.get(key).push(s);
-    if (!doneKeys.has(s.day_key)) doneKeys.set(s.day_key, s);
+    if (!doneDates.has(s.day_key)) doneDates.set(s.day_key, finished);
   }
 
+  // Aktuelle Woche zeigt die Projektion (Sequenz rutscht nach), vergangene Wochen den Ziel-Rhythmus.
   const dueByWeekday = assignWeekdays(plan);
   const isCurrentWeek = weeksAgo === 0;
   const todayKey = localDateKey(new Date());
-  const todayIdx = (new Date().getDay() + 6) % 7;
-  const nextKey = isCurrentWeek && plan ? nextDueDayKey(plan, doneKeys) : null;
-  const missedDays = isCurrentWeek && plan ? getMissedDays(plan, doneKeys) : [];
-  const missedKeys = new Set(missedDays.map((d) => d.key));
-  const progress = plan ? weekProgress(plan, doneKeys) : { done: 0, total: 0 };
+  const projection = isCurrentWeek && plan ? projectWeek(plan, doneDates) : null;
+  const projectedByIdx = new Map((projection?.days ?? []).filter((e) => e.projectedIdx != null).map((e) => [e.projectedIdx, e]));
+  const unplacedDays = (projection?.days ?? []).filter((e) => e.unplaced);
+  const progress = plan ? weekProgress(plan, doneDates) : { done: 0, total: 0 };
 
   async function resetDay() {
     try {
@@ -77,7 +78,7 @@ export default function Kalender() {
     <div className="wrap">
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 16, gap: 12 }}>
         <h2 style={{ margin: 0 }}>Kalender</h2>
-        {isCurrentWeek && progress.total > 0 && (
+        {progress.total > 0 && (
           <div
             style={{
               fontFamily: 'var(--font-mono)',
@@ -86,7 +87,8 @@ export default function Kalender() {
               whiteSpace: 'nowrap',
             }}
           >
-            {progress.done}/{progress.total} diese Woche
+            {progress.done}/{progress.total}
+            {isCurrentWeek ? ' diese Woche' : ''}
           </div>
         )}
       </div>
@@ -127,11 +129,10 @@ export default function Kalender() {
         {WEEKDAYS.map((wd, i) => {
           const date = addDays(weekStart, i);
           const dateKey = localDateKey(date);
-          const due = dueByWeekday.get(wd);
+          const due = isCurrentWeek ? projectedByIdx.get(i) : dueByWeekday.get(wd);
           const doneSessions = byDate.get(dateKey) ?? [];
           const isToday = isCurrentWeek && dateKey === todayKey;
-          const isMissed = isCurrentWeek && due && i < todayIdx && missedKeys.has(due.key);
-          const isNext = isCurrentWeek && due && due.key === nextKey && !doneKeys.has(due.key);
+          const isNext = isCurrentWeek && due && due.key === projection?.nextKey;
           return (
             <div
               key={wd}
@@ -139,8 +140,8 @@ export default function Kalender() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                background: isToday ? 'var(--primary-dim)' : isMissed ? 'rgba(236, 72, 153, 0.08)' : 'var(--surface)',
-                border: `1px solid ${isToday ? 'var(--primary)' : isMissed ? 'var(--accent)' : 'var(--line)'}`,
+                background: isToday ? 'var(--primary-dim)' : 'var(--surface)',
+                border: `1px solid ${isToday ? 'var(--primary)' : 'var(--line)'}`,
                 borderRadius: 14,
                 padding: '10px 14px',
                 minHeight: 56,
@@ -159,21 +160,6 @@ export default function Kalender() {
                 {due ? (
                   <div style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {due.name}
-                    {isMissed && (
-                      <span
-                        style={{
-                          marginLeft: 6,
-                          padding: '2px 6px',
-                          borderRadius: 999,
-                          fontSize: 10,
-                          textTransform: 'uppercase',
-                          background: 'rgba(236, 72, 153, 0.12)',
-                          color: 'var(--accent)',
-                        }}
-                      >
-                        Offen
-                      </span>
-                    )}
                     {isNext && (
                       <span
                         style={{
@@ -226,6 +212,12 @@ export default function Kalender() {
           );
         })}
       </div>
+
+      {unplacedDays.length > 0 && (
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
+          Passt nicht mehr diese Woche: {unplacedDays.map((d) => d.name).join(', ')}
+        </div>
+      )}
 
       {!plan && (
         <div style={{ marginTop: 16 }}>

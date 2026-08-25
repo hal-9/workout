@@ -180,7 +180,7 @@ export default function DayEditor({
         placeholder="z. B. Brust, Schultern, Trizeps"
       />
 
-      <label style={labelStyle}>Wochentag (optional)</label>
+      <label style={labelStyle}>Ziel-Wochentag (optional)</label>
       <select
         value={day.weekday ?? ''}
         onChange={(e) => onChange({ ...day, weekday: e.target.value || null })}
