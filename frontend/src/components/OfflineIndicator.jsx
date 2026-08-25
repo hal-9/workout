@@ -10,6 +10,10 @@ async function deleteSet(sessionId, payload) {
   return api.delete(`/sessions/${sessionId}/sets`, payload);
 }
 
+async function postFinish(sessionId, payload) {
+  return api.post(`/sessions/${sessionId}/finish`, payload);
+}
+
 export default function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pending, setPending] = useState(0);
@@ -20,7 +24,7 @@ export default function OfflineIndicator() {
   }
 
   async function sync() {
-    await replayQueue({ postSet, deleteSet });
+    await replayQueue({ postSet, deleteSet, postFinish });
     await refreshPending();
   }
 

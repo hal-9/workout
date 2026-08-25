@@ -15,14 +15,14 @@ function getActivePlan(db, userId) {
 function setLogsForSession(db, sessionId) {
   return db
     .prepare(
-      'SELECT exercise_id, set_number, reps, weight_kg, duration_s FROM set_logs WHERE session_id = ? ORDER BY set_number'
+      'SELECT exercise_id, set_number, reps, weight_kg, duration_s, set_type, superset_group FROM set_logs WHERE session_id = ? ORDER BY set_number'
     )
     .all(sessionId);
 }
 
 function rpeForSession(db, sessionId) {
   return db
-    .prepare('SELECT exercise_id, rpe FROM exercise_rpe WHERE session_id = ?')
+    .prepare('SELECT exercise_id, rpe, rir FROM exercise_rpe WHERE session_id = ?')
     .all(sessionId);
 }
 
@@ -81,6 +81,7 @@ const setKeySchema = z.object({
 const rpeSchema = z.object({
   exercise_id: z.string().min(1),
   rpe: z.number().int().min(1).max(10).nullable(),
+  rir: z.number().int().min(0).max(5).nullable().optional(),
 });
 
 const finishSchema = z.object({
@@ -96,10 +97,35 @@ const setSchema = setKeySchema
     reps: z.number().int().nullable(),
     weight_kg: z.number().nullable(),
     duration_s: z.number().int().nullable(),
+    set_type: z.enum(['warmup', 'working', 'drop', 'failure']).optional().default('working'),
+    superset_group: z.number().int().nullable().optional(),
   })
   .refine((data) => (data.reps !== null) !== (data.duration_s !== null), {
     message: 'exactly one of reps/duration_s must be set',
   });
+
+const adaptationsSchema = z.object({
+  skipped: z.array(z.string()).optional(),
+  order: z.array(z.string()).optional(),
+  added: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    muscle: z.string().optional(),
+    type: z.enum(['bw', 'wt', 'time', 'cardio']),
+    sets: z.number().int().min(1).optional(),
+    target_reps: z.string().nullable().optional(),
+    target_seconds: z.number().nullable().optional(),
+    default_weight_kg: z.number().nullable().optional(),
+    cue: z.string().optional(),
+    video_query: z.string().optional(),
+  })).optional(),
+});
+
+const readinessSchema = z.object({
+  energy: z.number().int().min(1).max(5),
+  soreness: z.number().int().min(1).max(5),
+  time_available_min: z.number().int().min(15).max(180).optional(),
+});
 
 function groupSetsByExercise(logs) {
   const byExercise = new Map();
@@ -142,7 +168,7 @@ export function sessionsRouter(db) {
 
     const activeRow = db
       .prepare(
-        `SELECT id, day_key, started_at, note FROM sessions
+        `SELECT id, day_key, started_at, note, adaptations_json, readiness_json FROM sessions
          WHERE user_id = ? AND status = 'active'
          ORDER BY started_at DESC LIMIT 1`
       )
@@ -156,6 +182,8 @@ export function sessionsRouter(db) {
           set_logs: setLogsForSession(db, activeRow.id),
           rpe: rpeForSession(db, activeRow.id),
           note: activeRow.note ?? null,
+          adaptations: activeRow.adaptations_json ? JSON.parse(activeRow.adaptations_json) : null,
+          readiness: activeRow.readiness_json ? JSON.parse(activeRow.readiness_json) : null,
         }
       : null;
 
@@ -287,15 +315,16 @@ export function sessionsRouter(db) {
     if (!result.success) {
       return res.status(422).json({ error: 'validation failed', details: result.error.issues });
     }
-    const { exercise_id, set_number, reps, weight_kg, duration_s } = result.data;
+    const { exercise_id, set_number, reps, weight_kg, duration_s, set_type, superset_group } = result.data;
 
     db.prepare(
-      `INSERT INTO set_logs (session_id, exercise_id, set_number, reps, weight_kg, duration_s)
-       VALUES (?, ?, ?, ?, ?, ?)
+      `INSERT INTO set_logs (session_id, exercise_id, set_number, reps, weight_kg, duration_s, set_type, superset_group)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (session_id, exercise_id, set_number)
        DO UPDATE SET reps = excluded.reps, weight_kg = excluded.weight_kg,
-         duration_s = excluded.duration_s, updated_at = datetime('now')`
-    ).run(session.id, exercise_id, set_number, reps, weight_kg, duration_s);
+         duration_s = excluded.duration_s, set_type = excluded.set_type,
+         superset_group = excluded.superset_group, updated_at = datetime('now')`
+    ).run(session.id, exercise_id, set_number, reps, weight_kg, duration_s, set_type ?? 'working', superset_group ?? null);
 
     res.json({ ok: true });
   });
@@ -341,23 +370,23 @@ export function sessionsRouter(db) {
     if (!result.success) {
       return res.status(422).json({ error: 'validation failed', details: result.error.issues });
     }
-    const { exercise_id, rpe } = result.data;
+    const { exercise_id, rpe, rir } = result.data;
 
     if (rpe === null) {
       db.prepare('DELETE FROM exercise_rpe WHERE session_id = ? AND exercise_id = ?').run(
         session.id,
         exercise_id
       );
-      return res.json({ ok: true, rpe: null });
+      return res.json({ ok: true, rpe: null, rir: null });
     }
 
     db.prepare(
-      `INSERT INTO exercise_rpe (session_id, exercise_id, rpe) VALUES (?, ?, ?)
+      `INSERT INTO exercise_rpe (session_id, exercise_id, rpe, rir) VALUES (?, ?, ?, ?)
        ON CONFLICT (session_id, exercise_id)
-       DO UPDATE SET rpe = excluded.rpe, updated_at = datetime('now')`
-    ).run(session.id, exercise_id, rpe);
+       DO UPDATE SET rpe = excluded.rpe, rir = excluded.rir, updated_at = datetime('now')`
+    ).run(session.id, exercise_id, rpe, rir ?? null);
 
-    res.json({ ok: true, rpe });
+    res.json({ ok: true, rpe, rir: rir ?? null });
   });
 
   // Notiz wird schon während der Session gespeichert, damit ein Reload sie nicht verliert.
@@ -383,6 +412,42 @@ export function sessionsRouter(db) {
     res.json({ ok: true, note });
   });
 
+  router.post('/sessions/:id/adaptations', (req, res) => {
+    const session = db
+      .prepare('SELECT * FROM sessions WHERE id = ? AND user_id = ?')
+      .get(req.params.id, req.user.id);
+
+    if (!session) return res.status(404).json({ error: 'not found' });
+    if (session.status !== 'active') return res.status(409).json({ error: 'session finished' });
+
+    const parsed = adaptationsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: 'validation failed', details: parsed.error.issues });
+    }
+
+    const json = JSON.stringify(parsed.data);
+    db.prepare('UPDATE sessions SET adaptations_json = ? WHERE id = ?').run(json, session.id);
+    res.json({ ok: true, adaptations: parsed.data });
+  });
+
+  router.post('/sessions/:id/readiness', (req, res) => {
+    const session = db
+      .prepare('SELECT * FROM sessions WHERE id = ? AND user_id = ?')
+      .get(req.params.id, req.user.id);
+
+    if (!session) return res.status(404).json({ error: 'not found' });
+    if (session.status !== 'active') return res.status(409).json({ error: 'session finished' });
+
+    const parsed = readinessSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: 'validation failed', details: parsed.error.issues });
+    }
+
+    const json = JSON.stringify(parsed.data);
+    db.prepare('UPDATE sessions SET readiness_json = ? WHERE id = ?').run(json, session.id);
+    res.json({ ok: true, readiness: parsed.data });
+  });
+
   router.post('/sessions/:id/finish', (req, res) => {
     const session = db
       .prepare('SELECT * FROM sessions WHERE id = ? AND user_id = ?')
@@ -390,6 +455,24 @@ export function sessionsRouter(db) {
 
     if (!session) {
       return res.status(404).json({ error: 'not found' });
+    }
+    if (session.status === 'finished') {
+      const logs = setLogsForSession(db, session.id);
+      const currentSets = groupSetsByExercise(logs);
+      const summary = {
+        exercises: [...currentSets.entries()].map(([exercise_id, sets]) => ({
+          exercise_id,
+          sets,
+        })),
+      };
+      const evaluation = db.prepare('SELECT 1 FROM evaluations WHERE session_id = ?').get(session.id);
+      return res.json({
+        session_id: session.id,
+        summary,
+        evaluation: Boolean(evaluation),
+        new_records: [],
+        already_finished: true,
+      });
     }
     if (session.status !== 'active') {
       return res.status(409).json({ error: 'session finished' });

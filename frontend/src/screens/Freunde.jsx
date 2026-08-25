@@ -73,6 +73,10 @@ export default function Freunde() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({ queryKey: ['friends'], queryFn: () => api.get('/friends') });
+  const { data: activityData } = useQuery({
+    queryKey: ['friends-activity'],
+    queryFn: () => api.get('/friends/activity'),
+  });
 
   function refresh() {
     queryClient.invalidateQueries({ queryKey: ['friends'] });
@@ -198,6 +202,21 @@ export default function Freunde() {
               <button onClick={() => removeRequest.mutate(r.id)} style={smallButton()}>
                 Zurückziehen
               </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(activityData?.activity ?? []).length > 0 && (
+        <div className="glass" style={cardStyle}>
+          <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>Diese Woche</h3>
+          {activityData.activity.map((a) => (
+            <div key={a.user_id} style={rowStyle}>
+              <Avatar name={a.name} />
+              <span style={nameStyle}>{a.name}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
+                {a.workouts_this_week} Workout{a.workouts_this_week === 1 ? '' : 's'}
+              </span>
             </div>
           ))}
         </div>

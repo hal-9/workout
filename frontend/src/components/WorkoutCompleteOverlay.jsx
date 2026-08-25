@@ -5,8 +5,6 @@ import { playWorkoutComplete } from '../lib/workoutSounds.js';
 
 const PARTICLES = particleLayout(14);
 const COUNT_UP_MS = 700;
-const HOLD_MS = 1400;
-const HOLD_WITH_RECORDS_MS = 2400;
 
 const RING_RADIUS = 34;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
@@ -81,12 +79,6 @@ export default function WorkoutCompleteOverlay({ stats, records = [], onDone }) 
   useEffect(() => {
     playWorkoutComplete();
   }, []);
-
-  useEffect(() => {
-    const hold = records.length ? HOLD_WITH_RECORDS_MS : HOLD_MS;
-    const timer = setTimeout(onDone, reduced ? 700 : hold);
-    return () => clearTimeout(timer);
-  }, [onDone, records.length, reduced]);
 
   return (
     <div
@@ -244,6 +236,26 @@ export default function WorkoutCompleteOverlay({ stats, records = [], onDone }) 
             )}
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={onDone}
+          className="btn primary"
+          style={{
+            width: '100%',
+            marginTop: 16,
+            border: 'none',
+            borderRadius: 13,
+            padding: 15,
+            fontWeight: 600,
+            fontSize: 15,
+            cursor: 'pointer',
+            background: 'var(--primary-grad)',
+            color: 'var(--on-primary)',
+          }}
+        >
+          Zur Auswertung
+        </button>
       </div>
     </div>
   );

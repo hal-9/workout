@@ -9,18 +9,22 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const [pending, setPending] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
+    setPending(true);
     try {
       const user = await api.post('/login', { email, password });
       queryClient.setQueryData(['me'], user);
       navigate(user.onboarded ? '/heute' : '/willkommen');
     } catch {
       setError('E-Mail oder Passwort falsch.');
+    } finally {
+      setPending(false);
     }
   }
 
@@ -53,8 +57,8 @@ export default function Login() {
           />
         </div>
         {error && <p style={{ color: 'var(--danger)' }}>{error}</p>}
-        <button type="submit" className="btn primary" style={authButtonStyle}>
-          Einloggen
+        <button type="submit" className="btn primary" style={authButtonStyle} disabled={pending}>
+          {pending ? 'Wird eingeloggt…' : 'Einloggen'}
         </button>
       </form>
       <Link to="/registrieren" style={authLinkStyle}>

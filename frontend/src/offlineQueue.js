@@ -74,11 +74,13 @@ async function removeQueuedSet(key) {
   db.close();
 }
 
-export async function replayQueue({ postSet, deleteSet }) {
+export async function replayQueue({ postSet, deleteSet, postFinish }) {
   const entries = await getQueuedSets();
   for (const entry of entries) {
     try {
-      if (entry.operation === 'delete') {
+      if (entry.operation === 'finish') {
+        await postFinish(entry.sessionId, entry.payload);
+      } else if (entry.operation === 'delete') {
         await deleteSet(entry.sessionId, entry.payload);
       } else {
         await postSet(entry.sessionId, entry.payload);
@@ -92,4 +94,14 @@ export async function replayQueue({ postSet, deleteSet }) {
       break;
     }
   }
+}
+
+export async function enqueueFinish(sessionId, payload = {}) {
+  const entry = {
+    key: `finish:${sessionId}`,
+    sessionId,
+    operation: 'finish',
+    payload,
+  };
+  await putQueuedEntry(entry);
 }

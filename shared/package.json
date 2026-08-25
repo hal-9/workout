@@ -9,7 +9,10 @@
     "./duration": "./duration.js",
     "./records": "./records.js",
     "./progression": "./progression.js",
-    "./muscles": "./muscles.js"
+    "./muscles": "./muscles.js",
+    "./setTypes": "./setTypes.js",
+    "./plateCalc": "./plateCalc.js",
+    "./warmupCalc": "./warmupCalc.js"
   },
   "dependencies": {
     "zod": "^3.23.8"

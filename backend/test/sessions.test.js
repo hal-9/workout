@@ -299,11 +299,12 @@ describe('sessions', () => {
       expect(evaluation).toBeUndefined();
     });
 
-    it('doppeltes finish -> 409', async () => {
+    it('doppeltes finish ist idempotent', async () => {
       const sessionId = await createSession();
       await request(app).post(`/api/sessions/${sessionId}/finish`).set('Cookie', cookie);
       const res = await request(app).post(`/api/sessions/${sessionId}/finish`).set('Cookie', cookie);
-      expect(res.status).toBe(409);
+      expect(res.status).toBe(200);
+      expect(res.body.already_finished).toBe(true);
     });
   });
 });

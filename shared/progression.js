@@ -1,4 +1,5 @@
 import { isCooldown, parseTargetReps } from './exerciseProgress.js';
+import { workingSets } from './setTypes.js';
 
 // Voreinstellungen je Übungstyp. Cardio ist absichtlich aus: Intervalle werden
 // vom Nutzer vorgegeben, nicht automatisch hochgeschraubt.
@@ -38,7 +39,7 @@ function plannedSets(exercise) {
 // Eine Session gilt als "geschafft", wenn alle geplanten Sätze das Ziel erreichen.
 export function sessionQualifies(exercise, config, sets = []) {
   const planned = plannedSets(exercise);
-  const relevant = sets.slice(0, planned);
+  const relevant = workingSets(sets).slice(0, planned);
   if (relevant.length < planned) return false;
 
   if (config.type === 'duration') {
@@ -91,6 +92,28 @@ function buildProposal(exercise, config) {
   return { field: 'target_reps', from: exercise.target_reps, to, unit: 'Wdh.' };
 }
 
+/** Explainable rationale for a progression proposal (German UI copy). */
+export function proposalRationale(exercise, config, proposal) {
+  const count = proposal?.sessions_in_streak ?? config?.after_success ?? 1;
+  const streakLabel = count > 1 ? `${count}× am Ziel` : 'Ziel erreicht';
+
+  if (proposal?.field === 'default_weight_kg') {
+    const target = parseTargetReps(exercise.target_reps);
+    const repsHint = target ? `${target.max} Wdh.` : 'Ziel';
+    return `${streakLabel}: ${repsHint} in allen Arbeitssätzen · +${config.increment} kg empfohlen`;
+  }
+
+  if (proposal?.field === 'target_seconds') {
+    return `${streakLabel}: Zieldauer erreicht · +${config.increment} s empfohlen`;
+  }
+
+  if (proposal?.field === 'target_reps') {
+    return `${streakLabel}: Wiederholungen am oberen Ende · Bereich erhöhen`;
+  }
+
+  return streakLabel;
+}
+
 /**
  * Prüft eine Übung gegen ihre letzten Sessions (älteste zuerst) und liefert
  * einen Vorschlag, wenn `after_success` Sessions in Folge das Ziel erreicht haben.
@@ -108,13 +131,15 @@ export function evaluateExercise(exercise, sessionsOldestFirst = []) {
   const change = buildProposal(exercise, config);
   if (!change || change.to === change.from) return null;
 
-  return {
+  const proposal = {
     exercise_id: exercise.id,
     name: exercise.name,
     type: config.type,
     sessions_in_streak: streak.length,
     ...change,
   };
+  proposal.rationale = proposalRationale(exercise, config, proposal);
+  return proposal;
 }
 
 /**

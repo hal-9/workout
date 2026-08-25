@@ -126,3 +126,42 @@ export function weekProgress(plan, doneThisWeek) {
   }
   return { done, total: plan.days.length };
 }
+
+/** Legacy weekday helpers — used by tests and missed-day hints. */
+export function getMissedDays(plan, doneDates, refDate = new Date()) {
+  const todayIdx = weekdayIndex(refDate);
+  const map = assignWeekdays(plan);
+  const missed = [];
+  for (const weekday of WEEKDAYS) {
+    const idx = WEEKDAYS.indexOf(weekday);
+    if (idx >= todayIdx) continue;
+    const day = map.get(weekday);
+    if (day && !doneDates.has(day.key)) {
+      missed.push({ ...day, weekday });
+    }
+  }
+  return missed;
+}
+
+export function missedDayKeys(plan, doneDates, refDate = new Date()) {
+  return new Set(getMissedDays(plan, doneDates, refDate).map((d) => d.key));
+}
+
+export function nextDueDayKey(plan, doneDates, refDate = new Date()) {
+  if (!plan?.days?.length) return undefined;
+  const todayIdx = weekdayIndex(refDate);
+  const map = assignWeekdays(plan);
+
+  const todayDay = map.get(WEEKDAYS[todayIdx]);
+  if (todayDay && !doneDates.has(todayDay.key)) return todayDay.key;
+
+  for (let i = todayIdx + 1; i < 7; i++) {
+    const day = map.get(WEEKDAYS[i]);
+    if (day && !doneDates.has(day.key)) return day.key;
+  }
+
+  for (const day of plan.days) {
+    if (!doneDates.has(day.key)) return day.key;
+  }
+  return plan.days[0].key;
+}
