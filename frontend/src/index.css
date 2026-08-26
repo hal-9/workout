@@ -388,6 +388,24 @@ body::after {
   }
 }
 
+/* „Satz geschafft": grüner Puls direkt nach dem Loggen */
+
+@keyframes set-logged-pulse {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+.set-logged-pulse {
+  animation: set-logged-pulse 500ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .set-logged-pulse {
+    animation: none;
+  }
+}
+
 .ex-card {
   transition: transform 80ms;
 }

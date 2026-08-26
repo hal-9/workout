@@ -51,7 +51,9 @@ export default function ExerciseFocus({
 }) {
   const [phase, setPhase] = useState('entering');
   const [editing, setEditing] = useState(null); // null | 'big' | 'kg'
+  const [justLogged, setJustLogged] = useState(false);
   const closeTimeoutRef = useRef(null);
+  const pulseTimeoutRef = useRef(null);
   const editAreaRef = useRef(null);
   const touchStartRef = useRef(null);
 
@@ -60,7 +62,23 @@ export default function ExerciseFocus({
     return () => cancelAnimationFrame(id);
   }, []);
 
-  useEffect(() => () => clearTimeout(closeTimeoutRef.current), []);
+  useEffect(
+    () => () => {
+      clearTimeout(closeTimeoutRef.current);
+      clearTimeout(pulseTimeoutRef.current);
+    },
+    []
+  );
+
+  // Satz geloggt: kurz grün pulsieren, danach bleibt der Button bis zum Ende
+  // der Pause (Ablauf oder „Weiter") gesperrt.
+  function handleLogSet() {
+    if (disabled || restTimerActive) return;
+    setJustLogged(true);
+    clearTimeout(pulseTimeoutRef.current);
+    pulseTimeoutRef.current = setTimeout(() => setJustLogged(false), 650);
+    onLogCurrentSet();
+  }
 
   function requestClose() {
     setPhase('closing');
@@ -297,23 +315,33 @@ export default function ExerciseFocus({
       >
         <button
           type="button"
-          onClick={disabled ? undefined : onLogCurrentSet}
-          disabled={disabled}
+          onClick={handleLogSet}
+          disabled={disabled || restTimerActive}
+          className={justLogged ? 'set-logged-pulse' : undefined}
           style={{
             height: 58,
             borderRadius: 18,
             border: 'none',
-            background: 'var(--primary-grad)',
+            background: justLogged
+              ? 'var(--success)'
+              : restTimerActive
+                ? 'var(--surface2)'
+                : 'var(--primary-grad)',
             fontFamily: 'var(--font-display)',
             fontWeight: 700,
             fontSize: 17,
-            color: '#fff',
-            boxShadow: '0 8px 30px rgba(236,72,153,.28)',
-            cursor: disabled ? 'not-allowed' : 'pointer',
+            color: justLogged ? '#fff' : restTimerActive ? 'var(--muted)' : '#fff',
+            boxShadow: justLogged
+              ? '0 8px 30px rgba(52,211,153,.35)'
+              : restTimerActive
+                ? 'none'
+                : '0 8px 30px rgba(236,72,153,.28)',
+            cursor: disabled || restTimerActive ? 'not-allowed' : 'pointer',
             opacity: disabled ? 0.55 : 1,
+            transition: 'background 250ms ease, box-shadow 250ms ease, color 250ms ease',
           }}
         >
-          Satz geschafft ✓
+          {restTimerActive && !justLogged ? '⏱ Pause läuft …' : 'Satz geschafft ✓'}
         </button>
         <div style={{ display: 'flex', gap: 10 }}>
           <button type="button" onClick={onStartRestTimer} style={{ ...secondaryBtnStyle, color: 'var(--primary)' }}>
