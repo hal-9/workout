@@ -15,6 +15,7 @@ import MuscleModal from '../components/MuscleModal.jsx';
 import { formatDuration, toInputValue } from 'shared/duration';
 import { WEEKDAYS, WEEKDAY_LABELS, projectWeek, weekProgress, todayWeekday } from '../lib/schedule.js';
 import { getAllOverrides, getOverride, setOverride } from '../lib/weightOverrides.js';
+import { applyWeekOrder, clearWeekOrder, hasWeekOrder, swapWorkout } from '../lib/weekOrder.js';
 import { lightenExercise, lightWeight } from '../lib/lightMode.js';
 import { buildSetPayload } from '../components/SetRow.jsx';
 import ExerciseListCard, { buildCardSubline } from '../components/ExerciseListCard.jsx';
@@ -25,6 +26,7 @@ import ReadinessDialog, { readinessAdaptations } from '../components/ReadinessDi
 import WrappedStory, { monthLabel } from '../components/WrappedStory.jsx';
 import ProgressionProposals from '../components/ProgressionProposals.jsx';
 import PageHeader from '../components/ui/PageHeader.jsx';
+import Dialog from '../components/ui/Dialog.jsx';
 import Button from '../components/ui/Button.jsx';
 import LoadingScreen from '../components/ui/LoadingScreen.jsx';
 import {
@@ -131,6 +133,7 @@ export default function Heute() {
   const [detailExercise, setDetailExercise] = useState(null);
   const [muscleExercise, setMuscleExercise] = useState(null);
   const [rpeByExercise, setRpeByExercise] = useState({});
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const [note, setNote] = useState('');
   const [noteOpen, setNoteOpen] = useState(false);
   const noteSaveRef = useRef(null);
@@ -144,7 +147,9 @@ export default function Heute() {
       doneThisWeek.set(s.day_key, finished);
     }
   }
-  const projection = plan ? projectWeek(plan, doneThisWeek) : { days: [], nextKey: null, todayEntry: null, trainedToday: false };
+  // Wochen-Reihenfolge ggf. per Workout-Tausch überschrieben (localStorage, nur diese Woche)
+  const orderedPlan = plan ? applyWeekOrder(plan) : plan;
+  const projection = orderedPlan ? projectWeek(orderedPlan, doneThisWeek) : { days: [], nextKey: null, todayEntry: null, trainedToday: false };
   const nextDayKey = projection.nextKey;
   const projectionByKey = new Map(projection.days.map((e) => [e.key, e]));
   const progress = plan ? weekProgress(plan, doneThisWeek) : { done: 0, total: 0 };
@@ -440,6 +445,16 @@ export default function Heute() {
     }
   }
 
+  // Workout-Tausch: offener Tag rückt in der Wochensequenz nach vorn — Kalender zieht mit.
+  function selectWorkout(d) {
+    if (!doneThisWeek.has(d.key) && d.key !== dayKey) {
+      swapWorkout(plan, d.key, new Set(doneThisWeek.keys()));
+    }
+    setDayKey(d.key);
+    setFocusExerciseId(null);
+    setSwitcherOpen(false);
+  }
+
   async function undoLastSet() {
     const last = undoStack[undoStack.length - 1];
     if (!last || !plan) return;
@@ -696,14 +711,43 @@ export default function Heute() {
         action={
           progress.total > 0 ? (
             <div
+              aria-label={`${progress.done} von ${progress.total} Workouts diese Woche erledigt`}
+              title="Workouts diese Woche"
               style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 12,
-                color: progress.done === progress.total ? 'var(--success)' : 'var(--muted)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'var(--surface)',
+                border: `1px solid ${progress.done === progress.total ? 'var(--success)' : 'var(--line)'}`,
+                borderRadius: 999,
+                padding: '7px 12px',
                 whiteSpace: 'nowrap',
               }}
             >
-              {progress.done}/{progress.total} diese Woche
+              <span style={{ display: 'flex', gap: 4 }} aria-hidden="true">
+                {orderedPlan.days.map((d) => (
+                  <span
+                    key={d.key}
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: doneThisWeek.has(d.key) ? 'var(--success)' : 'var(--surface2)',
+                      border: `1px solid ${doneThisWeek.has(d.key) ? 'var(--success)' : 'var(--line)'}`,
+                    }}
+                  />
+                ))}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: progress.done === progress.total ? 'var(--success)' : 'var(--text)',
+                }}
+              >
+                {progress.done}/{progress.total}
+              </span>
             </div>
           ) : null
         }
@@ -830,70 +874,6 @@ export default function Heute() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', margin: '16px 0' }}>
-        {plan.days.map((d) => {
-          const doneAt = doneThisWeek.get(d.key);
-          const entry = projectionByKey.get(d.key);
-          const isNext = !doneAt && d.key === nextDayKey;
-          const selected = d.key === dayKey;
-          return (
-            <button
-              key={d.key}
-              onClick={() => {
-                setDayKey(d.key);
-                setFocusExerciseId(null);
-              }}
-              disabled={!isOnline && !selected}
-              style={{
-                flex: '0 0 auto',
-                textAlign: 'left',
-                background: selected ? 'var(--primary-dim)' : doneAt ? 'var(--success-dim)' : 'var(--surface)',
-                border: `1px solid ${selected ? 'var(--primary)' : doneAt ? 'var(--success)' : 'var(--line)'}`,
-                color: selected ? 'var(--primary)' : doneAt ? 'var(--success)' : 'var(--muted)',
-                borderRadius: 11,
-                padding: '9px 13px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 12,
-                cursor: !isOnline && !selected ? 'not-allowed' : 'pointer',
-                whiteSpace: 'nowrap',
-                opacity: !isOnline && !selected ? 0.5 : 1,
-              }}
-            >
-              <span>
-                {doneAt ? '✓ ' : ''}
-                {d.name}
-                {isNext && (
-                  <span
-                    style={{
-                      marginLeft: 6,
-                      padding: '2px 6px',
-                      borderRadius: 999,
-                      fontSize: 10,
-                      textTransform: 'uppercase',
-                      background: 'var(--primary-dim)',
-                      color: 'var(--primary)',
-                    }}
-                  >
-                    Als Nächstes
-                  </span>
-                )}
-              </span>
-              {doneAt ? (
-                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.8 }}>
-                  Erledigt ({doneAt.toLocaleDateString('de-DE', { weekday: 'short' })})
-                </div>
-              ) : entry?.projectedIdx != null ? (
-                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.8 }}>
-                  {WEEKDAY_LABELS[WEEKDAYS[entry.projectedIdx]]}
-                </div>
-              ) : (
-                <div style={{ fontSize: 10, marginTop: 3, opacity: 0.8 }}>diese Woche nicht mehr</div>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
       {showRestartGate && (
         <div
           style={{
@@ -901,7 +881,7 @@ export default function Heute() {
             border: '1px solid var(--success)',
             borderRadius: 16,
             padding: 16,
-            marginBottom: 12,
+            margin: '16px 0 12px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -1011,7 +991,7 @@ export default function Heute() {
             </div>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, margin: '18px 0 8px' }}>
             <div
               style={{
                 fontFamily: 'var(--font-mono)',
@@ -1049,23 +1029,40 @@ export default function Heute() {
               </a>
             )}
           </div>
-          <div
+          <button
+            type="button"
+            onClick={orderedPlan.days.length > 1 ? () => setSwitcherOpen(true) : undefined}
+            aria-label="Workout wechseln"
             style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: 10,
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              textAlign: 'left',
+              color: 'var(--text)',
               fontFamily: 'var(--font-display)',
               fontWeight: 700,
               fontSize: 34,
               lineHeight: 1.05,
               letterSpacing: -0.5,
+              cursor: orderedPlan.days.length > 1 ? 'pointer' : 'default',
             }}
           >
-            {day.name}
-          </div>
-          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span>{day.name}</span>
+            {orderedPlan.days.length > 1 && (
+              <span style={{ fontSize: 16, color: 'var(--primary)', flexShrink: 0 }} aria-hidden="true">
+                ▾
+              </span>
+            )}
+          </button>
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 11, color: 'var(--muted)' }}>
               HEUTE · {WEEKDAY_LABELS[todayWeekday()].toUpperCase()}
             </span>
           </div>
-          <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div style={{ marginTop: 18, display: 'flex', gap: 10, alignItems: 'center' }}>
             <div style={{ flex: 1, height: 5, borderRadius: 999, background: 'var(--surface2)', overflow: 'hidden' }}>
               <div
                 style={{
@@ -1081,12 +1078,12 @@ export default function Heute() {
             </div>
           </div>
           {!anyExerciseLogged && (
-            <div style={{ marginTop: 10, fontFamily: 'var(--font-display)', fontSize: 11, color: 'var(--muted)' }}>
+            <div style={{ marginTop: 12, fontFamily: 'var(--font-display)', fontSize: 11, color: 'var(--muted)' }}>
               Übung antippen, um Sätze zu loggen
             </div>
           )}
 
-          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {mainExercises.map((ex) => {
               const rows = setsByExercise[ex.id] || [];
               const allLogged = rows.length > 0 && rows.every((r) => r.logged);
@@ -1369,6 +1366,88 @@ export default function Heute() {
           onChange={setRestTimerState}
         />
       )}
+
+      <Dialog open={switcherOpen} onClose={() => setSwitcherOpen(false)} title="Workout wechseln">
+        <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--muted)' }}>
+          Ein anderes Workout vorziehen? Die Wochenplanung und der Kalender passen sich an.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {orderedPlan.days.map((d) => {
+            const doneAt = doneThisWeek.get(d.key);
+            const entry = projectionByKey.get(d.key);
+            const isNext = !doneAt && d.key === nextDayKey;
+            const selected = d.key === dayKey;
+            return (
+              <button
+                key={d.key}
+                onClick={() => selectWorkout(d)}
+                disabled={!isOnline && !selected}
+                style={{
+                  textAlign: 'left',
+                  background: selected ? 'var(--primary-dim)' : 'var(--surface)',
+                  border: `1px solid ${selected ? 'var(--primary)' : doneAt ? 'var(--success)' : 'var(--line)'}`,
+                  borderRadius: 13,
+                  padding: '11px 13px',
+                  cursor: !isOnline && !selected ? 'not-allowed' : 'pointer',
+                  opacity: !isOnline && !selected ? 0.5 : 1,
+                  color: 'var(--text)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 600, fontSize: 14 }}>
+                    {doneAt ? '✓ ' : ''}
+                    {d.name}
+                  </span>
+                  {isNext && (
+                    <span
+                      style={{
+                        padding: '2px 6px',
+                        borderRadius: 999,
+                        fontSize: 10,
+                        textTransform: 'uppercase',
+                        background: 'var(--primary-dim)',
+                        color: 'var(--primary)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Als Nächstes
+                    </span>
+                  )}
+                </div>
+                <div style={{ marginTop: 4, fontFamily: 'var(--font-mono)', fontSize: 11, color: doneAt ? 'var(--success)' : 'var(--muted)' }}>
+                  {doneAt
+                    ? `Erledigt (${doneAt.toLocaleDateString('de-DE', { weekday: 'short' })})`
+                    : entry?.projectedIdx != null
+                      ? `Geplant: ${WEEKDAY_LABELS[WEEKDAYS[entry.projectedIdx]]}`
+                      : 'Diese Woche nicht mehr'}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {hasWeekOrder() && (
+          <button
+            onClick={() => {
+              clearWeekOrder();
+              setDayKey(null);
+              setSwitcherOpen(false);
+            }}
+            style={{
+              marginTop: 12,
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              color: 'var(--muted)',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+            }}
+          >
+            Ursprüngliche Reihenfolge wiederherstellen
+          </button>
+        )}
+      </Dialog>
 
       <ReadinessDialog
         open={readinessOpen}

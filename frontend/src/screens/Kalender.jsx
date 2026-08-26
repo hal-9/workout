@@ -5,6 +5,7 @@ import { api } from '../api.js';
 import { addDays, formatWeekLabel, localDateKey, mondayStart, parseUtc, toSqlUtc } from '../lib/dates.js';
 import { formatDuration } from 'shared/duration';
 import { WEEKDAYS, WEEKDAY_LABELS, assignWeekdays, projectWeek, weekProgress } from '../lib/schedule.js';
+import { applyWeekOrder } from '../lib/weekOrder.js';
 
 const pagerBtnStyle = {
   width: 44,
@@ -56,7 +57,8 @@ export default function Kalender() {
   const dueByWeekday = assignWeekdays(plan);
   const isCurrentWeek = weeksAgo === 0;
   const todayKey = localDateKey(new Date());
-  const projection = isCurrentWeek && plan ? projectWeek(plan, doneDates) : null;
+  // Workout-Tausch aus „Heute" (weekOrder) fließt in die Projektion der aktuellen Woche ein.
+  const projection = isCurrentWeek && plan ? projectWeek(applyWeekOrder(plan), doneDates) : null;
   const projectedByIdx = new Map((projection?.days ?? []).filter((e) => e.projectedIdx != null).map((e) => [e.projectedIdx, e]));
   const unplacedDays = (projection?.days ?? []).filter((e) => e.unplaced);
   const progress = plan ? weekProgress(plan, doneDates) : { done: 0, total: 0 };

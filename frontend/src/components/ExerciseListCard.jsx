@@ -59,7 +59,7 @@ export default function ExerciseListCard({ exercise, rows, subline, onOpen }) {
             </div>
             <div
               style={{
-                marginTop: 2,
+                marginTop: 4,
                 fontFamily: 'var(--font-mono)',
                 fontWeight: 500,
                 fontSize: 10.5,
