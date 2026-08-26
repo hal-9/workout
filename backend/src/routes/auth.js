@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
+import { z } from 'zod';
+import { THEME_MODES, THEME_PALETTE_IDS } from 'shared/themes';
 import {
   createSession,
   setSessionCookie,
@@ -15,15 +17,22 @@ import {
   findUserForLogin,
 } from '../accounts.js';
 
+const themeSchema = z.object({
+  mode: z.enum(THEME_MODES),
+  palette: z.enum(THEME_PALETTE_IDS),
+});
+
 function publicUser(db, userId) {
   const row = db
-    .prepare('SELECT id, name, email, onboarded_at FROM users WHERE id = ?')
+    .prepare('SELECT id, name, email, onboarded_at, theme_mode, theme_palette FROM users WHERE id = ?')
     .get(userId);
   return {
     id: row.id,
     name: row.name,
     email: row.email,
     onboarded: Boolean(row.onboarded_at),
+    // null = noch nie etwas gewaehlt; das Frontend behaelt dann seine lokale Auswahl.
+    theme: { mode: row.theme_mode, palette: row.theme_palette },
   };
 }
 
@@ -82,6 +91,21 @@ export function authRouter(db) {
     db.prepare(
       "UPDATE users SET onboarded_at = datetime('now') WHERE id = ? AND onboarded_at IS NULL"
     ).run(req.user.id);
+    res.json(publicUser(db, req.user.id));
+  });
+
+  router.put('/me/theme', requireAuth(db), (req, res) => {
+    const parsed = themeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: 'validation failed', details: parsed.error.issues });
+    }
+
+    const { mode, palette } = parsed.data;
+    db.prepare('UPDATE users SET theme_mode = ?, theme_palette = ? WHERE id = ?').run(
+      mode,
+      palette,
+      req.user.id
+    );
     res.json(publicUser(db, req.user.id));
   });
 

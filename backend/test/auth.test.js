@@ -22,6 +22,7 @@ describe('auth', () => {
         name: 'tuncay',
         email: 'tuncay@example.com',
         onboarded: true,
+        theme: { mode: null, palette: null },
       });
       expect(res.headers['set-cookie'][0]).toMatch(/^session=/);
     });
@@ -55,6 +56,7 @@ describe('auth', () => {
         name: 'tuncay',
         email: 'tuncay@example.com',
         onboarded: true,
+        theme: { mode: null, palette: null },
       });
     });
 

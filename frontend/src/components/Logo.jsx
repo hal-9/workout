@@ -3,8 +3,8 @@ export default function Logo({ size = 26 }) {
     <svg width={size} height={size} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
         <linearGradient id="lilief-logo-g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#8b5cf6" />
-          <stop offset="1" stopColor="#ec4899" />
+          <stop offset="0" stopColor="var(--grad-from)" />
+          <stop offset="1" stopColor="var(--grad-to)" />
         </linearGradient>
       </defs>
       <g transform="rotate(-35 256 276)">
@@ -16,7 +16,7 @@ export default function Logo({ size = 26 }) {
       </g>
       <path
         d="M388 56a34 34 0 0 0-30 18 34 34 0 0 0-30-18 34 34 0 0 0-34 34c0 36 40 58 64 78 24-20 64-42 64-78a34 34 0 0 0-34-34z"
-        fill="#ec4899"
+        fill="var(--grad-to)"
         transform="translate(38 -26)"
       />
     </svg>

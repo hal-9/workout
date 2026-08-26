@@ -3,7 +3,7 @@ import { durationUnitLabel, toInputValue } from 'shared/duration';
 import { parseTargetReps } from '../lib/exerciseCompare.js';
 import { REST_DEFAULT_SECONDS } from '../lib/restTimer.js';
 
-const CURRENT_PINK = '#ec4899';
+const CURRENT_ACCENT = 'var(--accent)';
 
 const secondaryBtnStyle = {
   flex: 1,
@@ -165,7 +165,7 @@ export default function ExerciseFocus({
                 width: 18,
                 height: 5,
                 borderRadius: 999,
-                background: status === 'done' ? 'var(--success)' : status === 'current' ? CURRENT_PINK : 'var(--line)',
+                background: status === 'done' ? 'var(--success)' : status === 'current' ? CURRENT_ACCENT : 'var(--line)',
               }}
             />
           ))}
@@ -203,7 +203,7 @@ export default function ExerciseFocus({
                 type="button"
                 onClick={() => setEditing('big')}
                 style={{
-                  background: 'linear-gradient(135deg, #a78bfa, #ec4899)',
+                  background: 'var(--primary-grad)',
                   WebkitBackgroundClip: 'text',
                   backgroundClip: 'text',
                   color: 'transparent',
@@ -268,7 +268,7 @@ export default function ExerciseFocus({
                   padding: 0,
                   boxSizing: 'border-box',
                   background: state === 'logged' ? 'var(--success)' : 'transparent',
-                  border: `2px solid ${state === 'logged' ? 'var(--success)' : state === 'current' ? CURRENT_PINK : 'var(--line)'}`,
+                  border: `2px solid ${state === 'logged' ? 'var(--success)' : state === 'current' ? CURRENT_ACCENT : 'var(--line)'}`,
                   cursor: row.logged ? 'pointer' : 'default',
                   transition: 'background 200ms, border-color 200ms',
                 }}

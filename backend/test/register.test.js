@@ -34,6 +34,7 @@ describe('registrierung', () => {
       name: 'neuling',
       email: 'neuling@example.com',
       onboarded: false,
+      theme: { mode: null, palette: null },
     });
     expect(res.headers['set-cookie'][0]).toMatch(/^session=/);
 

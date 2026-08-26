@@ -1,7 +1,31 @@
+/* ---- Themes ----
+   Zwei Achsen: data-theme = hell/dunkel, data-palette = Farbfamilie.
+   Palettenbloecke setzen nur die eingefaerbten Variablen; was neutral ist
+   (Glas, Erfolg, Schrift, Masse) steht in :root bzw. im dunklen Basisblock.
+   Reihenfolge zaehlt: helle Paletten zuerst, dann dunkle. */
+
 :root {
+  --surface: rgba(255, 255, 255, 0.82);
+  --glass: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --on-primary: #ffffff;
+  /* Wird pro Palette nur ueber --grad-from/--grad-to gefuellt — auch das
+     Logo-SVG greift auf die beiden Stops zu. */
+  --primary-grad: linear-gradient(135deg, var(--grad-from) 0%, var(--grad-to) 100%);
+  --success: #2f9e77;
+  --success-dim: #e2f5ec;
+  --danger: #dd4a72;
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --header-h: 52px;
+  --nav-h: 78px;
+}
+
+/* Lila/Pink — Default-Palette, auch ohne data-palette-Attribut. */
+:root,
+[data-palette='violet'] {
   --bg: #f6f2fb;
   --bg-gradient: linear-gradient(165deg, #fdf2f8 0%, #f5eefc 45%, #eef0fe 100%);
-  --surface: rgba(255, 255, 255, 0.82);
   --surface2: #f4edfa;
   --line: #e7dcf3;
   --text: #2e2440;
@@ -9,25 +33,78 @@
   --primary: #7c3aed;
   --primary-dim: #efe7fd;
   --accent: #ec4899;
-  --primary-grad: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-  --on-primary: #ffffff;
-  --success: #2f9e77;
-  --success-dim: #e2f5ec;
-  --danger: #dd4a72;
-  --glass: rgba(255, 255, 255, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.75);
+  --grad-from: #8b5cf6;
+  --grad-to: #ec4899;
   --shadow-card: 0 6px 22px rgba(124, 58, 237, 0.08);
   --focus-bg: radial-gradient(120% 70% at 50% 0%, #f3e8ff 0%, #f6f2fb 55%, #eef0fe 100%);
-  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-  --header-h: 52px;
-  --nav-h: 78px;
+  --blob-a: rgba(139, 92, 246, 0.35);
+  --blob-b: rgba(236, 72, 153, 0.28);
 }
 
+[data-palette='ocean'] {
+  --bg: #f0f5fb;
+  --bg-gradient: linear-gradient(165deg, #eef7fd 0%, #eff3fc 45%, #eaf1ff 100%);
+  --surface2: #e9f1fa;
+  --line: #d9e5f3;
+  --text: #1f2a40;
+  --muted: #6b7d99;
+  --primary: #4f46e5;
+  --primary-dim: #e4e8fd;
+  --accent: #06b6d4;
+  --grad-from: #4f46e5;
+  --grad-to: #06b6d4;
+  --shadow-card: 0 6px 22px rgba(37, 99, 235, 0.1);
+  --focus-bg: radial-gradient(120% 70% at 50% 0%, #e2effd 0%, #f0f5fb 55%, #eaf1ff 100%);
+  --blob-a: rgba(79, 70, 229, 0.32);
+  --blob-b: rgba(6, 182, 212, 0.26);
+}
+
+[data-palette='sun'] {
+  --bg: #fdf6ee;
+  --bg-gradient: linear-gradient(165deg, #fff3e2 0%, #fdf3ec 45%, #fdeef0 100%);
+  --surface2: #faeddc;
+  --line: #f2e0cb;
+  --text: #3a2a1c;
+  --muted: #93765d;
+  --primary: #b45309;
+  --primary-dim: #fbeacd;
+  --accent: #f43f5e;
+  --grad-from: #f59e0b;
+  --grad-to: #fb7185;
+  --shadow-card: 0 6px 22px rgba(180, 83, 9, 0.1);
+  --focus-bg: radial-gradient(120% 70% at 50% 0%, #ffeccd 0%, #fdf6ee 55%, #fdeef0 100%);
+  --blob-a: rgba(245, 158, 11, 0.32);
+  --blob-b: rgba(251, 113, 133, 0.26);
+}
+
+[data-palette='forest'] {
+  --bg: #f0faf5;
+  --bg-gradient: linear-gradient(165deg, #e9f9f1 0%, #eff9f5 45%, #e9f7f8 100%);
+  --surface2: #e4f4ec;
+  --line: #d0e8dc;
+  --text: #1c3129;
+  --muted: #648476;
+  --primary: #047857;
+  --primary-dim: #d8f0e5;
+  --accent: #14b8a6;
+  --grad-from: #059669;
+  --grad-to: #14b8a6;
+  --shadow-card: 0 6px 22px rgba(4, 120, 87, 0.1);
+  --focus-bg: radial-gradient(120% 70% at 50% 0%, #d6f5e6 0%, #f0faf5 55%, #e9f7f8 100%);
+  --blob-a: rgba(5, 150, 105, 0.3);
+  --blob-b: rgba(20, 184, 166, 0.24);
+}
+
+/* Dunkler Basisblock — traegt zugleich die dunkle Lila-Palette. */
 [data-theme='dark'] {
+  --surface: rgba(36, 30, 50, 0.92);
+  --glass: rgba(36, 30, 50, 0.85);
+  --glass-border: rgba(80, 70, 100, 0.5);
+  --success: #34d399;
+  --success-dim: #1a2e28;
+  --danger: #f472b6;
   --bg: #1a1525;
   --bg-gradient: linear-gradient(165deg, #1f1a2e 0%, #1a1525 45%, #151220 100%);
-  --surface: rgba(36, 30, 50, 0.92);
   --surface2: #2a2438;
   --line: #3d3550;
   --text: #ece6f5;
@@ -35,23 +112,75 @@
   --primary: #a78bfa;
   --primary-dim: #2d2640;
   --accent: #f472b6;
-  --primary-grad: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-  --on-primary: #ffffff;
-  --success: #34d399;
-  --success-dim: #1a2e28;
-  --danger: #f472b6;
-  --glass: rgba(36, 30, 50, 0.85);
-  --glass-border: rgba(80, 70, 100, 0.5);
+  --grad-from: #8b5cf6;
+  --grad-to: #ec4899;
   --shadow-card: 0 6px 22px rgba(0, 0, 0, 0.35);
   --focus-bg: radial-gradient(120% 70% at 50% 0%, #2a2144 0%, #1a1525 55%, #151220 100%);
+  --blob-a: rgba(139, 92, 246, 0.15);
+  --blob-b: rgba(236, 72, 153, 0.12);
 }
 
-[data-theme='dark'] body::before {
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.15), transparent 70%);
+[data-theme='dark'][data-palette='ocean'] {
+  --surface: rgba(28, 36, 56, 0.92);
+  --glass: rgba(28, 36, 56, 0.85);
+  --glass-border: rgba(70, 85, 120, 0.5);
+  --danger: #fb7185;
+  --bg: #141a29;
+  --bg-gradient: linear-gradient(165deg, #182035 0%, #141a29 45%, #111624 100%);
+  --surface2: #212b40;
+  --line: #33405c;
+  --text: #e6ecf8;
+  --muted: #90a0bd;
+  --primary: #818cf8;
+  --primary-dim: #232b4a;
+  --accent: #22d3ee;
+  --grad-from: #6366f1;
+  --grad-to: #22d3ee;
+  --focus-bg: radial-gradient(120% 70% at 50% 0%, #1e2a4a 0%, #141a29 55%, #111624 100%);
+  --blob-a: rgba(99, 102, 241, 0.18);
+  --blob-b: rgba(34, 211, 238, 0.13);
 }
 
-[data-theme='dark'] body::after {
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.12), transparent 70%);
+[data-theme='dark'][data-palette='sun'] {
+  --surface: rgba(48, 36, 28, 0.92);
+  --glass: rgba(48, 36, 28, 0.85);
+  --glass-border: rgba(105, 82, 62, 0.5);
+  --danger: #fb7185;
+  --bg: #221a14;
+  --bg-gradient: linear-gradient(165deg, #2a201a 0%, #221a14 45%, #1d1712 100%);
+  --surface2: #35281f;
+  --line: #4a382c;
+  --text: #f5e9dd;
+  --muted: #b39a83;
+  --primary: #fbbf24;
+  --primary-dim: #3d2d1c;
+  --accent: #fb7185;
+  --grad-from: #f59e0b;
+  --grad-to: #fb7185;
+  --focus-bg: radial-gradient(120% 70% at 50% 0%, #3b2a18 0%, #221a14 55%, #1d1712 100%);
+  --blob-a: rgba(245, 158, 11, 0.16);
+  --blob-b: rgba(251, 113, 133, 0.12);
+}
+
+[data-theme='dark'][data-palette='forest'] {
+  --surface: rgba(26, 44, 37, 0.92);
+  --glass: rgba(26, 44, 37, 0.85);
+  --glass-border: rgba(62, 96, 80, 0.5);
+  --danger: #fb7185;
+  --bg: #121e1a;
+  --bg-gradient: linear-gradient(165deg, #16261f 0%, #121e1a 45%, #0f1a16 100%);
+  --surface2: #1e2f28;
+  --line: #2f4438;
+  --text: #e3f2ea;
+  --muted: #8aa89a;
+  --primary: #34d399;
+  --primary-dim: #17342a;
+  --accent: #2dd4bf;
+  --grad-from: #10b981;
+  --grad-to: #2dd4bf;
+  --focus-bg: radial-gradient(120% 70% at 50% 0%, #14332a 0%, #121e1a 55%, #0f1a16 100%);
+  --blob-a: rgba(16, 185, 129, 0.16);
+  --blob-b: rgba(45, 212, 191, 0.12);
 }
 
 * {
@@ -110,6 +239,10 @@ button {
   font-family: inherit;
 }
 
+button {
+  color: inherit;
+}
+
 /* Farbige Blobs im Hintergrund — machen den Blur der Glas-Flächen sichtbar */
 body::before,
 body::after {
@@ -126,7 +259,7 @@ body::before {
   height: 340px;
   top: -80px;
   right: -100px;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.35), transparent 70%);
+  background: radial-gradient(circle, var(--blob-a), transparent 70%);
 }
 
 body::after {
@@ -134,7 +267,7 @@ body::after {
   height: 380px;
   bottom: -120px;
   left: -120px;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.28), transparent 70%);
+  background: radial-gradient(circle, var(--blob-b), transparent 70%);
 }
 
 /* ---- Workout-Abschluss ---- */

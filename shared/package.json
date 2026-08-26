@@ -11,6 +11,7 @@
     "./progression": "./progression.js",
     "./muscles": "./muscles.js",
     "./setTypes": "./setTypes.js",
+    "./themes": "./themes.js",
     "./plateCalc": "./plateCalc.js",
     "./warmupCalc": "./warmupCalc.js"
   },
