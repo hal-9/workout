@@ -4,18 +4,20 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { cancelQueuedSet, enqueueDelete, enqueueFinish, enqueueSet } from '../offlineQueue.js';
 import { parseUtc, mondayStart } from '../lib/dates.js';
-import { compareExercise } from '../lib/exerciseCompare.js';
+import { compareExercise, parseTargetReps } from '../lib/exerciseCompare.js';
 import { isCooldownExercise, splitPhases } from '../lib/cooldown.js';
-import { bestsByExerciseId, formatRecordValue, livePreviewRecord } from '../lib/records.js';
+import { bestsByExerciseId } from '../lib/records.js';
 import { summarizeSession } from '../lib/completion.js';
 import { deloadMessage } from '../lib/progressionView.js';
 import WorkoutCompleteOverlay from '../components/WorkoutCompleteOverlay.jsx';
 import ExerciseDetailSheet from '../components/ExerciseDetailSheet.jsx';
 import MuscleModal from '../components/MuscleModal.jsx';
 import { formatDuration, toInputValue } from 'shared/duration';
-import { WEEKDAYS, WEEKDAY_LABELS, projectWeek, weekProgress } from '../lib/schedule.js';
+import { WEEKDAYS, WEEKDAY_LABELS, projectWeek, weekProgress, todayWeekday } from '../lib/schedule.js';
 import { getAllOverrides, getOverride, setOverride } from '../lib/weightOverrides.js';
-import SetRow, { buildSetPayload } from '../components/SetRow.jsx';
+import { buildSetPayload } from '../components/SetRow.jsx';
+import ExerciseListCard, { buildCardSubline } from '../components/ExerciseListCard.jsx';
+import ExerciseFocus from '../components/ExerciseFocus.jsx';
 import RestTimerBar from '../components/RestTimerBar.jsx';
 import ReadinessDialog, { readinessAdaptations } from '../components/ReadinessDialog.jsx';
 import ProgressionProposals from '../components/ProgressionProposals.jsx';
@@ -71,13 +73,14 @@ function formatElapsed(ms) {
   return `${mins} min`;
 }
 
-const RPE_VALUES = [6, 7, 8, 9, 10];
+function formatMMSS(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
 
-const TREND_LABELS = {
-  up: { text: '↑ besser', color: 'var(--success)' },
-  same: { text: '→ gleich', color: 'var(--muted)' },
-  down: { text: '↓ weniger', color: 'var(--accent)' },
-};
+const RPE_VALUES = [6, 7, 8, 9, 10];
 
 export default function Heute() {
   const navigate = useNavigate();
@@ -103,7 +106,6 @@ export default function Heute() {
   const [sessionStartedAt, setSessionStartedAt] = useState(null);
   const [elapsedNow, setElapsedNow] = useState(Date.now());
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
-  const setRowRefs = useRef(new Map());
   const [pauseDuration, setPauseDuration] = useState(loadPauseDuration);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
@@ -122,7 +124,7 @@ export default function Heute() {
     };
   }, []);
   const [restTimerState, setRestTimerState] = useState(null);
-  const [focusMode, setFocusMode] = useState(false);
+  const [focusExerciseId, setFocusExerciseId] = useState(null);
   const [finishPending, setFinishPending] = useState(false);
   const [finishError, setFinishError] = useState(null);
   const [undoStack, setUndoStack] = useState([]);
@@ -236,22 +238,6 @@ export default function Heute() {
     return sessionPromiseRef.current;
   }
 
-  const scrollToNextSet = useCallback(() => {
-    if (!plan || !dayKey) return;
-    const dayPlan = plan.days.find((d) => d.key === dayKey);
-    if (!dayPlan) return;
-    for (const ex of splitPhases(dayPlan.exercises).main) {
-      const rows = setsByExercise[ex.id] ?? [];
-      const nextIndex = rows.findIndex((r) => !r.logged);
-      if (nextIndex >= 0) {
-        const key = `${ex.id}-${nextIndex}`;
-        const el = setRowRefs.current.get(key);
-        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-    }
-  }, [plan, dayKey, setsByExercise]);
-
   useEffect(() => {
     if (!sessionStartedAt) return;
     const id = setInterval(() => setElapsedNow(Date.now()), 10000);
@@ -266,7 +252,6 @@ export default function Heute() {
       if (left <= 0) {
         playRestEnd();
         setRestTimerState(null);
-        scrollToNextSet();
         return;
       }
       if (left <= 5) playTick();
@@ -275,7 +260,43 @@ export default function Heute() {
     tick();
     const id = setInterval(tick, 500);
     return () => clearInterval(id);
-  }, [restTimerState, scrollToNextSet]);
+  }, [restTimerState]);
+
+  // Fokus-Ansicht zeigt eine vorausgefüllte Zahl an — der State muss diesen Wert
+  // tatsächlich tragen, sonst postet "Satz geschafft" einen leeren Wert.
+  useEffect(() => {
+    if (!focusExerciseId) return;
+    const rows = setsByExercise[focusExerciseId];
+    if (!rows) return;
+    const exercise = plan?.days?.flatMap((d) => d.exercises ?? []).find((e) => e.id === focusExerciseId);
+    if (!exercise) return;
+    const idx = rows.findIndex((r) => !r.logged);
+    const targetIndex = idx === -1 ? rows.length - 1 : idx;
+    const row = rows[targetIndex];
+    if (!row) return;
+
+    const isDurationType = exercise.type === 'time' || exercise.type === 'cardio';
+    const updates = {};
+    if (isDurationType) {
+      if (row.duration === '' || row.duration == null) {
+        const fallback = toInputValue(exercise.target_seconds, exercise.type);
+        if (fallback !== '') updates.duration = fallback;
+      }
+    } else if (row.reps === '' || row.reps == null) {
+      const parsed = parseTargetReps(exercise.target_reps);
+      if (parsed?.min != null) updates.reps = String(parsed.min);
+    }
+    if (exercise.type === 'wt' && (row.weight_kg === '' || row.weight_kg == null) && exercise.default_weight_kg != null) {
+      updates.weight_kg = exercise.default_weight_kg;
+    }
+
+    if (Object.keys(updates).length) {
+      setSetsByExercise((prev) => ({
+        ...prev,
+        [focusExerciseId]: prev[focusExerciseId].map((r, i) => (i === targetIndex ? { ...r, ...updates } : r)),
+      }));
+    }
+  }, [focusExerciseId, setsByExercise, plan]);
 
   function handleToggleSound() {
     const next = !soundOn;
@@ -287,13 +308,6 @@ export default function Heute() {
   function changePauseDuration(value) {
     setPauseDuration(value);
     localStorage.setItem('pauseDuration', String(value));
-  }
-
-  function updateSetField(exerciseId, index, field, value) {
-    setSetsByExercise((prev) => ({
-      ...prev,
-      [exerciseId]: prev[exerciseId].map((s, i) => (i === index ? { ...s, [field]: value } : s)),
-    }));
   }
 
   async function toggleSet(exercise, index) {
@@ -340,47 +354,22 @@ export default function Heute() {
     if (nextLogged) {
       unlockAudio();
       if (!sessionStartedAt) setSessionStartedAt(Date.now());
-      if (!focusMode && loggedSetCount === 0) setFocusMode(true);
       setRestTimerState(startRestTimer(pauseDuration));
       setUndoStack((prev) => [...prev, { exerciseId: exercise.id, index }]);
     }
   }
 
-  function copyPrevSet(exerciseId, index) {
-    setSetsByExercise((prev) => {
-      const rows = prev[exerciseId];
-      const prevRow = rows[index - 1];
-      if (!prevRow) return prev;
-      return {
-        ...prev,
-        [exerciseId]: rows.map((s, i) =>
-          i === index
-            ? {
-                ...s,
-                reps: prevRow.reps,
-                weight_kg: prevRow.weight_kg,
-                duration: prevRow.duration,
-                set_type: prevRow.set_type ?? 'working',
-              }
-            : s
-        ),
-      };
-    });
-  }
-
-  function adjustWeight(exerciseId, index, delta) {
-    setSetsByExercise((prev) => {
-      const rows = prev[exerciseId];
-      return {
-        ...prev,
-        [exerciseId]: rows.map((s, i) => {
-          if (i !== index) return s;
-          const current = Number(s.weight_kg) || 0;
-          const next = Math.max(0, Math.round((current + delta) * 10) / 10);
-          return { ...s, weight_kg: next };
-        }),
-      };
-    });
+  function adjustWeight(exercise, index, delta) {
+    const rows = setsByExercise[exercise.id];
+    const current = Number(rows[index]?.weight_kg) || 0;
+    const next = Math.max(0, Math.round((current + delta) * 10) / 10);
+    setSetsByExercise((prev) => ({
+      ...prev,
+      [exercise.id]: prev[exercise.id].map((s, i) => (i === index ? { ...s, weight_kg: next } : s)),
+    }));
+    if (exercise.type === 'wt' && next && next !== Number(exercise.default_weight_kg)) {
+      setOverride(exercise.id, next);
+    }
   }
 
   function updateSetType(exerciseId, index, setType) {
@@ -388,6 +377,38 @@ export default function Heute() {
       ...prev,
       [exerciseId]: prev[exerciseId].map((s, i) => (i === index ? { ...s, set_type: setType } : s)),
     }));
+  }
+
+  function adjustBigNumber(exercise, index, delta) {
+    setSetsByExercise((prev) => {
+      const rows = prev[exercise.id];
+      const isDurationType = exercise.type === 'time' || exercise.type === 'cardio';
+      const field = isDurationType ? 'duration' : 'reps';
+      return {
+        ...prev,
+        [exercise.id]: rows.map((s, i) => {
+          if (i !== index) return s;
+          const current = Number(s[field]) || 0;
+          return { ...s, [field]: String(Math.max(0, current + delta)) };
+        }),
+      };
+    });
+  }
+
+  function currentSetIndexFor(exerciseId) {
+    const rows = setsByExercise[exerciseId] ?? [];
+    const idx = rows.findIndex((r) => !r.logged);
+    return idx === -1 ? rows.length - 1 : idx;
+  }
+
+  async function handleLogFocusSet(exercise) {
+    const rows = setsByExercise[exercise.id] ?? [];
+    const targetIndex = currentSetIndexFor(exercise.id);
+    const isLast = targetIndex === rows.length - 1;
+    await toggleSet(exercise, targetIndex);
+    if (isLast) {
+      setTimeout(() => setFocusExerciseId(null), 350);
+    }
   }
 
   async function undoLastSet() {
@@ -582,16 +603,29 @@ export default function Heute() {
   const activeOverrides =
     day?.exercises.filter((ex) => weightOverrides[ex.id] != null && ex.type === 'wt') ?? [];
 
-  const currentExerciseIndex = mainExercises.findIndex(
-    (ex) => !(setsByExercise[ex.id]?.every((r) => r.logged))
-  );
-  const visibleMainExercises = focusMode && sessionId
-    ? mainExercises.map((ex, idx) => ({
-        ex,
-        collapsed: idx < currentExerciseIndex,
-        isCurrent: idx === currentExerciseIndex,
-      }))
-    : mainExercises.map((ex) => ({ ex, collapsed: false, isCurrent: false }));
+  const focusDisabled = showRestartGate || (!isOnline && !sessionId);
+  const focusExercise = focusExerciseId ? mainExercises.find((ex) => ex.id === focusExerciseId) ?? null : null;
+  const focusIndex = focusExercise ? mainExercises.findIndex((ex) => ex.id === focusExerciseId) : -1;
+  const focusRows = focusExercise ? setsByExercise[focusExercise.id] ?? [] : [];
+  const focusCompare = focusExercise
+    ? compareExercise(focusExercise, focusRows, historyRes?.prefill?.[focusExercise.id])
+    : null;
+  const segments = mainExercises.map((ex) => {
+    const rows = setsByExercise[ex.id] ?? [];
+    if (rows.length > 0 && rows.every((r) => r.logged)) return 'done';
+    if (ex.id === focusExerciseId) return 'current';
+    return 'rest';
+  });
+  const doneExerciseCount = mainExercises.filter((ex) => {
+    const rows = setsByExercise[ex.id] ?? [];
+    return rows.length > 0 && rows.every((r) => r.logged);
+  }).length;
+  const anyExerciseLogged = mainExercises.some((ex) => (setsByExercise[ex.id] ?? []).some((r) => r.logged));
+  const muscleSummary = [
+    ...new Set(
+      mainExercises.flatMap((ex) => (ex.muscle ? ex.muscle.split(/\s*·\s*/) : []))
+    ),
+  ].join(' · ');
 
   return (
     <div className="wrap">
@@ -631,9 +665,6 @@ export default function Heute() {
 
       {sessionId && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-          <Button variant="secondary" onClick={() => setFocusMode((f) => !f)} style={{ fontSize: 12, minHeight: 36, padding: '8px 12px' }}>
-            {focusMode ? 'Alle Übungen' : 'Fokus-Modus'}
-          </Button>
           <Button variant="secondary" onClick={() => setPlateCalcOpen(true)} style={{ fontSize: 12, minHeight: 36, padding: '8px 12px' }}>
             Scheiben
           </Button>
@@ -664,7 +695,10 @@ export default function Heute() {
           return (
             <button
               key={d.key}
-              onClick={() => setDayKey(d.key)}
+              onClick={() => {
+                setDayKey(d.key);
+                setFocusExerciseId(null);
+              }}
               disabled={!isOnline && !selected}
               style={{
                 flex: '0 0 auto',
@@ -804,9 +838,19 @@ export default function Heute() {
             </div>
           )}
 
-          <div style={{ color: 'var(--muted)', fontSize: 11, textTransform: 'uppercase' }}>{day.focus}</div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <h2>{day.name}</h2>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+            <div
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontWeight: 500,
+                fontSize: 11,
+                color: 'var(--muted)',
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+              }}
+            >
+              {day.focus}
+            </div>
             {plan.music_url && (
               <a
                 href={plan.music_url}
@@ -832,221 +876,106 @@ export default function Heute() {
               </a>
             )}
           </div>
-
-          {visibleMainExercises.map(({ ex, collapsed, isCurrent }) => {
-            if (collapsed) {
-              return (
-                <div
-                  key={ex.id}
-                  style={{
-                    background: 'var(--success-dim)',
-                    border: '1px solid var(--success)',
-                    borderRadius: 12,
-                    padding: '10px 14px',
-                    marginBottom: 8,
-                    fontSize: 13,
-                    color: 'var(--success)',
-                  }}
-                >
-                  ✓ {ex.name}
-                </div>
-              );
-            }
-            const rows = setsByExercise[ex.id] || [];
-            const allLogged = rows.length > 0 && rows.every((r) => r.logged);
-            const prefillSets = historyRes?.prefill?.[ex.id];
-            const compare = compareExercise(ex, rows, prefillSets);
-            const trendMeta = compare.trend ? TREND_LABELS[compare.trend] : null;
-            const liveRecord = livePreviewRecord(ex, rows, bests.get(ex.id));
-            return (
-            <div
-              key={ex.id}
-              style={{
-                background: allLogged ? 'var(--success-dim)' : isCurrent ? 'var(--primary-dim)' : 'var(--surface)',
-                border: `1px solid ${allLogged ? 'var(--success)' : isCurrent ? 'var(--primary)' : 'var(--line)'}`,
-                borderRadius: 16,
-                padding: 16,
-                marginBottom: 12,
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <div>
-                  <h3>
-                    {allLogged && <span style={{ color: 'var(--success)' }}>✓ </span>}
-                    {ex.name}
-                  </h3>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-                    {ex.muscle}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 12, flexShrink: 0, alignSelf: 'flex-start' }}>
-                  <button
-                    type="button"
-                    onClick={() => setMuscleExercise(ex)}
-                    aria-label={`Muskelgruppen zu ${ex.name}`}
-                    style={cardLinkStyle}
-                  >
-                    Muskeln
-                  </button>
-                  <button type="button" onClick={() => setDetailExercise(ex)} style={cardLinkStyle}>
-                    Details
-                  </button>
-                </div>
-              </div>
-              <p
+          <div
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 34,
+              lineHeight: 1.05,
+              letterSpacing: -0.5,
+            }}
+          >
+            {day.name}
+          </div>
+          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 11, color: 'var(--muted)' }}>
+              HEUTE · {WEEKDAY_LABELS[todayWeekday()].toUpperCase()}
+            </span>
+            <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--line)' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 11, color: 'var(--primary)' }}>
+              {muscleSummary} ▾
+            </span>
+          </div>
+          <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div style={{ flex: 1, height: 5, borderRadius: 999, background: 'var(--surface2)', overflow: 'hidden' }}>
+              <div
                 style={{
-                  fontSize: 13,
-                  color: 'var(--muted)',
-                  margin: '10px 0 0',
-                  paddingLeft: 11,
-                  borderLeft: '2px solid var(--line)',
+                  width: `${mainExercises.length ? (doneExerciseCount / mainExercises.length) * 100 : 0}%`,
+                  height: '100%',
+                  borderRadius: 999,
+                  background: 'var(--primary-grad)',
                 }}
-              >
-                {ex.cue}
-              </p>
+              />
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+              {doneExerciseCount}/{mainExercises.length} ÜBUNGEN
+            </div>
+          </div>
+          {!anyExerciseLogged && (
+            <div style={{ marginTop: 10, fontFamily: 'var(--font-display)', fontSize: 11, color: 'var(--muted)' }}>
+              Übung antippen, um Sätze zu loggen
+            </div>
+          )}
 
-              {(compare.lastSummary || compare.targetLabel) && (
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 11,
-                    color: 'var(--muted)',
-                    marginTop: 10,
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
-                  {compare.lastSummary && <span>Letzte Session: {compare.lastSummary}</span>}
-                  {compare.lastSummary && compare.targetLabel && <span>·</span>}
-                  {compare.targetLabel && <span>Ziel: {compare.targetLabel}</span>}
-                  {liveRecord && (
-                    <span
-                      style={{
-                        padding: '2px 7px',
-                        borderRadius: 999,
-                        fontSize: 10,
-                        color: 'var(--on-primary)',
-                        background: 'var(--primary-grad)',
-                      }}
-                    >
-                      ★ Rekord {formatRecordValue(liveRecord.kind, liveRecord.value)}
-                    </span>
-                  )}
-                  {trendMeta && (
-                    <span
-                      style={{
-                        padding: '2px 6px',
-                        borderRadius: 999,
-                        fontSize: 10,
-                        color: trendMeta.color,
-                        background: 'var(--surface2)',
-                      }}
-                    >
-                      {trendMeta.text}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
-                {rows.map((row, i) => (
-                  <SetRow
-                    key={row.set_number}
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {mainExercises.map((ex) => {
+              const rows = setsByExercise[ex.id] || [];
+              const allLogged = rows.length > 0 && rows.every((r) => r.logged);
+              const prefillSets = historyRes?.prefill?.[ex.id];
+              const compare = compareExercise(ex, rows, prefillSets);
+              const subline = buildCardSubline(ex, rows, compare);
+              return (
+                <div key={ex.id}>
+                  <ExerciseListCard
                     exercise={ex}
-                    row={row}
-                    index={i}
-                    disabled={showRestartGate || (!isOnline && !sessionId)}
-                    onToggle={() => toggleSet(ex, i)}
-                    onFieldChange={(idx, field, value) => {
-                      updateSetField(ex.id, idx, field, value);
-                      if (field === 'weight_kg' && ex.type === 'wt') {
-                        const kg = Number(value);
-                        if (kg && kg !== Number(ex.default_weight_kg)) setOverride(ex.id, kg);
-                      }
-                    }}
-                    onSetTypeChange={(idx, type) => updateSetType(ex.id, idx, type)}
-                    onCopyPrev={() => copyPrevSet(ex.id, i)}
-                    onAdjustWeight={(idx, delta) => adjustWeight(ex.id, idx, delta)}
-                    onUndo={undoLastSet}
-                    canUndo={undoStack.length > 0}
-                    setRef={(el) => {
-                      if (el) setRowRefs.current.set(`${ex.id}-${i}`, el);
-                      else setRowRefs.current.delete(`${ex.id}-${i}`);
-                    }}
+                    rows={rows}
+                    subline={subline}
+                    onOpen={() => setFocusExerciseId(ex.id)}
                   />
-                ))}
-              </div>
-
-              {allLogged && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: 6,
-                    marginTop: 12,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: 10,
-                      textTransform: 'uppercase',
-                      color: 'var(--muted)',
-                      marginRight: 2,
-                    }}
-                  >
-                    Anstrengung
-                  </span>
-                  {RPE_VALUES.map((value) => {
-                    const active = rpeByExercise[ex.id] === value;
-                    return (
-                      <button
-                        key={value}
-                        onClick={() => toggleRpe(ex, value)}
-                        disabled={!isOnline && !sessionId}
-                        aria-pressed={active}
-                        aria-label={`Anstrengung ${value} von 10`}
+                  {allLogged && (
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                      <span
                         style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 999,
-                          border: `1px solid ${active ? 'var(--primary)' : 'var(--line)'}`,
-                          background: active ? 'var(--primary-dim)' : 'var(--surface2)',
-                          color: active ? 'var(--primary)' : 'var(--muted)',
                           fontFamily: 'var(--font-mono)',
-                          fontSize: 13,
-                          cursor: 'pointer',
+                          fontSize: 10,
+                          textTransform: 'uppercase',
+                          color: 'var(--muted)',
+                          marginRight: 2,
                         }}
                       >
-                        {value}
-                      </button>
-                    );
-                  })}
+                        Anstrengung
+                      </span>
+                      {RPE_VALUES.map((value) => {
+                        const active = rpeByExercise[ex.id] === value;
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => toggleRpe(ex, value)}
+                            disabled={!isOnline && !sessionId}
+                            aria-pressed={active}
+                            aria-label={`Anstrengung ${value} von 10`}
+                            style={{
+                              width: 36,
+                              height: 36,
+                              borderRadius: 999,
+                              border: `1px solid ${active ? 'var(--primary)' : 'var(--line)'}`,
+                              background: active ? 'var(--primary-dim)' : 'var(--surface2)',
+                              color: active ? 'var(--primary)' : 'var(--muted)',
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: 13,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-
-              <button
-                onClick={() => addExtraSet(ex)}
-                style={{
-                  marginTop: 10,
-                  background: 'var(--surface2)',
-                  border: '1px solid var(--line)',
-                  color: 'var(--text)',
-                  borderRadius: 9,
-                  padding: '7px 11px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 12,
-                  cursor: 'pointer',
-                }}
-              >
-                + Satz
-              </button>
-            </div>
-            );
-          })}
+              );
+            })}
+          </div>
 
           {cooldownExercises.length > 0 && (
             <div
@@ -1227,6 +1156,35 @@ export default function Heute() {
         </>
       )}
 
+      {focusExercise && focusCompare && (
+        <ExerciseFocus
+          exercise={focusExercise}
+          index={focusIndex}
+          total={mainExercises.length}
+          rows={focusRows}
+          compare={focusCompare}
+          segments={segments}
+          disabled={focusDisabled}
+          elapsedLabel={sessionStartedAt ? formatMMSS(elapsedNow - sessionStartedAt) : '00:00'}
+          pauseDuration={pauseDuration}
+          restTimerActive={isRestTimerActive(restTimerState)}
+          onClose={() => setFocusExerciseId(null)}
+          onLogCurrentSet={() => handleLogFocusSet(focusExercise)}
+          onToggleDot={(i) => toggleSet(focusExercise, i)}
+          onAdjustBigNumber={(delta) => adjustBigNumber(focusExercise, currentSetIndexFor(focusExercise.id), delta)}
+          onAdjustWeight={(delta) => adjustWeight(focusExercise, currentSetIndexFor(focusExercise.id), delta)}
+          onSetTypeChange={(value) => updateSetType(focusExercise.id, currentSetIndexFor(focusExercise.id), value)}
+          onAddExtraSet={() => addExtraSet(focusExercise)}
+          onStartRestTimer={() => {
+            unlockAudio();
+            setRestTimerState(startRestTimer(pauseDuration));
+          }}
+          onOpenMuscle={() => setMuscleExercise(focusExercise)}
+          onOpenDetail={() => setDetailExercise(focusExercise)}
+          onOpenPlateCalc={() => setPlateCalcOpen(true)}
+        />
+      )}
+
       {isRestTimerActive(restTimerState) && (
         <RestTimerBar
           timerState={restTimerState}
@@ -1269,13 +1227,3 @@ export default function Heute() {
     </div>
   );
 }
-
-const cardLinkStyle = {
-  background: 'none',
-  border: 'none',
-  padding: 0,
-  fontFamily: 'var(--font-mono)',
-  color: 'var(--primary)',
-  fontSize: 12,
-  cursor: 'pointer',
-};
