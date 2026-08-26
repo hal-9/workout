@@ -30,7 +30,7 @@ export default function RestTimerBar({
         right: 16,
         maxWidth: 560,
         margin: '0 auto',
-        zIndex: 55,
+        zIndex: 65,
         background: 'var(--surface)',
         border: '1px solid var(--line)',
         borderRadius: 14,
