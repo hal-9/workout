@@ -29,19 +29,9 @@ import {
   startRestTimer,
   remainingSeconds,
   isRestTimerActive,
+  REST_DEFAULT_SECONDS,
 } from '../lib/restTimer.js';
-import {
-  isSoundEnabled,
-  playRestEnd,
-  playTick,
-  setSoundEnabled,
-  unlockAudio,
-} from '../lib/workoutSounds.js';
-
-function loadPauseDuration() {
-  const stored = localStorage.getItem('pauseDuration');
-  return stored ? Number(stored) : 90;
-}
+import { playRestEnd, playTick, unlockAudio } from '../lib/workoutSounds.js';
 
 function buildInitialSets(exercise, prefillSets, resumedSets) {
   const source = resumedSets?.length ? resumedSets : prefillSets;
@@ -91,8 +81,6 @@ export default function Heute() {
   const [setsByExercise, setSetsByExercise] = useState({});
   const [historyRes, setHistoryRes] = useState(null);
   const [sessionStartedAt, setSessionStartedAt] = useState(null);
-  const [soundOn, setSoundOn] = useState(isSoundEnabled);
-  const [pauseDuration, setPauseDuration] = useState(loadPauseDuration);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -110,6 +98,7 @@ export default function Heute() {
     };
   }, []);
   const [restTimerState, setRestTimerState] = useState(null);
+  const [restSeconds, setRestSeconds] = useState(0);
   const [focusExerciseId, setFocusExerciseId] = useState(null);
   const [finishPending, setFinishPending] = useState(false);
   const [discardConfirm, setDiscardConfirm] = useState(false);
@@ -223,6 +212,7 @@ export default function Heute() {
 
     const tick = () => {
       const left = remainingSeconds(restTimerState);
+      setRestSeconds(left);
       if (left <= 0) {
         playRestEnd();
         setRestTimerState(null);
@@ -272,18 +262,6 @@ export default function Heute() {
     }
   }, [focusExerciseId, setsByExercise, plan]);
 
-  function handleToggleSound() {
-    const next = !soundOn;
-    setSoundOn(next);
-    setSoundEnabled(next);
-    if (next) unlockAudio();
-  }
-
-  function changePauseDuration(value) {
-    setPauseDuration(value);
-    localStorage.setItem('pauseDuration', String(value));
-  }
-
   async function toggleSet(exercise, index) {
     const row = setsByExercise[exercise.id][index];
     const nextLogged = !row.logged;
@@ -328,7 +306,7 @@ export default function Heute() {
     if (nextLogged) {
       unlockAudio();
       if (!sessionStartedAt) setSessionStartedAt(Date.now());
-      setRestTimerState(startRestTimer(pauseDuration));
+      setRestTimerState(startRestTimer(REST_DEFAULT_SECONDS));
       setUndoStack((prev) => [...prev, { exerciseId: exercise.id, index }]);
     } else {
       const stillLogged = Object.entries(setsByExercise).some(([exId, rows]) =>
@@ -1179,7 +1157,6 @@ export default function Heute() {
           segments={segments}
           disabled={focusDisabled}
           elapsedLabel={<ElapsedTimer startedAt={sessionStartedAt} />}
-          pauseDuration={pauseDuration}
           restTimerActive={isRestTimerActive(restTimerState)}
           onClose={() => setFocusExerciseId(null)}
           onLogCurrentSet={() => handleLogFocusSet(focusExercise)}
@@ -1189,7 +1166,7 @@ export default function Heute() {
           onAddExtraSet={() => addExtraSet(focusExercise)}
           onStartRestTimer={() => {
             unlockAudio();
-            setRestTimerState(startRestTimer(pauseDuration));
+            setRestTimerState(startRestTimer(REST_DEFAULT_SECONDS));
           }}
           onOpenMuscle={() => setMuscleExercise(focusExercise)}
           onOpenDetail={() => setDetailExercise(focusExercise)}
@@ -1207,12 +1184,9 @@ export default function Heute() {
       {isRestTimerActive(restTimerState) && (
         <RestTimerBar
           timerState={restTimerState}
+          seconds={restSeconds}
           onSkip={() => setRestTimerState(null)}
           onChange={setRestTimerState}
-          soundOn={soundOn}
-          onToggleSound={handleToggleSound}
-          defaultDuration={pauseDuration}
-          onChangeDefault={changePauseDuration}
         />
       )}
 

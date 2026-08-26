@@ -1,19 +1,14 @@
 import { extendRestTimer, pauseRestTimer, remainingSeconds, resumeRestTimer } from '../lib/restTimer.js';
-import Chip from './ui/Chip.jsx';
 
-export default function RestTimerBar({
-  timerState,
-  onSkip,
-  onChange,
-  soundOn,
-  onToggleSound,
-  defaultDuration,
-  onChangeDefault,
-}) {
+export default function RestTimerBar({ timerState, seconds, onSkip, onChange }) {
   if (!timerState) return null;
 
-  const seconds = remainingSeconds(timerState);
+  // `seconds` kommt aus dem laufenden Tick des Screens; ohne Tick bliebe die Zahl stehen.
+  const left = seconds ?? remainingSeconds(timerState);
+  const total = timerState.totalSeconds || left || 1;
+  const progress = Math.max(0, Math.min(1, left / total));
   const paused = Boolean(timerState.pausedAtMs);
+  const ending = left <= 5;
 
   const handleAdd30 = () => onChange(extendRestTimer(timerState, 30));
   const handlePause = () => onChange(paused ? resumeRestTimer(timerState) : pauseRestTimer(timerState));
@@ -21,8 +16,8 @@ export default function RestTimerBar({
   return (
     <div
       role="timer"
-      aria-live="polite"
-      aria-label={`Pause: ${seconds} Sekunden`}
+      aria-live="off"
+      aria-label={`Pause: ${left} Sekunden`}
       style={{
         position: 'fixed',
         bottom: 'calc(var(--nav-h) + 8px + env(safe-area-inset-bottom))',
@@ -33,63 +28,78 @@ export default function RestTimerBar({
         zIndex: 65,
         background: 'var(--surface)',
         border: '1px solid var(--line)',
-        borderRadius: 14,
-        padding: '10px 12px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
+        borderRadius: 16,
+        overflow: 'hidden',
         boxShadow: 'var(--shadow-card)',
       }}
     >
-      <div
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontWeight: 700,
-          fontSize: 22,
-          color: seconds <= 5 ? 'var(--accent)' : 'var(--primary)',
-          minWidth: 44,
-          textAlign: 'center',
-        }}
-      >
-        {seconds}
+      <div style={{ height: 3, background: 'var(--surface2)' }}>
+        <div
+          style={{
+            height: '100%',
+            width: `${progress * 100}%`,
+            background: 'var(--primary-grad)',
+            transition: 'width 500ms linear',
+          }}
+        />
       </div>
-      <div style={{ flex: 1, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        <Chip onClick={handleAdd30} ariaLabel="30 Sekunden hinzufügen">+30s</Chip>
-        <Chip onClick={handlePause} ariaLabel={paused ? 'Pause fortsetzen' : 'Pause anhalten'}>
-          {paused ? '▶' : '⏸'}
-        </Chip>
-        <Chip onClick={onToggleSound} ariaLabel={soundOn ? 'Ton aus' : 'Ton an'}>
-          {soundOn ? '🔊' : '🔇'}
-        </Chip>
-        {[60, 90, 120].map((d) => (
-          <Chip
-            key={d}
-            active={d === defaultDuration}
-            onClick={() => onChangeDefault(d)}
-            ariaLabel={`Standardpause ${d} Sekunden`}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
+        <div style={{ minWidth: 56 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 500, color: 'var(--muted)', letterSpacing: 1 }}>
+            {paused ? 'ANGEHALTEN' : 'PAUSE'}
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 700,
+              fontSize: 24,
+              lineHeight: 1.1,
+              color: ending ? 'var(--accent)' : 'var(--primary)',
+            }}
           >
-            {d}s
-          </Chip>
-        ))}
+            {left}s
+          </div>
+        </div>
+        <button type="button" onClick={handlePause} aria-label={paused ? 'Pause fortsetzen' : 'Pause anhalten'} style={iconBtnStyle}>
+          {paused ? '▶' : '⏸'}
+        </button>
+        <button type="button" onClick={handleAdd30} aria-label="30 Sekunden hinzufügen" style={{ ...iconBtnStyle, width: 'auto', padding: '0 12px', fontFamily: 'var(--font-mono)', fontSize: 13 }}>
+          +30s
+        </button>
+        <button
+          type="button"
+          onClick={onSkip}
+          aria-label="Pause überspringen"
+          style={{
+            marginLeft: 'auto',
+            background: 'var(--primary-grad)',
+            color: 'var(--on-primary)',
+            border: 'none',
+            borderRadius: 12,
+            padding: '0 16px',
+            height: 40,
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: 'pointer',
+          }}
+        >
+          Weiter
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={onSkip}
-        aria-label="Pause überspringen"
-        style={{
-          background: 'var(--primary-grad)',
-          color: 'var(--on-primary)',
-          border: 'none',
-          borderRadius: 10,
-          padding: '8px 12px',
-          fontWeight: 600,
-          fontSize: 13,
-          cursor: 'pointer',
-          minHeight: 36,
-        }}
-      >
-        Weiter
-      </button>
     </div>
   );
 }
+
+const iconBtnStyle = {
+  width: 40,
+  height: 40,
+  borderRadius: 12,
+  border: '1px solid var(--line)',
+  background: 'var(--surface2)',
+  color: 'var(--text)',
+  fontSize: 14,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};

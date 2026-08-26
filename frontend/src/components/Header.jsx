@@ -4,11 +4,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import Logo from './Logo.jsx';
 import { getTheme, setTheme } from '../lib/theme.js';
+import { isSoundEnabled, setSoundEnabled, unlockAudio } from '../lib/workoutSounds.js';
 
 export default function Header() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [theme, setCurrentTheme] = useState(getTheme);
+  const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const dark = theme === 'dark';
 
   async function handleLogout() {
@@ -20,6 +22,13 @@ export default function Header() {
     queryClient.clear();
     navigate('/login', { replace: true });
   }
+
+  const handleToggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
+    if (next) unlockAudio();
+  };
 
   const handleToggleTheme = () => {
     const nextTheme = dark ? 'light' : 'dark';
@@ -90,6 +99,26 @@ export default function Header() {
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
           </Link>
+          <button
+            type="button"
+            onClick={handleToggleSound}
+            aria-label={soundOn ? 'Ton aus' : 'Ton an'}
+            aria-pressed={soundOn}
+            style={{
+              width: 44,
+              height: 44,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'none',
+              border: 'none',
+              color: 'var(--muted)',
+              cursor: 'pointer',
+              fontSize: 16,
+            }}
+          >
+            {soundOn ? '🔊' : '🔇'}
+          </button>
           <button
             type="button"
             onClick={handleToggleTheme}

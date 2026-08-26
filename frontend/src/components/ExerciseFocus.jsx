@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { durationUnitLabel, toInputValue } from 'shared/duration';
 import { parseTargetReps } from '../lib/exerciseCompare.js';
+import { REST_DEFAULT_SECONDS } from '../lib/restTimer.js';
 
 const CURRENT_PINK = '#ec4899';
 
@@ -21,7 +22,7 @@ const linkStyle = {
   border: 'none',
   padding: 0,
   fontFamily: 'var(--font-mono)',
-  color: 'var(--primary)',
+  color: 'var(--accent)',
   fontSize: 11,
   cursor: 'pointer',
 };
@@ -35,7 +36,6 @@ export default function ExerciseFocus({
   segments,
   disabled,
   elapsedLabel,
-  pauseDuration,
   restTimerActive,
   onClose,
   onLogCurrentSet,
@@ -287,7 +287,7 @@ export default function ExerciseFocus({
       <div
         style={{
           padding: restTimerActive
-            ? '0 20px calc(150px + env(safe-area-inset-bottom))'
+            ? '0 20px calc(170px + env(safe-area-inset-bottom))'
             : '0 20px calc(26px + env(safe-area-inset-bottom))',
           display: 'flex',
           flexDirection: 'column',
@@ -317,7 +317,7 @@ export default function ExerciseFocus({
         </button>
         <div style={{ display: 'flex', gap: 10 }}>
           <button type="button" onClick={onStartRestTimer} style={{ ...secondaryBtnStyle, color: 'var(--primary)' }}>
-            ⏱ Pause {pauseDuration}s
+            ⏱ Pause {REST_DEFAULT_SECONDS}s
           </button>
           <button type="button" onClick={requestClose} style={{ ...secondaryBtnStyle, color: 'var(--muted)' }}>
             Überspringen ›

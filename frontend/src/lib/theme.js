@@ -7,7 +7,15 @@ export function getTheme() {
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLORS[theme]);
+  // Safari/iOS übernimmt ein geändertes content-Attribut erst nach dem Reload —
+  // ein frisch eingehängter Meta-Tag färbt Status- und Home-Leiste sofort um.
+  const color = THEME_COLORS[theme];
+  for (const old of document.querySelectorAll('meta[name="theme-color"]')) old.remove();
+  const meta = document.createElement('meta');
+  meta.name = 'theme-color';
+  meta.content = color;
+  document.head.appendChild(meta);
+  document.documentElement.style.backgroundColor = color;
 }
 
 export function setTheme(theme) {
