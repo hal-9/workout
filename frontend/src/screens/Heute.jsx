@@ -1112,6 +1112,7 @@ export default function Heute() {
                 padding: '10px 12px',
                 fontSize: 14,
                 resize: 'vertical',
+                marginTop: 20,
                 marginBottom: 10,
               }}
             />
@@ -1128,6 +1129,7 @@ export default function Heute() {
                 fontFamily: 'var(--font-mono)',
                 fontSize: 12,
                 cursor: 'pointer',
+                marginTop: 20,
                 marginBottom: 10,
               }}
             >
@@ -1182,6 +1184,14 @@ export default function Heute() {
           onOpenMuscle={() => setMuscleExercise(focusExercise)}
           onOpenDetail={() => setDetailExercise(focusExercise)}
           onOpenPlateCalc={() => setPlateCalcOpen(true)}
+          onNext={() => {
+            const next = mainExercises[focusIndex + 1];
+            if (next) setFocusExerciseId(next.id);
+          }}
+          onPrev={() => {
+            const prev = mainExercises[focusIndex - 1];
+            if (prev) setFocusExerciseId(prev.id);
+          }}
         />
       )}
 

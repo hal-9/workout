@@ -49,11 +49,14 @@ export default function ExerciseFocus({
   onOpenMuscle,
   onOpenDetail,
   onOpenPlateCalc,
+  onNext,
+  onPrev,
 }) {
   const [phase, setPhase] = useState('entering');
-  const [cueOpen, setCueOpen] = useState(false);
   const [editing, setEditing] = useState(null); // null | 'big' | 'kg'
   const closeTimeoutRef = useRef(null);
+  const editAreaRef = useRef(null);
+  const touchStartRef = useRef(null);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setPhase('open'));
@@ -67,6 +70,23 @@ export default function ExerciseFocus({
     closeTimeoutRef.current = setTimeout(onClose, 150);
   }
 
+  function handleTouchStart(e) {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  }
+
+  function handleTouchEnd(e) {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0) onNext?.();
+    else onPrev?.();
+  }
+
   const isDurationType = exercise.type === 'time' || exercise.type === 'cardio';
   const isWeighted = exercise.type === 'wt';
 
@@ -76,7 +96,18 @@ export default function ExerciseFocus({
 
   useEffect(() => {
     setEditing(null);
-  }, [activeIndex]);
+  }, [activeIndex, exercise.id]);
+
+  useEffect(() => {
+    if (!editing) return;
+    function handlePointerDown(e) {
+      if (editAreaRef.current && !editAreaRef.current.contains(e.target)) {
+        setEditing(null);
+      }
+    }
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [editing]);
 
   if (!activeRow) return null;
 
@@ -105,6 +136,8 @@ export default function ExerciseFocus({
         flexDirection: 'column',
         paddingTop: 'env(safe-area-inset-top)',
       }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       <div style={{ padding: '16px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <button
@@ -152,21 +185,15 @@ export default function ExerciseFocus({
         <div style={{ marginTop: 10, maxWidth: 300, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32, lineHeight: 1.1, letterSpacing: -0.5, textWrap: 'balance' }}>
           {exercise.name}
         </div>
-        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>
-          {compare.lastSummary && <>Letzte: {compare.lastSummary} · </>}
-          <button type="button" onClick={() => setCueOpen((o) => !o)} style={{ ...linkStyle, fontSize: 12 }}>
-            💡 Technik ▾
-          </button>
-        </div>
-        {cueOpen && exercise.cue && (
-          <p style={{ marginTop: 6, maxWidth: 300, fontSize: 12, color: 'var(--muted)' }}>{exercise.cue}</p>
+        {compare.lastSummary && (
+          <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>Letzte: {compare.lastSummary}</div>
         )}
-        <div style={{ marginTop: 6, display: 'flex', gap: 12 }}>
-          <button type="button" onClick={onOpenMuscle} style={linkStyle}>Muskeln</button>
-          <button type="button" onClick={onOpenDetail} style={linkStyle}>Details</button>
+        <div style={{ marginTop: 10, display: 'flex', gap: 16 }}>
+          <button type="button" onClick={onOpenMuscle} style={{ ...linkStyle, fontSize: 15, fontWeight: 600 }}>Muskeln</button>
+          <button type="button" onClick={onOpenDetail} style={{ ...linkStyle, fontSize: 15, fontWeight: 600 }}>Details</button>
         </div>
 
-        <div style={{ marginTop: 32, display: 'flex', alignItems: 'baseline', gap: 16 }}>
+        <div ref={editAreaRef} style={{ marginTop: 32, display: 'flex', alignItems: 'baseline', gap: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {editing === 'big' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
