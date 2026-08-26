@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { SET_TYPE_LABELS } from 'shared/setTypes';
 import { durationUnitLabel, toInputValue } from 'shared/duration';
 import { parseTargetReps } from '../lib/exerciseCompare.js';
 
@@ -43,12 +42,10 @@ export default function ExerciseFocus({
   onToggleDot,
   onAdjustBigNumber,
   onAdjustWeight,
-  onSetTypeChange,
   onAddExtraSet,
   onStartRestTimer,
   onOpenMuscle,
   onOpenDetail,
-  onOpenPlateCalc,
   onNext,
   onPrev,
 }) {
@@ -247,11 +244,7 @@ export default function ExerciseFocus({
                   </button>
                 )}
                 <div style={{ marginTop: 4, fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500, color: 'var(--muted)' }}>
-                  {editing === 'kg' ? (
-                    <button type="button" onClick={onOpenPlateCalc} style={{ ...linkStyle, fontSize: 10 }}>KG · Scheiben ⚖</button>
-                  ) : (
-                    'KG'
-                  )}
+                  KG
                 </div>
               </div>
             </>
@@ -286,18 +279,6 @@ export default function ExerciseFocus({
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
               SATZ {Math.min(activeIndex + 1, rows.length)}/{rows.length}
             </span>
-            {isWeighted && (
-              <select
-                value={activeRow.set_type ?? 'working'}
-                onChange={(e) => onSetTypeChange(e.target.value)}
-                aria-label="Satztyp"
-                style={{ fontFamily: 'var(--font-mono)', fontSize: 10, background: 'var(--surface2)', border: '1px solid var(--line)', borderRadius: 6, color: 'var(--muted)' }}
-              >
-                {Object.entries(SET_TYPE_LABELS).map(([k, label]) => (
-                  <option key={k} value={k}>{label}</option>
-                ))}
-              </select>
-            )}
             <button type="button" onClick={onAddExtraSet} style={{ ...linkStyle, fontSize: 10 }}>+ Satz</button>
           </div>
         </div>

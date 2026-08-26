@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { workingSets, isWarmupSet } from 'shared/setTypes';
-import { calculatePlates } from 'shared/plateCalc';
-import { warmupSets } from 'shared/warmupCalc';
 import { proposalRationale, progressionConfig } from 'shared/progression';
 import request from 'supertest';
 import { setupTestApp } from './helpers.js';
@@ -31,22 +29,6 @@ describe('setTypes', () => {
     ];
     expect(workingSets(sets).length).toBe(1);
     expect(isWarmupSet({ set_type: 'warmup' })).toBe(true);
-  });
-});
-
-describe('plateCalc', () => {
-  it('calculates plates per side', () => {
-    const result = calculatePlates(60, 20, [20, 10, 5, 2.5]);
-    expect(result.total).toBe(60);
-    expect(result.perSide).toEqual([20]);
-  });
-});
-
-describe('warmupCalc', () => {
-  it('returns progressive warm-up sets below working weight', () => {
-    const sets = warmupSets(100);
-    expect(sets.length).toBeGreaterThan(0);
-    expect(sets.every((s) => s.weight_kg < 100)).toBe(true);
   });
 });
 

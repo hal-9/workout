@@ -21,8 +21,6 @@ import ExerciseFocus from '../components/ExerciseFocus.jsx';
 import RestTimerBar from '../components/RestTimerBar.jsx';
 import ReadinessDialog, { readinessAdaptations } from '../components/ReadinessDialog.jsx';
 import ProgressionProposals from '../components/ProgressionProposals.jsx';
-import PlateCalculator from '../components/PlateCalculator.jsx';
-import WarmupCalculator from '../components/WarmupCalculator.jsx';
 import PageHeader from '../components/ui/PageHeader.jsx';
 import Button from '../components/ui/Button.jsx';
 import LoadingScreen from '../components/ui/LoadingScreen.jsx';
@@ -129,8 +127,6 @@ export default function Heute() {
   const [finishError, setFinishError] = useState(null);
   const [undoStack, setUndoStack] = useState([]);
   const [readinessOpen, setReadinessOpen] = useState(false);
-  const [plateCalcOpen, setPlateCalcOpen] = useState(false);
-  const [warmupCalcOpen, setWarmupCalcOpen] = useState(false);
   const [readinessHints, setReadinessHints] = useState(null);
   const [completion, setCompletion] = useState(null);
   const [detailExercise, setDetailExercise] = useState(null);
@@ -370,13 +366,6 @@ export default function Heute() {
     if (exercise.type === 'wt' && next && next !== Number(exercise.default_weight_kg)) {
       setOverride(exercise.id, next);
     }
-  }
-
-  function updateSetType(exerciseId, index, setType) {
-    setSetsByExercise((prev) => ({
-      ...prev,
-      [exerciseId]: prev[exerciseId].map((s, i) => (i === index ? { ...s, set_type: setType } : s)),
-    }));
   }
 
   function adjustBigNumber(exercise, index, delta) {
@@ -621,11 +610,6 @@ export default function Heute() {
     return rows.length > 0 && rows.every((r) => r.logged);
   }).length;
   const anyExerciseLogged = mainExercises.some((ex) => (setsByExercise[ex.id] ?? []).some((r) => r.logged));
-  const muscleSummary = [
-    ...new Set(
-      mainExercises.flatMap((ex) => (ex.muscle ? ex.muscle.split(/\s*·\s*/) : []))
-    ),
-  ].join(' · ');
 
   return (
     <div className="wrap">
@@ -663,19 +647,11 @@ export default function Heute() {
         <ProgressionProposals proposals={progression.proposals.slice(0, 2)} deload={progression.deload} />
       )}
 
-      {sessionId && (
+      {sessionId && undoStack.length > 0 && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-          <Button variant="secondary" onClick={() => setPlateCalcOpen(true)} style={{ fontSize: 12, minHeight: 36, padding: '8px 12px' }}>
-            Scheiben
+          <Button variant="secondary" onClick={undoLastSet} style={{ fontSize: 12, minHeight: 36, padding: '8px 12px' }}>
+            ↶ Rückgängig
           </Button>
-          <Button variant="secondary" onClick={() => setWarmupCalcOpen(true)} style={{ fontSize: 12, minHeight: 36, padding: '8px 12px' }}>
-            Warm-up
-          </Button>
-          {undoStack.length > 0 && (
-            <Button variant="secondary" onClick={undoLastSet} style={{ fontSize: 12, minHeight: 36, padding: '8px 12px' }}>
-              ↶ Rückgängig
-            </Button>
-          )}
         </div>
       )}
 
@@ -890,10 +866,6 @@ export default function Heute() {
           <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 11, color: 'var(--muted)' }}>
               HEUTE · {WEEKDAY_LABELS[todayWeekday()].toUpperCase()}
-            </span>
-            <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--line)' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 11, color: 'var(--primary)' }}>
-              {muscleSummary} ▾
             </span>
           </div>
           <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -1175,7 +1147,6 @@ export default function Heute() {
           onToggleDot={(i) => toggleSet(focusExercise, i)}
           onAdjustBigNumber={(delta) => adjustBigNumber(focusExercise, currentSetIndexFor(focusExercise.id), delta)}
           onAdjustWeight={(delta) => adjustWeight(focusExercise, currentSetIndexFor(focusExercise.id), delta)}
-          onSetTypeChange={(value) => updateSetType(focusExercise.id, currentSetIndexFor(focusExercise.id), value)}
           onAddExtraSet={() => addExtraSet(focusExercise)}
           onStartRestTimer={() => {
             unlockAudio();
@@ -1183,7 +1154,6 @@ export default function Heute() {
           }}
           onOpenMuscle={() => setMuscleExercise(focusExercise)}
           onOpenDetail={() => setDetailExercise(focusExercise)}
-          onOpenPlateCalc={() => setPlateCalcOpen(true)}
           onNext={() => {
             const next = mainExercises[focusIndex + 1];
             if (next) setFocusExerciseId(next.id);
@@ -1212,9 +1182,6 @@ export default function Heute() {
         onClose={() => setReadinessOpen(false)}
         onSubmit={handleReadiness}
       />
-      <PlateCalculator open={plateCalcOpen} onClose={() => setPlateCalcOpen(false)} />
-      <WarmupCalculator open={warmupCalcOpen} onClose={() => setWarmupCalcOpen(false)} />
-
       {muscleExercise && (
         <MuscleModal exercise={muscleExercise} onClose={() => setMuscleExercise(null)} />
       )}
