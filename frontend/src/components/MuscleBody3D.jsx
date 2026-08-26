@@ -6,6 +6,9 @@
 // wie beim alten prozeduralen Modell. Zonen-Keys aus shared/muscles.js.
 // Props:
 //   primary / secondary — string | string[]: Zonen-Keys oder roher muscle-Text
+//   heat                — { [zoneKey]: hours } — Frische-Modus: färbt Zonen nach
+//                         Stunden seit letztem Training (ersetzt primary/secondary,
+//                         kein Puls). null/undefined = normaler Highlight-Modus.
 //   view                — 'front' | 'back' (Startposition; danach frei drehbar)
 //   height              — CSS-Höhe des Canvas (default 360)
 //   background          — CSS-Farbe hinter der Szene (default transparent)
@@ -32,6 +35,21 @@ const COL = {
   secondary: { color: 0xf0955f, emissive: 0xc2551f, intensity: 0.16 },
 };
 const DEBUG_COLORS = [0xe6194b, 0x3cb44b, 0xffe119, 0x4363d8, 0xf58231, 0x911eb4, 0x46f0f0, 0xf032e6, 0xbcf60c, 0x008080, 0x9a6324, 0x800000];
+
+// Frische-Rampe: <24 h heiß, 24–48 h warm, 48–72 h ausklingend, danach Körperfarbe.
+export const HEAT_STEPS = [
+  { maxHours: 24, label: '< 24 h', color: 0xf4506a, emissive: 0xe11d48, intensity: 0.35 },
+  { maxHours: 48, label: '24–48 h', color: 0xf0955f, emissive: 0xc2551f, intensity: 0.14 },
+  { maxHours: 72, label: '48–72 h', color: 0xedd3b2, emissive: 0x000000, intensity: 0 },
+];
+
+function heatStyle(hours) {
+  if (hours == null) return COL.off;
+  for (const step of HEAT_STEPS) {
+    if (hours < step.maxHours) return step;
+  }
+  return COL.off;
+}
 
 // Regionen zu flacher Testliste auflösen; slot = Index in MUSCLE_ZONES + 1 (0 = Körper)
 const REGION_TESTS = MUSCLE_ZONES.flatMap((key, i) => {
@@ -117,7 +135,7 @@ function loadGroupedGeometry() {
 }
 
 export default function MuscleBody3D({
-  primary = [], secondary = [],
+  primary = [], secondary = [], heat = null,
   view = 'front', height = 360, background = 'transparent', interactive = true,
   debugZones = false,
 }) {
@@ -125,7 +143,7 @@ export default function MuscleBody3D({
   // Startausrichtung, ohne die Szene bei jedem view-Wechsel neu zu bauen.
   const viewRef = useRef(view);
   // Gewünschte Highlights — greifen auch, wenn das GLB erst später fertig lädt.
-  const wantRef = useRef({ primary, secondary });
+  const wantRef = useRef({ primary, secondary, heat });
   const sceneRef = useRef(null); // { applyWanted, setView }
 
   // Szene einmal aufbauen
@@ -181,7 +199,17 @@ export default function MuscleBody3D({
         zoneMats.forEach((mat, i) => { mat.color.setHex(DEBUG_COLORS[i % DEBUG_COLORS.length]); mat.emissive.setHex(0x000000); mat.emissiveIntensity = 0; });
         return;
       }
-      const { primary: p, secondary: s } = wantRef.current;
+      const { primary: p, secondary: s, heat: h } = wantRef.current;
+      if (h) {
+        // Frische-Modus: statische Färbung nach Stunden, kein Puls (zoneState bleibt 'off').
+        MUSCLE_ZONES.forEach((key2, i) => {
+          zoneState[key2] = 'off';
+          const c = heatStyle(h[key2]);
+          const mat = zoneMats[i];
+          mat.color.setHex(c.color); mat.emissive.setHex(c.emissive); mat.emissiveIntensity = c.intensity;
+        });
+        return;
+      }
       const prim = new Set(resolveZoneKeys(p));
       const sec = new Set(resolveZoneKeys(s).filter((k) => !prim.has(k)));
       MUSCLE_ZONES.forEach((key2, i) => {
@@ -231,9 +259,9 @@ export default function MuscleBody3D({
 
   // Highlights bei Prop-Änderung
   useEffect(() => {
-    wantRef.current = { primary, secondary };
+    wantRef.current = { primary, secondary, heat };
     sceneRef.current?.applyWanted();
-  }, [primary, secondary]);
+  }, [primary, secondary, heat]);
 
   // Kamera bei view-Änderung
   useEffect(() => { sceneRef.current?.setView(view); }, [view]);

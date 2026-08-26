@@ -14,6 +14,9 @@ import {
 import ExerciseChart from '../components/ExerciseChart.jsx';
 import MaxTestsSection from '../components/MaxTestsSection.jsx';
 import ConsistencyHeatmap, { buildConsistencyHeatmap } from '../components/ConsistencyHeatmap.jsx';
+import RecoveryMap from '../components/RecoveryMap.jsx';
+import TrainingTree from '../components/TrainingTree.jsx';
+import WrappedStory, { monthLabel } from '../components/WrappedStory.jsx';
 import ProgressionProposals from '../components/ProgressionProposals.jsx';
 import PageHeader from '../components/ui/PageHeader.jsx';
 import Button from '../components/ui/Button.jsx';
@@ -77,6 +80,7 @@ export default function Fortschritt() {
   const { data: others } = useQuery({ queryKey: ['users'], queryFn: () => api.get('/users') });
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [showAllExercises, setShowAllExercises] = useState(false);
+  const [wrappedOpen, setWrappedOpen] = useState(false);
   // Entfernte Freunde verschwinden aus der Liste — dann zurueck auf die eigene Ansicht.
   if (selectedUserId !== null && others && !others.some((u) => u.id === selectedUserId)) {
     setSelectedUserId(null);
@@ -125,6 +129,18 @@ export default function Fortschritt() {
   const { data: progression } = useQuery({
     queryKey: ['progression-proposals'],
     queryFn: () => api.get('/progression/proposals'),
+    retry: false,
+    enabled: !viewPartner,
+  });
+  const { data: treeData } = useQuery({
+    queryKey: ['stats-tree'],
+    queryFn: () => api.get('/stats/tree'),
+    retry: false,
+    enabled: !viewPartner,
+  });
+  const { data: wrappedLatest } = useQuery({
+    queryKey: ['wrapped-latest'],
+    queryFn: () => api.get('/wrapped/latest'),
     retry: false,
     enabled: !viewPartner,
   });
@@ -214,8 +230,14 @@ export default function Fortschritt() {
         </Link>
       </div>
 
+      {!viewPartner && treeData && <TrainingTree weeks={treeData.weeks} />}
+
       {!viewPartner && progression?.proposals?.length > 0 && (
         <ProgressionProposals proposals={progression.proposals} deload={progression.deload} />
+      )}
+
+      {!viewPartner && plan && heatmapRange && (
+        <RecoveryMap plan={plan} sessions={heatmapRange.sessions} />
       )}
 
       {!viewPartner && heatmapData && (
@@ -317,6 +339,36 @@ export default function Fortschritt() {
             </div>
           )}
         </div>
+      )}
+
+      {!viewPartner && wrappedLatest?.available && (
+        <button
+          type="button"
+          onClick={() => setWrappedOpen(true)}
+          style={{
+            width: '100%',
+            background: 'var(--surface)',
+            border: '1px solid var(--line)',
+            borderRadius: 16,
+            padding: '13px 16px',
+            marginBottom: 12,
+            color: 'var(--text)',
+            fontSize: 14,
+            textAlign: 'left',
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <span>🎁 Rückblick {monthLabel(wrappedLatest.month)}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--primary)' }}>Ansehen →</span>
+        </button>
+      )}
+
+      {wrappedOpen && wrappedLatest?.month && (
+        <WrappedStory month={wrappedLatest.month} onClose={() => setWrappedOpen(false)} />
       )}
 
       {!viewPartner && (

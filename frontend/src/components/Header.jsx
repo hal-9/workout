@@ -8,6 +8,7 @@ import Dialog from './ui/Dialog.jsx';
 import Button from './ui/Button.jsx';
 import { getTheme, setTheme } from '../lib/theme.js';
 import { isSoundEnabled, setSoundEnabled, unlockAudio } from '../lib/workoutSounds.js';
+import PushSettingsDialog from './PushSettingsDialog.jsx';
 
 const ICON_BUTTON = {
   width: 44,
@@ -69,6 +70,15 @@ function SoundIcon({ on }) {
   );
 }
 
+function BellIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
+
 function LogoutIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -117,6 +127,7 @@ export default function Header() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [pushOpen, setPushOpen] = useState(false);
   const [theme, setLocalTheme] = useState(getTheme);
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
 
@@ -299,6 +310,19 @@ export default function Header() {
                 <Switch on={soundOn} />
               </button>
 
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setPushOpen(true);
+                }}
+                style={MENU_ROW}
+              >
+                <BellIcon />
+                Mitteilungen
+              </button>
+
               <div style={{ height: 1, background: 'var(--line)', margin: '6px 10px' }} />
 
               <div style={{ padding: '4px 12px 10px' }}>
@@ -420,6 +444,8 @@ export default function Header() {
           </div>
         </div>
       )}
+
+      <PushSettingsDialog open={pushOpen} onClose={() => setPushOpen(false)} />
 
       <Dialog open={confirmLogout} onClose={() => setConfirmLogout(false)} title="Abmelden?">
         <p style={{ margin: '0 0 18px', fontSize: 14, color: 'var(--muted)' }}>

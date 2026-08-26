@@ -15,12 +15,14 @@ import MuscleModal from '../components/MuscleModal.jsx';
 import { formatDuration, toInputValue } from 'shared/duration';
 import { WEEKDAYS, WEEKDAY_LABELS, projectWeek, weekProgress, todayWeekday } from '../lib/schedule.js';
 import { getAllOverrides, getOverride, setOverride } from '../lib/weightOverrides.js';
+import { lightenExercise, lightWeight } from '../lib/lightMode.js';
 import { buildSetPayload } from '../components/SetRow.jsx';
 import ExerciseListCard, { buildCardSubline } from '../components/ExerciseListCard.jsx';
 import ExerciseFocus from '../components/ExerciseFocus.jsx';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
 import RestTimerBar from '../components/RestTimerBar.jsx';
 import ReadinessDialog, { readinessAdaptations } from '../components/ReadinessDialog.jsx';
+import WrappedStory, { monthLabel } from '../components/WrappedStory.jsx';
 import ProgressionProposals from '../components/ProgressionProposals.jsx';
 import PageHeader from '../components/ui/PageHeader.jsx';
 import Button from '../components/ui/Button.jsx';
@@ -32,19 +34,30 @@ import {
   REST_DEFAULT_SECONDS,
 } from '../lib/restTimer.js';
 import { playRestEnd, playTick, unlockAudio } from '../lib/workoutSounds.js';
+import { timerPushWanted } from '../lib/push.js';
 
-function buildInitialSets(exercise, prefillSets, resumedSets) {
+function buildInitialSets(exercise, prefillSets, resumedSets, light = false) {
   const source = resumedSets?.length ? resumedSets : prefillSets;
-  const defaultWeight = getOverride(exercise.id) ?? exercise.default_weight_kg ?? '';
+  // Leichte Version: −1 Satz, −10 % Gewicht — Prefill-Länge zählt dann nicht mehr,
+  // sonst würde der gestrichene Satz über die Historie wieder auftauchen.
+  const applyLight = light && !isCooldownExercise(exercise);
+  const baseWeight = getOverride(exercise.id) ?? exercise.default_weight_kg ?? '';
+  const defaultWeight =
+    applyLight && exercise.type === 'wt' && baseWeight !== '' ? lightWeight(baseWeight) : baseWeight;
+  const plannedSets = applyLight ? Math.max(1, (exercise.sets ?? 1) - 1) : exercise.sets;
   const rows = [];
-  const count = Math.max(exercise.sets, source?.length || 0);
+  const count = Math.max(plannedSets, (applyLight ? resumedSets?.length : source?.length) || 0);
   for (let i = 1; i <= count; i++) {
     const fromSource = source?.find((s) => s.set_number === i);
     const isResumed = resumedSets?.some((s) => s.set_number === i);
+    let weight = fromSource?.weight_kg ?? defaultWeight;
+    if (applyLight && !isResumed && exercise.type === 'wt' && fromSource?.weight_kg != null) {
+      weight = lightWeight(fromSource.weight_kg);
+    }
     rows.push({
       set_number: i,
       reps: fromSource?.reps ?? '',
-      weight_kg: fromSource?.weight_kg ?? defaultWeight,
+      weight_kg: weight,
       duration: toInputValue(
         fromSource?.duration_s ?? (isCooldownExercise(exercise) ? exercise.target_seconds : null),
         exercise.type
@@ -74,6 +87,12 @@ export default function Heute() {
     queryFn: () => api.get('/progression/proposals'),
     retry: false,
   });
+  const { data: wrappedLatest } = useQuery({
+    queryKey: ['wrapped-latest'],
+    queryFn: () => api.get('/wrapped/latest'),
+    retry: false,
+  });
+  const [wrappedOpen, setWrappedOpen] = useState(false);
 
   const [dayKey, setDayKey] = useState(null);
   const [sessionId, setSessionId] = useState(null);
@@ -106,6 +125,8 @@ export default function Heute() {
   const [undoStack, setUndoStack] = useState([]);
   const [readinessOpen, setReadinessOpen] = useState(false);
   const [readinessHints, setReadinessHints] = useState(null);
+  const [lightMode, setLightMode] = useState(false);
+  const [lightOffer, setLightOffer] = useState(false);
   const [completion, setCompletion] = useState(null);
   const [detailExercise, setDetailExercise] = useState(null);
   const [muscleExercise, setMuscleExercise] = useState(null);
@@ -169,10 +190,15 @@ export default function Heute() {
         resumedByExercise[log.exercise_id].push(log);
       }
 
+      const light = Boolean(resumed?.adaptations?.light);
+      setLightMode(light);
+      setLightOffer(false);
+      setReadinessHints(resumed?.readiness ? readinessAdaptations(resumed.readiness) : null);
+
       const day = plan.days.find((d) => d.key === dayKey);
       const initial = {};
       for (const ex of day.exercises) {
-        initial[ex.id] = buildInitialSets(ex, historyRes.prefill[ex.id], resumedByExercise[ex.id]);
+        initial[ex.id] = buildInitialSets(ex, historyRes.prefill[ex.id], resumedByExercise[ex.id], light);
       }
       setSetsByExercise(initial);
       setRpeByExercise(
@@ -226,14 +252,31 @@ export default function Heute() {
     return () => clearInterval(id);
   }, [restTimerState]);
 
+  // Pausen-Timer-Push: nur planen, wenn die App in den Hintergrund geht
+  // (Bildschirm sperren o. Ä.) — im Vordergrund übernimmt der lokale Ton.
+  useEffect(() => {
+    if (!timerPushWanted()) return undefined;
+    function onVisibility() {
+      if (document.visibilityState === 'hidden') {
+        const left = restTimerState && !restTimerState.pausedAtMs ? remainingSeconds(restTimerState) : 0;
+        if (left >= 5) api.post('/push/timer', { seconds: left }).catch(() => {});
+      } else {
+        api.delete('/push/timer').catch(() => {});
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [restTimerState]);
+
   // Fokus-Ansicht zeigt eine vorausgefüllte Zahl an — der State muss diesen Wert
   // tatsächlich tragen, sonst postet "Satz geschafft" einen leeren Wert.
   useEffect(() => {
     if (!focusExerciseId) return;
     const rows = setsByExercise[focusExerciseId];
     if (!rows) return;
-    const exercise = plan?.days?.flatMap((d) => d.exercises ?? []).find((e) => e.id === focusExerciseId);
+    let exercise = plan?.days?.flatMap((d) => d.exercises ?? []).find((e) => e.id === focusExerciseId);
     if (!exercise) return;
+    if (lightMode) exercise = lightenExercise(exercise);
     const idx = rows.findIndex((r) => !r.logged);
     const targetIndex = idx === -1 ? rows.length - 1 : idx;
     const row = rows[targetIndex];
@@ -260,7 +303,7 @@ export default function Heute() {
         [focusExerciseId]: prev[focusExerciseId].map((r, i) => (i === targetIndex ? { ...r, ...updates } : r)),
       }));
     }
-  }, [focusExerciseId, setsByExercise, plan]);
+  }, [focusExerciseId, setsByExercise, plan, lightMode]);
 
   async function toggleSet(exercise, index) {
     const row = setsByExercise[exercise.id][index];
@@ -332,14 +375,23 @@ export default function Heute() {
     setUndoStack([]);
     setRpeByExercise({});
     setReadinessHints(null);
+    setLightMode(false);
+    setLightOffer(false);
     setNote('');
     setNoteOpen(false);
     setFocusExerciseId(null);
-    setSetsByExercise((prev) =>
-      Object.fromEntries(
-        Object.entries(prev).map(([exId, rows]) => [exId, rows.map((r) => ({ ...r, logged: false }))])
-      )
-    );
+    setSetsByExercise((prev) => {
+      if (!lightMode) {
+        return Object.fromEntries(
+          Object.entries(prev).map(([exId, rows]) => [exId, rows.map((r) => ({ ...r, logged: false }))])
+        );
+      }
+      // Leichte Version war aktiv — Rows zurück auf Planwerte.
+      const dayPlan = plan?.days?.find((d) => d.key === dayKey);
+      return Object.fromEntries(
+        (dayPlan?.exercises ?? []).map((ex) => [ex.id, buildInitialSets(ex, historyRes?.prefill?.[ex.id], null, false)])
+      );
+    });
     queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
   }
 
@@ -413,8 +465,35 @@ export default function Heute() {
     try {
       await api.post(`/sessions/${sid}/readiness`, readiness);
       setReadinessHints(readinessAdaptations(readiness));
+      if (readiness.energy <= 2 && !lightMode) setLightOffer(true);
     } catch {
       /* optional */
+    }
+  }
+
+  // Leichte Version an/aus: ungeloggte Rows werden neu aus dem (ggf. reduzierten) Plan
+  // aufgebaut, geloggte Sätze bleiben unangetastet. Persistenz best effort.
+  async function applyLightMode(next) {
+    setLightMode(next);
+    setLightOffer(false);
+    const dayPlan = plan?.days?.find((d) => d.key === dayKey);
+    setSetsByExercise((prev) => {
+      const out = {};
+      for (const ex of dayPlan?.exercises ?? []) {
+        const fresh = buildInitialSets(ex, historyRes?.prefill?.[ex.id], null, next);
+        const byNumber = new Map(fresh.map((r) => [r.set_number, r]));
+        for (const r of prev[ex.id] ?? []) {
+          if (r.logged) byNumber.set(r.set_number, r);
+        }
+        out[ex.id] = [...byNumber.values()].sort((a, b) => a.set_number - b.set_number);
+      }
+      return out;
+    });
+    try {
+      const sid = await ensureSession();
+      await api.post(`/sessions/${sid}/adaptations`, { light: next });
+    } catch {
+      /* optional — lokal bereits aktiv */
     }
   }
 
@@ -438,6 +517,7 @@ export default function Heute() {
         summary: res.summary,
         evaluation: res.evaluation,
         records: res.new_records ?? [],
+        day_name: dayPlan?.name ?? 'Workout',
         stats: summarizeSession(dayPlan, res.summary, sessionStartedAt ? Date.now() - sessionStartedAt : null),
       });
     } catch (err) {
@@ -512,7 +592,14 @@ export default function Heute() {
     if (!completion) return;
     setCompletion(null);
     navigate(`/session/${completion.session_id}/auswertung`, {
-      state: { summary: completion.summary, evaluation: completion.evaluation },
+      state: {
+        summary: completion.summary,
+        evaluation: completion.evaluation,
+        // Für die Share-Card direkt nach dem Finish — Rekorde gibt es nur hier.
+        records: completion.records,
+        stats: completion.stats,
+        day_name: completion.day_name,
+      },
     });
   }, [completion, navigate]);
 
@@ -559,7 +646,10 @@ export default function Heute() {
     );
   }
 
-  const day = plan.days.find((d) => d.key === dayKey);
+  const planDay = plan.days.find((d) => d.key === dayKey);
+  // Leichte Version: abgeleitete Übungsobjekte, damit Karten, Fokus-Ansicht und
+  // Fortschrittszähler denselben reduzierten Plan sehen.
+  const day = planDay && lightMode ? { ...planDay, exercises: planDay.exercises.map(lightenExercise) } : planDay;
   const dayDoneAt = dayKey ? doneThisWeek.get(dayKey) : null;
   const showRestartGate = Boolean(dayDoneAt) && !sessionId;
   const weightOverrides = getAllOverrides();
@@ -619,6 +709,33 @@ export default function Heute() {
         }
       />
 
+      {wrappedLatest?.available && !wrappedLatest.seen && !wrappedOpen && (
+        <button
+          type="button"
+          onClick={() => setWrappedOpen(true)}
+          style={{
+            width: '100%',
+            background: 'var(--primary-grad)',
+            border: 'none',
+            borderRadius: 14,
+            padding: '13px 16px',
+            marginBottom: 12,
+            color: 'var(--on-primary)',
+            fontWeight: 600,
+            fontSize: 14,
+            textAlign: 'left',
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <span>🎁 Dein Rückblick für {monthLabel(wrappedLatest.month)} ist da</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, opacity: 0.9 }}>Ansehen →</span>
+        </button>
+      )}
+
       {sessionId && !readinessHints && (
         <Button variant="secondary" onClick={() => setReadinessOpen(true)} style={{ marginBottom: 12, fontSize: 13, minHeight: 40 }}>
           Tagesform checken
@@ -628,6 +745,69 @@ export default function Heute() {
       {readinessHints && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: 12, marginBottom: 12, fontSize: 13 }}>
           <strong>Hinweise:</strong> {readinessHints.join(' · ')}
+        </div>
+      )}
+
+      {lightOffer && !lightMode && (
+        <div
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--primary)',
+            borderRadius: 14,
+            padding: 14,
+            marginBottom: 12,
+            fontSize: 13,
+          }}
+        >
+          <div style={{ marginBottom: 10 }}>
+            <strong>Wenig Energie?</strong> Leichte Version: −10 % Gewicht, −1 Satz pro Übung — zählt ganz
+            normal.
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button onClick={() => applyLightMode(true)} style={{ fontSize: 13, minHeight: 40 }}>
+              Leicht trainieren
+            </Button>
+            <Button variant="secondary" onClick={() => setLightOffer(false)} style={{ fontSize: 13, minHeight: 40 }}>
+              Nein, normal
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {lightMode && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+            background: 'var(--primary-dim)',
+            border: '1px solid var(--primary)',
+            color: 'var(--primary)',
+            borderRadius: 12,
+            padding: '8px 12px',
+            marginBottom: 12,
+            fontSize: 13,
+          }}
+        >
+          <span>
+            <strong>Leichte Version aktiv</strong> · −10 % Gewicht, −1 Satz
+          </span>
+          <button
+            onClick={() => applyLightMode(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'inherit',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            Zurücksetzen
+          </button>
         </div>
       )}
 
@@ -1207,10 +1387,15 @@ export default function Heute() {
         />
       )}
 
+      {wrappedOpen && wrappedLatest?.month && (
+        <WrappedStory month={wrappedLatest.month} onClose={() => setWrappedOpen(false)} />
+      )}
+
       {completion && (
         <WorkoutCompleteOverlay
           stats={completion.stats}
           records={completion.records}
+          dayName={completion.day_name}
           onDone={leaveCompletion}
         />
       )}

@@ -8,16 +8,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      workbox: {
+      // injectManifest statt generateSW: der Push-Handler braucht einen eigenen
+      // SW (src/sw.js). Navigation-Fallback und NetworkOnly für /api leben dort.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
+      injectManifest: {
         // .glb mit precachen, sonst fehlt das Muskel-Modell offline
         globPatterns: ['**/*.{js,css,html,ico,png,svg,glb}'],
-        navigateFallbackDenylist: [/^\/api/],
-        runtimeCaching: [
-          {
-            urlPattern: /^\/api\//,
-            handler: 'NetworkOnly',
-          },
-        ],
       },
       manifest: {
         name: 'LiLief-Workout',

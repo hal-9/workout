@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { completionHeadline, easeOutCubic, particleLayout, shouldCountUp } from '../lib/completion.js';
 import { formatRecordValue } from '../lib/records.js';
 import { playWorkoutComplete } from '../lib/workoutSounds.js';
+import { shareCard, shareCardColors } from '../lib/shareCard.js';
 
 const PARTICLES = particleLayout(14);
 const COUNT_UP_MS = 700;
@@ -68,9 +69,10 @@ function Stat({ label, value, unit }) {
   );
 }
 
-export default function WorkoutCompleteOverlay({ stats, records = [], onDone }) {
+export default function WorkoutCompleteOverlay({ stats, records = [], dayName, onDone }) {
   const [reduced] = useState(prefersReducedMotion);
   const animate = !reduced;
+  const [sharing, setSharing] = useState(false);
 
   const sets = useCountUp(stats?.sets ?? 0, animate);
   const tonnage = useCountUp(stats?.tonnage_kg ?? 0, animate);
@@ -79,6 +81,25 @@ export default function WorkoutCompleteOverlay({ stats, records = [], onDone }) 
   useEffect(() => {
     playWorkoutComplete();
   }, []);
+
+  async function handleShare(e) {
+    e.stopPropagation();
+    if (sharing) return;
+    setSharing(true);
+    try {
+      await shareCard({
+        colors: shareCardColors(),
+        dayName: dayName || 'Workout',
+        dateLabel: new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }),
+        stats,
+        records,
+      });
+    } catch {
+      /* Teilen ist optional */
+    } finally {
+      setSharing(false);
+    }
+  }
 
   return (
     <div
@@ -239,11 +260,31 @@ export default function WorkoutCompleteOverlay({ stats, records = [], onDone }) 
 
         <button
           type="button"
+          onClick={handleShare}
+          disabled={sharing}
+          style={{
+            width: '100%',
+            marginTop: 16,
+            background: 'var(--surface2)',
+            border: '1px solid var(--line)',
+            borderRadius: 13,
+            padding: 13,
+            fontWeight: 600,
+            fontSize: 14,
+            color: 'var(--text)',
+            cursor: 'pointer',
+          }}
+        >
+          {sharing ? 'Bild wird erstellt…' : 'Als Bild teilen'}
+        </button>
+
+        <button
+          type="button"
           onClick={onDone}
           className="btn primary"
           style={{
             width: '100%',
-            marginTop: 16,
+            marginTop: 10,
             border: 'none',
             borderRadius: 13,
             padding: 15,

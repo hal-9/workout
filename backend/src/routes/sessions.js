@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAuth } from '../auth.js';
 import { detectNewRecords } from 'shared/records';
 import { runEvaluation } from '../evaluation.js';
+import { notifyFriendsOfFinish } from '../push.js';
 
 function getActivePlan(db, userId) {
   const row = db
@@ -113,6 +114,7 @@ const setSchema = setKeySchema
   });
 
 const adaptationsSchema = z.object({
+  light: z.boolean().optional(),
   skipped: z.array(z.string()).optional(),
   order: z.array(z.string()).optional(),
   added: z.array(z.object({
@@ -513,6 +515,7 @@ export function sessionsRouter(db) {
     if (logs.length > 0) {
       runEvaluation(db, session.id).catch(() => {});
     }
+    notifyFriendsOfFinish(db, req.user).catch(() => {});
 
     const currentSets = groupSetsByExercise(logs);
     const summary = {

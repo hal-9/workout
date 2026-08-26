@@ -6,6 +6,7 @@ import { api } from '../api.js';
 import { formatDuration } from 'shared/duration';
 import { formatProposalChange, proposalReason } from '../lib/progressionView.js';
 import { clearOverride } from '../lib/weightOverrides.js';
+import { shareCard, shareCardColors } from '../lib/shareCard.js';
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 60000;
@@ -27,6 +28,29 @@ export default function Auswertung() {
 
   const [selectedIds, setSelectedIds] = useState(null);
   const [applyState, setApplyState] = useState({ status: 'idle', error: null, count: 0 });
+  const [sharing, setSharing] = useState(false);
+
+  // Share-Card gibt es nur direkt nach dem Finish — new_records entstehen
+  // ausschließlich zur Finish-Zeit und kommen über den Navigation-State mit.
+  const shareStats = location.state?.stats ?? null;
+
+  async function handleShare() {
+    if (sharing || !shareStats) return;
+    setSharing(true);
+    try {
+      await shareCard({
+        colors: shareCardColors(),
+        dayName: location.state?.day_name || 'Workout',
+        dateLabel: new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }),
+        stats: shareStats,
+        records: location.state?.records ?? [],
+      });
+    } catch {
+      /* Teilen ist optional */
+    } finally {
+      setSharing(false);
+    }
+  }
 
   const { data: progression } = useQuery({
     queryKey: ['progression-proposals'],
@@ -121,7 +145,29 @@ export default function Auswertung() {
 
   return (
     <div className="wrap">
-      <h2>Auswertung</h2>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+        <h2>Auswertung</h2>
+        {shareStats && (
+          <button
+            type="button"
+            onClick={handleShare}
+            disabled={sharing}
+            style={{
+              background: 'var(--surface2)',
+              border: '1px solid var(--line)',
+              borderRadius: 11,
+              padding: '8px 12px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              color: 'var(--text)',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            {sharing ? 'Erstelle…' : 'Als Bild teilen'}
+          </button>
+        )}
+      </div>
       {fetched?.day_name && (
         <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: -6 }}>
           {fetched.day_name}

@@ -1,5 +1,5 @@
 import { isCooldown } from 'shared/exerciseProgress';
-import { bestsForExercise, sessionTonnage } from 'shared/records';
+import { bestsForExercise, mergeBests, pickRecord, sessionMetrics, sessionTonnage } from 'shared/records';
 
 const SESSION_WINDOW_DAYS = 84; // 12 Wochen für Heatmap und Tonnage-Trend
 const MUSCLE_WINDOW_DAYS = 28;
@@ -164,4 +164,56 @@ export function buildStatsForUser(db, userId) {
     volume_by_muscle,
     records,
   };
+}
+
+// UTC-Montag der Woche eines SQL-Timestamps ('YYYY-MM-DD HH:MM:SS').
+// Konvention M20/M19: Wochen- und Monatsgrenzen serverseitig in UTC,
+// wie finished_at selbst (Abweichung zur lokalen Woche max. Randstunden).
+function utcMondayOf(sqlTs) {
+  const d = new Date(sqlTs.replace(' ', 'T') + 'Z');
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Wochen-Aggregate über die gesamte Historie für den Trainingsbaum:
+ * ein Ast pro Trainingswoche, Blüten = PRs, Früchte = Max-Tests.
+ * PRs werden chronologisch rekonstruiert (sie sind nirgends persistiert);
+ * die erste Session einer Übung zählt nie als PR — wie detectNewRecords.
+ */
+export function buildTreeForUser(db, userId) {
+  const meta = exerciseMetaForUser(db, userId);
+  const sessions = groupBySession(logRows(db, userId, null));
+
+  const weeks = new Map();
+  const bests = new Map();
+  function weekEntry(weekStart) {
+    if (!weeks.has(weekStart)) {
+      weeks.set(weekStart, { week_start: weekStart, workouts: 0, tonnage_kg: 0, prs: 0, max_tests: 0 });
+    }
+    return weeks.get(weekStart);
+  }
+
+  for (const session of sessions) {
+    const entry = weekEntry(utcMondayOf(session.finished_at));
+    entry.workouts += 1;
+    for (const [exerciseId, sets] of session.setsByExercise) {
+      const exercise = meta.get(exerciseId);
+      if (!exercise) continue;
+      entry.tonnage_kg += sessionTonnage(exercise, sets);
+      const metrics = sessionMetrics(exercise, sets);
+      const previous = bests.get(exerciseId);
+      if (previous && pickRecord(exercise, metrics, previous)) entry.prs += 1;
+      bests.set(exerciseId, mergeBests(previous, metrics));
+    }
+  }
+
+  const tests = db.prepare('SELECT date FROM max_tests WHERE user_id = ?').all(userId);
+  for (const test of tests) {
+    weekEntry(utcMondayOf(`${test.date} 00:00:00`)).max_tests += 1;
+  }
+
+  return [...weeks.values()]
+    .map((week) => ({ ...week, tonnage_kg: Math.round(week.tonnage_kg) }))
+    .sort((a, b) => (a.week_start < b.week_start ? -1 : 1));
 }

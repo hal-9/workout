@@ -12,6 +12,8 @@ import { progressRouter } from './routes/progress.js';
 import { progressionRouter } from './routes/progression.js';
 import { statsRouter } from './routes/stats.js';
 import { exportRouter } from './routes/export.js';
+import { wrappedRouter } from './routes/wrapped.js';
+import { pushRouter } from './routes/push.js';
 
 export function createApp(db) {
   const app = express();
@@ -35,6 +37,8 @@ export function createApp(db) {
   app.use('/api', statsRouter(db));
   app.use('/api', progressionRouter(db));
   app.use('/api', exportRouter(db));
+  app.use('/api', wrappedRouter(db));
+  app.use('/api', pushRouter(db));
 
   app.use('/api', (req, res) => {
     res.status(404).json({ error: 'not found' });
