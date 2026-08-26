@@ -112,6 +112,25 @@ describe('GET /api/sessions/recent + /api/sessions/:id/summary', () => {
       expect(ids).not.toContain(first.body.session_id);
     });
 
+    it('active.first_set_at: null ohne Sets, Zeitstempel des ersten Satzes danach', async () => {
+      const created = await request(app).post('/api/sessions').set('Cookie', cookie).send({ day_key: 'push' });
+      const sessionId = created.body.session_id;
+
+      const before = await request(app).get('/api/sessions/recent').set('Cookie', cookie);
+      expect(before.body.active.first_set_at).toBeNull();
+
+      await request(app)
+        .post(`/api/sessions/${sessionId}/sets`)
+        .set('Cookie', cookie)
+        .send({ exercise_id: 'pu', set_number: 1, reps: 10, weight_kg: null, duration_s: null });
+
+      const after = await request(app).get('/api/sessions/recent').set('Cookie', cookie);
+      const expected = db
+        .prepare('SELECT created_at FROM set_logs WHERE session_id = ?')
+        .get(sessionId).created_at;
+      expect(after.body.active.first_set_at).toBe(expected);
+    });
+
     it('limit wird respektiert und geclampt', async () => {
       await finishedSession('push');
       await finishedSession('pull');

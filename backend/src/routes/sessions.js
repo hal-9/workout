@@ -20,6 +20,14 @@ function setLogsForSession(db, sessionId) {
     .all(sessionId);
 }
 
+// Timer-Start = erster geloggter Satz, nicht die Session-Erstellung.
+function firstSetAt(db, sessionId) {
+  const row = db
+    .prepare('SELECT MIN(created_at) AS first_set_at FROM set_logs WHERE session_id = ?')
+    .get(sessionId);
+  return row?.first_set_at ?? null;
+}
+
 function rpeForSession(db, sessionId) {
   return db
     .prepare('SELECT exercise_id, rpe, rir FROM exercise_rpe WHERE session_id = ?')
@@ -179,6 +187,7 @@ export function sessionsRouter(db) {
           session_id: activeRow.id,
           day_key: activeRow.day_key,
           started_at: activeRow.started_at,
+          first_set_at: firstSetAt(db, activeRow.id),
           set_logs: setLogsForSession(db, activeRow.id),
           rpe: rpeForSession(db, activeRow.id),
           note: activeRow.note ?? null,
@@ -526,8 +535,8 @@ export function sessionsRouter(db) {
     if (!session) {
       return res.status(404).json({ error: 'not found' });
     }
-    if (session.status !== 'finished') {
-      return res.status(409).json({ error: 'not finished' });
+    if (session.status === 'discarded') {
+      return res.status(409).json({ error: 'already discarded' });
     }
 
     db.prepare("UPDATE sessions SET status = 'discarded' WHERE id = ?").run(session.id);

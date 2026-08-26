@@ -18,6 +18,7 @@ import { getAllOverrides, getOverride, setOverride } from '../lib/weightOverride
 import { buildSetPayload } from '../components/SetRow.jsx';
 import ExerciseListCard, { buildCardSubline } from '../components/ExerciseListCard.jsx';
 import ExerciseFocus from '../components/ExerciseFocus.jsx';
+import ElapsedTimer from '../components/ElapsedTimer.jsx';
 import RestTimerBar from '../components/RestTimerBar.jsx';
 import ReadinessDialog, { readinessAdaptations } from '../components/ReadinessDialog.jsx';
 import ProgressionProposals from '../components/ProgressionProposals.jsx';
@@ -66,18 +67,6 @@ function buildInitialSets(exercise, prefillSets, resumedSets) {
   return rows;
 }
 
-function formatElapsed(ms) {
-  const mins = Math.floor(ms / 60000);
-  return `${mins} min`;
-}
-
-function formatMMSS(ms) {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const mins = Math.floor(total / 60);
-  const secs = total % 60;
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-}
-
 const RPE_VALUES = [6, 7, 8, 9, 10];
 
 export default function Heute() {
@@ -102,7 +91,6 @@ export default function Heute() {
   const [setsByExercise, setSetsByExercise] = useState({});
   const [historyRes, setHistoryRes] = useState(null);
   const [sessionStartedAt, setSessionStartedAt] = useState(null);
-  const [elapsedNow, setElapsedNow] = useState(Date.now());
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const [pauseDuration, setPauseDuration] = useState(loadPauseDuration);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -124,6 +112,7 @@ export default function Heute() {
   const [restTimerState, setRestTimerState] = useState(null);
   const [focusExerciseId, setFocusExerciseId] = useState(null);
   const [finishPending, setFinishPending] = useState(false);
+  const [discardConfirm, setDiscardConfirm] = useState(false);
   const [finishError, setFinishError] = useState(null);
   const [undoStack, setUndoStack] = useState([]);
   const [readinessOpen, setReadinessOpen] = useState(false);
@@ -202,11 +191,7 @@ export default function Heute() {
       );
       setNote(resumed?.note ?? '');
       setNoteOpen(Boolean(resumed?.note));
-      if (resumed?.started_at) {
-        setSessionStartedAt(parseUtc(resumed.started_at).getTime());
-      } else {
-        setSessionStartedAt(null);
-      }
+      setSessionStartedAt(resumed?.first_set_at ? parseUtc(resumed.first_set_at).getTime() : null);
     }
 
     load();
@@ -223,7 +208,6 @@ export default function Heute() {
         .post('/sessions', { day_key: dayKey })
         .then((res) => {
           setSessionId(res.session_id);
-          setSessionStartedAt(Date.now());
           return res.session_id;
         })
         .catch((err) => {
@@ -233,12 +217,6 @@ export default function Heute() {
     }
     return sessionPromiseRef.current;
   }
-
-  useEffect(() => {
-    if (!sessionStartedAt) return;
-    const id = setInterval(() => setElapsedNow(Date.now()), 10000);
-    return () => clearInterval(id);
-  }, [sessionStartedAt]);
 
   useEffect(() => {
     if (!restTimerState || restTimerState.pausedAtMs) return;
@@ -352,7 +330,39 @@ export default function Heute() {
       if (!sessionStartedAt) setSessionStartedAt(Date.now());
       setRestTimerState(startRestTimer(pauseDuration));
       setUndoStack((prev) => [...prev, { exerciseId: exercise.id, index }]);
+    } else {
+      const stillLogged = Object.entries(setsByExercise).some(([exId, rows]) =>
+        rows.some((s, i) => s.logged && !(exId === exercise.id && i === index))
+      );
+      if (!stillLogged) setSessionStartedAt(null);
     }
+  }
+
+  // Laufende Session komplett verwerfen — set_logs bleiben in der DB, zaehlen aber nirgends mehr.
+  async function discardSession() {
+    if (!sessionId) return;
+    try {
+      await api.post(`/sessions/${sessionId}/discard`);
+    } catch {
+      return;
+    }
+    setDiscardConfirm(false);
+    setSessionId(null);
+    setSessionStartedAt(null);
+    sessionPromiseRef.current = null;
+    setRestTimerState(null);
+    setUndoStack([]);
+    setRpeByExercise({});
+    setReadinessHints(null);
+    setNote('');
+    setNoteOpen(false);
+    setFocusExerciseId(null);
+    setSetsByExercise((prev) =>
+      Object.fromEntries(
+        Object.entries(prev).map(([exId, rows]) => [exId, rows.map((r) => ({ ...r, logged: false }))])
+      )
+    );
+    queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
   }
 
   function adjustWeight(exercise, index, delta) {
@@ -765,16 +775,45 @@ export default function Heute() {
 
       {day && (
         <>
-          {sessionId && sessionStartedAt && (
+          {sessionId && (
             <div
               style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                gap: 12,
                 fontFamily: 'var(--font-mono)',
                 fontSize: 12,
                 color: 'var(--muted)',
                 marginBottom: 10,
               }}
             >
-              {formatElapsed(elapsedNow - sessionStartedAt)} · Satz {loggedSetCount}/{totalPlannedSets}
+              <span>
+                {sessionStartedAt && (
+                  <>
+                    <ElapsedTimer startedAt={sessionStartedAt} variant="minutes" /> ·{' '}
+                  </>
+                )}
+                Satz {loggedSetCount}/{totalPlannedSets}
+              </span>
+              <button
+                onClick={() => (discardConfirm ? discardSession() : setDiscardConfirm(true))}
+                onBlur={() => setDiscardConfirm(false)}
+                disabled={!isOnline}
+                style={{
+                  flex: '0 0 auto',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  fontFamily: 'inherit',
+                  fontSize: 12,
+                  color: discardConfirm ? 'var(--danger)' : 'var(--muted)',
+                  textDecoration: 'underline',
+                  cursor: isOnline ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {discardConfirm ? 'Wirklich verwerfen?' : 'Session verwerfen'}
+              </button>
             </div>
           )}
 
@@ -1139,7 +1178,7 @@ export default function Heute() {
           compare={focusCompare}
           segments={segments}
           disabled={focusDisabled}
-          elapsedLabel={sessionStartedAt ? formatMMSS(elapsedNow - sessionStartedAt) : '00:00'}
+          elapsedLabel={<ElapsedTimer startedAt={sessionStartedAt} />}
           pauseDuration={pauseDuration}
           restTimerActive={isRestTimerActive(restTimerState)}
           onClose={() => setFocusExerciseId(null)}

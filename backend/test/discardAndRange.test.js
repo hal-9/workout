@@ -119,12 +119,14 @@ describe('discard & range', () => {
       expect(logs.c).toBe(1);
     });
 
-    it('aktive Session -> 409', async () => {
+    it('aktive Session kann verworfen werden', async () => {
       const created = await request(app).post('/api/sessions').set('Cookie', cookie).send({ day_key: 'push' });
       const res = await request(app)
         .post(`/api/sessions/${created.body.session_id}/discard`)
         .set('Cookie', cookie);
-      expect(res.status).toBe(409);
+      expect(res.status).toBe(200);
+      const row = db.prepare('SELECT status FROM sessions WHERE id = ?').get(created.body.session_id);
+      expect(row.status).toBe('discarded');
     });
 
     it('bereits discarded -> 409', async () => {
