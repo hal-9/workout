@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { Suspense, lazy, useRef } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from './api.js';
@@ -15,6 +15,9 @@ import Fortschritt from './screens/Fortschritt.jsx';
 import Freunde from './screens/Freunde.jsx';
 import Kalender from './screens/Kalender.jsx';
 import Auswertung from './screens/Auswertung.jsx';
+
+// Kalibrierseite für die Muskelzonen — nur im Dev-Server, nie im Build.
+const MuscleDev = import.meta.env.DEV ? lazy(() => import('./screens/MuscleDev.jsx')) : null;
 
 function useMe() {
   return useQuery({
@@ -77,6 +80,9 @@ export default function App() {
       <Route path="/freunde" element={<AuthGuard><Freunde /></AuthGuard>} />
       <Route path="/kalender" element={<AuthGuard><Kalender /></AuthGuard>} />
       <Route path="/session/:id/auswertung" element={<AuthGuard><Auswertung /></AuthGuard>} />
+      {MuscleDev && (
+        <Route path="/dev/muskeln" element={<Suspense fallback={null}><MuscleDev /></Suspense>} />
+      )}
       <Route path="*" element={<Navigate to="/heute" replace />} />
     </Routes>
   );

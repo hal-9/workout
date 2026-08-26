@@ -9,6 +9,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
+        // .glb mit precachen, sonst fehlt das Muskel-Modell offline
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,glb}'],
         navigateFallbackDenylist: [/^\/api/],
         runtimeCaching: [
           {
