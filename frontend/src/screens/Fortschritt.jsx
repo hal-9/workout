@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import StatsSection from '../components/StatsSection.jsx';
 import { addDays, mondayStart, toSqlUtc } from '../lib/dates.js';
@@ -11,6 +11,7 @@ import {
   formatPlanSince,
   exercisesBeyondHighlights,
 } from '../lib/exerciseProgress.js';
+import { getStoredLayout, mergeLayout, setStoredLayout } from '../lib/progressLayout.js';
 import ExerciseChart from '../components/ExerciseChart.jsx';
 import MaxTestsSection from '../components/MaxTestsSection.jsx';
 import ConsistencyHeatmap, { buildConsistencyHeatmap } from '../components/ConsistencyHeatmap.jsx';
@@ -18,6 +19,7 @@ import RecoveryMap from '../components/RecoveryMap.jsx';
 import TrainingTree from '../components/TrainingTree.jsx';
 import WrappedStory, { monthLabel } from '../components/WrappedStory.jsx';
 import ProgressionProposals from '../components/ProgressionProposals.jsx';
+import ProgressLayoutEditor from '../components/ProgressLayoutEditor.jsx';
 import PageHeader from '../components/ui/PageHeader.jsx';
 import Button from '../components/ui/Button.jsx';
 
@@ -41,6 +43,22 @@ const tabButtonStyle = (active) => ({
   cursor: 'pointer',
   whiteSpace: 'nowrap',
 });
+
+// Karten des eigenen Fortschritt-Tabs: Reihenfolge + Sichtbarkeit sind pro
+// User anpassbar (Anpassen-Modus), Titel dienen auch den eingeklappten Zeilen.
+const CARD_TITLES = {
+  tree: 'Trainingsbaum',
+  progression: 'Nächste Session',
+  recovery: 'Erholung',
+  consistency: 'Konsistenz',
+  maxtests: 'Max-Tests & Körpergewicht',
+  weeks: 'Trainingswochen',
+  stats: 'Statistiken',
+  exercises: 'Übungs-Fortschritt',
+  wrapped: 'Monats-Rückblick',
+  recent: 'Auswertungen',
+};
+const CARD_IDS = Object.keys(CARD_TITLES);
 
 const ExerciseProgressCard = ({ exercise }) => {
   const delta = formatProgressDelta(exercise.first_value, exercise.latest_value, exercise.metric_label);
@@ -76,16 +94,72 @@ const ExerciseProgressCard = ({ exercise }) => {
   );
 };
 
+const CollapsedCard = ({ title, onShow }) => (
+  <button
+    type="button"
+    onClick={onShow}
+    style={{
+      ...cardStyle,
+      width: '100%',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 8,
+      padding: '11px 16px',
+      opacity: 0.45,
+      color: 'var(--text)',
+      textAlign: 'left',
+      cursor: 'pointer',
+      fontSize: 14,
+    }}
+  >
+    <span>{title}</span>
+    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+      Einblenden
+    </span>
+  </button>
+);
+
 export default function Fortschritt() {
+  const queryClient = useQueryClient();
   const { data: others } = useQuery({ queryKey: ['users'], queryFn: () => api.get('/users') });
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => api.get('/me'), retry: false });
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [showAllExercises, setShowAllExercises] = useState(false);
   const [wrappedOpen, setWrappedOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [layout, setLayout] = useState(() => mergeLayout(CARD_IDS, getStoredLayout()));
   // Entfernte Freunde verschwinden aus der Liste — dann zurueck auf die eigene Ansicht.
   if (selectedUserId !== null && others && !others.some((u) => u.id === selectedUserId)) {
     setSelectedUserId(null);
   }
   const viewPartner = selectedUserId !== null;
+
+  const saveLayout = useMutation({
+    mutationFn: (next) => api.put('/me/progress-layout', next),
+    onSuccess: (user) => queryClient.setQueryData(['me'], user),
+  });
+
+  // Wie beim Theme: der Server ist die Quelle fuer das Geraet, das die Auswahl
+  // noch nicht kennt; lokal Geaendertes wird sofort gespeichert.
+  const serverLayout = me?.progress_layout ?? null;
+  useEffect(() => {
+    if (!serverLayout) return;
+    const merged = mergeLayout(CARD_IDS, serverLayout);
+    if (JSON.stringify(merged) === JSON.stringify(layout)) return;
+    setLayout(merged);
+    setStoredLayout(merged);
+  }, [serverLayout]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const applyLayout = (next) => {
+    setLayout(next);
+    setStoredLayout(next);
+    saveLayout.mutate(next);
+  };
+
+  const hiddenSet = new Set(layout.hidden);
+  const unhideCard = (id) =>
+    applyLayout({ order: layout.order, hidden: layout.hidden.filter((h) => h !== id) });
 
   const { data: ownProgress } = useQuery({
     queryKey: ['progress'],
@@ -179,6 +253,178 @@ export default function Fortschritt() {
     URL.revokeObjectURL(url);
   };
 
+  const exerciseSection = progress && (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
+        <h3 style={{ margin: 0 }}>Übungs-Fortschritt</h3>
+        {planSinceLabel && (
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+            Seit {planSinceLabel}
+          </span>
+        )}
+      </div>
+      {viewPartner && progress.name && (
+        <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 0, marginBottom: 12 }}>
+          Plan: {progress.plan_name}
+        </p>
+      )}
+
+      {highlights.length === 0 && (
+        <div style={cardStyle}>
+          <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0 }}>
+            Nach dem ersten Workout siehst du hier deinen Fortschritt.
+          </p>
+        </div>
+      )}
+
+      {highlights.map((exercise) => (
+        <ExerciseProgressCard key={exercise.exercise_id} exercise={exercise} />
+      ))}
+
+      {moreExercises.length > 0 && (
+        <div style={{ marginTop: 4 }}>
+          <button
+            type="button"
+            onClick={() => setShowAllExercises((open) => !open)}
+            style={{
+              width: '100%',
+              background: 'var(--surface)',
+              border: '1px solid var(--line)',
+              color: 'var(--primary)',
+              borderRadius: 11,
+              padding: '10px 12px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              cursor: 'pointer',
+              marginBottom: showAllExercises ? 12 : 0,
+            }}
+          >
+            {showAllExercises ? 'Weniger anzeigen' : `Alle Übungen (${moreExercises.length})`}
+          </button>
+          {showAllExercises &&
+            moreExercises.map((exercise) => (
+              <ExerciseProgressCard key={exercise.exercise_id} exercise={exercise} />
+            ))}
+        </div>
+      )}
+    </div>
+  );
+
+  // Falsy = Karte hat gerade nichts zu zeigen und taucht auch eingeklappt nicht auf.
+  const cardNodes = {
+    tree: treeData && <TrainingTree weeks={treeData.weeks} />,
+    progression: progression?.proposals?.length > 0 && (
+      <ProgressionProposals proposals={progression.proposals} deload={progression.deload} />
+    ),
+    recovery: plan && heatmapRange && <RecoveryMap plan={plan} sessions={heatmapRange.sessions} />,
+    consistency: heatmapData && (
+      <div style={cardStyle}>
+        <h3 style={{ marginTop: 0 }}>Konsistenz (12 Wochen)</h3>
+        <ConsistencyHeatmap data={heatmapData} />
+      </div>
+    ),
+    maxtests: <MaxTestsSection />,
+    weeks: weekRecap && weekRecap.weeks.length > 0 && (
+      <div style={cardStyle}>
+        <h3 style={{ marginTop: 0 }}>Trainingswochen</h3>
+        {weekRecap.weeks.map((w) => (
+          <div key={w.weekLabel} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <div style={{ width: 52, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+              {w.weekLabel}
+            </div>
+            <div style={{ flex: 1, display: 'flex', gap: 3 }}>
+              {Array.from({ length: w.total }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    flex: 1,
+                    height: 8,
+                    borderRadius: 4,
+                    background: i < w.done ? 'var(--primary)' : 'var(--line)',
+                  }}
+                />
+              ))}
+            </div>
+            <div style={{ width: 36, fontFamily: 'var(--font-mono)', fontSize: 11, textAlign: 'right' }}>
+              {w.done}/{w.total}
+            </div>
+          </div>
+        ))}
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>
+          Ø {weekRecap.averageDone}/{weekRecap.total}
+          {weekRecap.streak > 0 && ` · Serie: ${weekRecap.streak} Woche${weekRecap.streak === 1 ? '' : 'n'}`}
+        </div>
+      </div>
+    ),
+    stats: stats && <StatsSection stats={stats} />,
+    exercises: exerciseSection,
+    wrapped: wrappedLatest?.available && (
+      <button
+        type="button"
+        onClick={() => setWrappedOpen(true)}
+        style={{
+          width: '100%',
+          background: 'var(--surface)',
+          border: '1px solid var(--line)',
+          borderRadius: 16,
+          padding: '13px 16px',
+          marginBottom: 12,
+          color: 'var(--text)',
+          fontSize: 14,
+          textAlign: 'left',
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        <span>🎁 Rückblick {monthLabel(wrappedLatest.month)}</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--primary)' }}>Ansehen →</span>
+      </button>
+    ),
+    recent: (
+      <div style={cardStyle}>
+        <h3 style={{ marginTop: 0 }}>Auswertungen</h3>
+        {(recent?.sessions ?? []).length === 0 && (
+          <p style={{ color: 'var(--muted)', fontSize: 13 }}>Noch keine abgeschlossenen Workouts.</p>
+        )}
+        {(recent?.sessions ?? []).map((s) => (
+          <Link
+            key={s.session_id}
+            to={`/session/${s.session_id}/auswertung`}
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 8,
+              padding: '9px 0',
+              borderBottom: '1px solid var(--line)',
+              color: 'var(--text)',
+              textDecoration: 'none',
+              fontSize: 14,
+            }}
+          >
+            <span>{s.day_name}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
+              {new Date(s.finished_at.replace(' ', 'T') + 'Z').toLocaleDateString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+              })}{' '}
+              {s.evaluation_status === 'ok'
+                ? '✓'
+                : s.evaluation_status === 'pending'
+                  ? '…'
+                  : s.evaluation_status === 'failed'
+                    ? '⚠'
+                    : '–'}
+            </span>
+          </Link>
+        ))}
+      </div>
+    ),
+  };
+
   return (
     <div className="wrap">
       <PageHeader
@@ -230,186 +476,37 @@ export default function Fortschritt() {
         </Link>
       </div>
 
-      {!viewPartner && treeData && <TrainingTree weeks={treeData.weeks} />}
-
-      {!viewPartner && progression?.proposals?.length > 0 && (
-        <ProgressionProposals proposals={progression.proposals} deload={progression.deload} />
-      )}
-
-      {!viewPartner && plan && heatmapRange && (
-        <RecoveryMap plan={plan} sessions={heatmapRange.sessions} />
-      )}
-
-      {!viewPartner && heatmapData && (
-        <div style={cardStyle}>
-          <h3 style={{ marginTop: 0 }}>Konsistenz (12 Wochen)</h3>
-          <ConsistencyHeatmap data={heatmapData} />
+      {!viewPartner && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+          <button type="button" onClick={() => setEditMode((m) => !m)} style={tabButtonStyle(editMode)}>
+            {editMode ? 'Fertig' : '≡ Anpassen'}
+          </button>
         </div>
       )}
 
-      {!viewPartner && <MaxTestsSection />}
-
-      {!viewPartner && weekRecap && weekRecap.weeks.length > 0 && (
-        <div style={cardStyle}>
-          <h3 style={{ marginTop: 0 }}>Trainingswochen</h3>
-          {weekRecap.weeks.map((w) => (
-            <div key={w.weekLabel} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <div style={{ width: 52, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-                {w.weekLabel}
-              </div>
-              <div style={{ flex: 1, display: 'flex', gap: 3 }}>
-                {Array.from({ length: w.total }).map((_, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      flex: 1,
-                      height: 8,
-                      borderRadius: 4,
-                      background: i < w.done ? 'var(--primary)' : 'var(--line)',
-                    }}
-                  />
-                ))}
-              </div>
-              <div style={{ width: 36, fontFamily: 'var(--font-mono)', fontSize: 11, textAlign: 'right' }}>
-                {w.done}/{w.total}
-              </div>
-            </div>
-          ))}
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>
-            Ø {weekRecap.averageDone}/{weekRecap.total}
-            {weekRecap.streak > 0 && ` · Serie: ${weekRecap.streak} Woche${weekRecap.streak === 1 ? '' : 'n'}`}
-          </div>
-        </div>
+      {!viewPartner && editMode && (
+        <ProgressLayoutEditor
+          cards={layout.order.map((id) => ({ id, title: CARD_TITLES[id] }))}
+          hidden={layout.hidden}
+          onChange={applyLayout}
+        />
       )}
 
-      {!viewPartner && <StatsSection stats={stats} />}
+      {!viewPartner &&
+        !editMode &&
+        layout.order.map((id) => {
+          const node = cardNodes[id];
+          if (!node) return null;
+          if (hiddenSet.has(id)) {
+            return <CollapsedCard key={id} title={CARD_TITLES[id]} onShow={() => unhideCard(id)} />;
+          }
+          return <Fragment key={id}>{node}</Fragment>;
+        })}
 
-      {progress && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
-            <h3 style={{ margin: 0 }}>Übungs-Fortschritt</h3>
-            {planSinceLabel && (
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-                Seit {planSinceLabel}
-              </span>
-            )}
-          </div>
-          {viewPartner && progress.name && (
-            <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 0, marginBottom: 12 }}>
-              Plan: {progress.plan_name}
-            </p>
-          )}
-
-          {highlights.length === 0 && (
-            <div style={cardStyle}>
-              <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0 }}>
-                Nach dem ersten Workout siehst du hier deinen Fortschritt.
-              </p>
-            </div>
-          )}
-
-          {highlights.map((exercise) => (
-            <ExerciseProgressCard key={exercise.exercise_id} exercise={exercise} />
-          ))}
-
-          {moreExercises.length > 0 && (
-            <div style={{ marginTop: 4 }}>
-              <button
-                type="button"
-                onClick={() => setShowAllExercises((open) => !open)}
-                style={{
-                  width: '100%',
-                  background: 'var(--surface)',
-                  border: '1px solid var(--line)',
-                  color: 'var(--primary)',
-                  borderRadius: 11,
-                  padding: '10px 12px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  marginBottom: showAllExercises ? 12 : 0,
-                }}
-              >
-                {showAllExercises ? 'Weniger anzeigen' : `Alle Übungen (${moreExercises.length})`}
-              </button>
-              {showAllExercises &&
-                moreExercises.map((exercise) => (
-                  <ExerciseProgressCard key={exercise.exercise_id} exercise={exercise} />
-                ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {!viewPartner && wrappedLatest?.available && (
-        <button
-          type="button"
-          onClick={() => setWrappedOpen(true)}
-          style={{
-            width: '100%',
-            background: 'var(--surface)',
-            border: '1px solid var(--line)',
-            borderRadius: 16,
-            padding: '13px 16px',
-            marginBottom: 12,
-            color: 'var(--text)',
-            fontSize: 14,
-            textAlign: 'left',
-            cursor: 'pointer',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <span>🎁 Rückblick {monthLabel(wrappedLatest.month)}</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--primary)' }}>Ansehen →</span>
-        </button>
-      )}
+      {viewPartner && cardNodes.exercises}
 
       {wrappedOpen && wrappedLatest?.month && (
         <WrappedStory month={wrappedLatest.month} onClose={() => setWrappedOpen(false)} />
-      )}
-
-      {!viewPartner && (
-        <div style={cardStyle}>
-          <h3 style={{ marginTop: 0 }}>Auswertungen</h3>
-          {(recent?.sessions ?? []).length === 0 && (
-            <p style={{ color: 'var(--muted)', fontSize: 13 }}>Noch keine abgeschlossenen Workouts.</p>
-          )}
-          {(recent?.sessions ?? []).map((s) => (
-            <Link
-              key={s.session_id}
-              to={`/session/${s.session_id}/auswertung`}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 8,
-                padding: '9px 0',
-                borderBottom: '1px solid var(--line)',
-                color: 'var(--text)',
-                textDecoration: 'none',
-                fontSize: 14,
-              }}
-            >
-              <span>{s.day_name}</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
-                {new Date(s.finished_at.replace(' ', 'T') + 'Z').toLocaleDateString('de-DE', {
-                  day: '2-digit',
-                  month: '2-digit',
-                })}{' '}
-                {s.evaluation_status === 'ok'
-                  ? '✓'
-                  : s.evaluation_status === 'pending'
-                    ? '…'
-                    : s.evaluation_status === 'failed'
-                      ? '⚠'
-                      : '–'}
-              </span>
-            </Link>
-          ))}
-        </div>
       )}
     </div>
   );
