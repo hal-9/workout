@@ -79,6 +79,36 @@ function LogoutIcon() {
   );
 }
 
+function Switch({ on }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        flexShrink: 0,
+        width: 42,
+        height: 26,
+        borderRadius: 13,
+        padding: 3,
+        display: 'flex',
+        justifyContent: on ? 'flex-end' : 'flex-start',
+        background: on ? 'var(--primary-grad)' : 'var(--line)',
+        boxShadow: on ? 'none' : 'inset 0 0 0 1px rgba(0, 0, 0, 0.06)',
+        transition: 'background 160ms ease',
+      }}
+    >
+      <span
+        style={{
+          width: 20,
+          height: 20,
+          borderRadius: '50%',
+          background: '#fff',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+        }}
+      />
+    </span>
+  );
+}
+
 export default function Header() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -167,17 +197,19 @@ export default function Header() {
         }}
       >
         <div
+          className="wrap"
           style={{
-            maxWidth: 560,
-            margin: '0 auto',
             height: 52,
-            padding: '0 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Link
+            to="/heute"
+            aria-label="Zu Heute"
+            style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+          >
             <Logo size={26} />
             <strong
               style={{
@@ -191,7 +223,7 @@ export default function Header() {
             >
               LiLief
             </strong>
-          </div>
+          </Link>
 
           <button
             ref={burgerRef}
@@ -200,7 +232,7 @@ export default function Header() {
             aria-label="Menü"
             aria-expanded={menuOpen}
             aria-haspopup="menu"
-            style={{ ...ICON_BUTTON, marginRight: -10 }}
+            style={{ ...ICON_BUTTON, marginRight: -14 }}
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <line x1="4" y1="7" x2="20" y2="7" />
@@ -228,10 +260,9 @@ export default function Header() {
           }}
         >
           <div
+            className="wrap"
             style={{
               width: '100%',
-              maxWidth: 560,
-              padding: '0 12px',
               display: 'flex',
               justifyContent: 'flex-end',
             }}
@@ -265,9 +296,7 @@ export default function Header() {
               >
                 <SoundIcon on={soundOn} />
                 <span style={{ flex: 1 }}>Ton</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-                  {soundOn ? 'an' : 'aus'}
-                </span>
+                <Switch on={soundOn} />
               </button>
 
               <div style={{ height: 1, background: 'var(--line)', margin: '6px 10px' }} />
