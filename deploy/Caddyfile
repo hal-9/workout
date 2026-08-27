@@ -8,3 +8,14 @@ workout.tunikb.com {
     file_server
   }
 }
+
+dienstplan.tunikb.com {
+  handle /api/* {
+    reverse_proxy dienstplan-api:3002
+  }
+  handle {
+    root * /srv/dienstplan
+    try_files {path} /index.html
+    file_server
+  }
+}
