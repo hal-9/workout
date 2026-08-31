@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { durationUnitLabel, toInputValue } from 'shared/duration';
+import { durationUnitLabel, formatDuration, toInputValue } from 'shared/duration';
 import { parseTargetReps } from '../lib/exerciseCompare.js';
-import { REST_DEFAULT_SECONDS } from '../lib/restTimer.js';
+import { REST_DEFAULT_SECONDS, remainingSeconds, startRestTimer } from '../lib/restTimer.js';
+import { playRestEnd, playTick, unlockAudio } from '../lib/workoutSounds.js';
+
+const HOLD_PREP_SECONDS = 3;
 
 const CURRENT_ACCENT = 'var(--accent)';
 
@@ -52,10 +55,35 @@ export default function ExerciseFocus({
   const [phase, setPhase] = useState('entering');
   const [editing, setEditing] = useState(null); // null | 'big' | 'kg'
   const [justLogged, setJustLogged] = useState(false);
+  const [holdPhase, setHoldPhase] = useState(null); // null | 'prep' | 'hold'
+  const [holdTimerState, setHoldTimerState] = useState(null);
+  const [holdSecondsLeft, setHoldSecondsLeft] = useState(0);
   const closeTimeoutRef = useRef(null);
   const pulseTimeoutRef = useRef(null);
   const editAreaRef = useRef(null);
   const touchStartRef = useRef(null);
+  const wakeLockRef = useRef(null);
+
+  function acquireWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    navigator.wakeLock
+      .request('screen')
+      .then((lock) => {
+        wakeLockRef.current = lock;
+      })
+      .catch(() => {});
+  }
+
+  function releaseWakeLock() {
+    wakeLockRef.current?.release?.().catch(() => {});
+    wakeLockRef.current = null;
+  }
+
+  function stopHold() {
+    releaseWakeLock();
+    setHoldPhase(null);
+    setHoldTimerState(null);
+  }
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setPhase('open'));
@@ -66,21 +94,70 @@ export default function ExerciseFocus({
     () => () => {
       clearTimeout(closeTimeoutRef.current);
       clearTimeout(pulseTimeoutRef.current);
+      releaseWakeLock();
     },
     []
   );
 
+  useEffect(() => {
+    if (!holdTimerState) return;
+
+    const tick = () => {
+      const left = remainingSeconds(holdTimerState);
+      setHoldSecondsLeft(left);
+      if (left > 0) {
+        if (holdPhase === 'prep' || left <= 3) playTick();
+        return;
+      }
+      if (holdPhase === 'prep') {
+        setHoldPhase('hold');
+        setHoldTimerState(startRestTimer(exercise.target_seconds));
+        return;
+      }
+      playRestEnd();
+      stopHold();
+      doLog();
+    };
+
+    tick();
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holdTimerState, holdPhase]);
+
+  useEffect(() => {
+    if (!holdPhase) return;
+    function onVisibility() {
+      if (document.visibilityState === 'visible') acquireWakeLock();
+    }
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [holdPhase]);
+
+  function handleStartHold() {
+    if (disabled || restTimerActive || holdPhase) return;
+    unlockAudio();
+    acquireWakeLock();
+    setHoldPhase('prep');
+    setHoldTimerState(startRestTimer(HOLD_PREP_SECONDS));
+  }
+
   // Satz geloggt: kurz grün pulsieren, danach bleibt der Button bis zum Ende
   // der Pause (Ablauf oder „Weiter") gesperrt.
-  function handleLogSet() {
-    if (disabled || restTimerActive) return;
+  function doLog() {
     setJustLogged(true);
     clearTimeout(pulseTimeoutRef.current);
     pulseTimeoutRef.current = setTimeout(() => setJustLogged(false), 650);
     onLogCurrentSet();
   }
 
+  function handleLogSet() {
+    if (disabled || restTimerActive || holdPhase) return;
+    doLog();
+  }
+
   function requestClose() {
+    stopHold();
     setPhase('closing');
     closeTimeoutRef.current = setTimeout(onClose, 150);
   }
@@ -111,6 +188,8 @@ export default function ExerciseFocus({
 
   useEffect(() => {
     setEditing(null);
+    stopHold();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex, exercise.id]);
 
   useEffect(() => {
@@ -210,7 +289,11 @@ export default function ExerciseFocus({
 
         <div ref={editAreaRef} style={{ marginTop: 32, display: 'flex', alignItems: 'baseline', gap: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {editing === 'big' ? (
+            {holdPhase ? (
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 92, lineHeight: 1, minWidth: 100 }}>
+                {holdPhase === 'prep' ? holdSecondsLeft : formatDuration(holdSecondsLeft)}
+              </div>
+            ) : editing === 'big' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <button type="button" onClick={() => onAdjustBigNumber(-1)} style={stepperStyle}>−</button>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 92, lineHeight: 1, minWidth: 100 }}>{bigValue}</div>
@@ -238,7 +321,7 @@ export default function ExerciseFocus({
               </button>
             )}
             <div style={{ marginTop: 4, fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500, color: 'var(--muted)' }}>
-              {bigUnit} · TIPPEN ZUM ÄNDERN
+              {holdPhase === 'prep' ? 'GLEICH GEHT’S LOS' : holdPhase === 'hold' ? 'HALTEN' : `${bigUnit} · TIPPEN ZUM ÄNDERN`}
             </div>
           </div>
 
@@ -316,7 +399,7 @@ export default function ExerciseFocus({
         <button
           type="button"
           onClick={handleLogSet}
-          disabled={disabled || restTimerActive}
+          disabled={disabled || restTimerActive || !!holdPhase}
           className={justLogged ? 'set-logged-pulse' : undefined}
           style={{
             height: 58,
@@ -324,27 +407,41 @@ export default function ExerciseFocus({
             border: 'none',
             background: justLogged
               ? 'var(--success)'
-              : restTimerActive
+              : restTimerActive || holdPhase
                 ? 'var(--surface2)'
                 : 'var(--primary-grad)',
             fontFamily: 'var(--font-display)',
             fontWeight: 700,
             fontSize: 17,
-            color: justLogged ? '#fff' : restTimerActive ? 'var(--muted)' : '#fff',
+            color: justLogged ? '#fff' : restTimerActive || holdPhase ? 'var(--muted)' : '#fff',
             boxShadow: justLogged
               ? '0 8px 30px rgba(52,211,153,.35)'
-              : restTimerActive
+              : restTimerActive || holdPhase
                 ? 'none'
                 : '0 8px 30px rgba(236,72,153,.28)',
-            cursor: disabled || restTimerActive ? 'not-allowed' : 'pointer',
+            cursor: disabled || restTimerActive || holdPhase ? 'not-allowed' : 'pointer',
             opacity: disabled ? 0.55 : 1,
             transition: 'background 250ms ease, box-shadow 250ms ease, color 250ms ease',
           }}
         >
-          {restTimerActive && !justLogged ? '⏱ Pause läuft …' : 'Satz geschafft ✓'}
+          {!justLogged && restTimerActive
+            ? '⏱ Pause läuft …'
+            : !justLogged && holdPhase
+              ? '⏱ Timer läuft …'
+              : 'Satz geschafft ✓'}
         </button>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button type="button" onClick={onStartRestTimer} style={{ ...secondaryBtnStyle, color: 'var(--primary)' }}>
+          {isDurationType && exercise.target_seconds > 0 && (
+            <button
+              type="button"
+              onClick={holdPhase ? stopHold : handleStartHold}
+              disabled={disabled || restTimerActive}
+              style={{ ...secondaryBtnStyle, color: holdPhase ? 'var(--muted)' : 'var(--primary)' }}
+            >
+              {holdPhase ? '✕ Abbrechen' : '▶ Start'}
+            </button>
+          )}
+          <button type="button" onClick={onStartRestTimer} disabled={!!holdPhase} style={{ ...secondaryBtnStyle, color: 'var(--primary)' }}>
             ⏱ Pause {REST_DEFAULT_SECONDS}s
           </button>
           <button type="button" onClick={requestClose} style={{ ...secondaryBtnStyle, color: 'var(--muted)' }}>
