@@ -181,6 +181,7 @@ export default function ExerciseFocus({
 
   const isDurationType = exercise.type === 'time' || exercise.type === 'cardio';
   const isWeighted = exercise.type === 'wt';
+  const canHoldTimer = isDurationType && exercise.target_seconds > 0;
 
   const firstOpenIndex = rows.findIndex((r) => !r.logged);
   const activeIndex = firstOpenIndex === -1 ? rows.length - 1 : firstOpenIndex;
@@ -398,7 +399,7 @@ export default function ExerciseFocus({
       >
         <button
           type="button"
-          onClick={handleLogSet}
+          onClick={canHoldTimer && !holdPhase ? handleStartHold : handleLogSet}
           disabled={disabled || restTimerActive || !!holdPhase}
           className={justLogged ? 'set-logged-pulse' : undefined}
           style={{
@@ -424,26 +425,26 @@ export default function ExerciseFocus({
             transition: 'background 250ms ease, box-shadow 250ms ease, color 250ms ease',
           }}
         >
-          {!justLogged && restTimerActive
-            ? '⏱ Pause läuft …'
-            : !justLogged && holdPhase
+          {justLogged
+            ? 'Satz geschafft ✓'
+            : holdPhase
               ? '⏱ Timer läuft …'
-              : 'Satz geschafft ✓'}
+              : restTimerActive
+                ? '⏱ Pause läuft …'
+                : canHoldTimer
+                  ? '▶ Start'
+                  : 'Satz geschafft ✓'}
         </button>
         <div style={{ display: 'flex', gap: 10 }}>
-          {isDurationType && exercise.target_seconds > 0 && (
-            <button
-              type="button"
-              onClick={holdPhase ? stopHold : handleStartHold}
-              disabled={disabled || restTimerActive}
-              style={{ ...secondaryBtnStyle, color: holdPhase ? 'var(--muted)' : 'var(--primary)' }}
-            >
-              {holdPhase ? '✕ Abbrechen' : '▶ Start'}
+          {holdPhase ? (
+            <button type="button" onClick={stopHold} style={{ ...secondaryBtnStyle, color: 'var(--muted)' }}>
+              ✕ Abbrechen
+            </button>
+          ) : (
+            <button type="button" onClick={onStartRestTimer} style={{ ...secondaryBtnStyle, color: 'var(--primary)' }}>
+              ⏱ Pause {REST_DEFAULT_SECONDS}s
             </button>
           )}
-          <button type="button" onClick={onStartRestTimer} disabled={!!holdPhase} style={{ ...secondaryBtnStyle, color: 'var(--primary)' }}>
-            ⏱ Pause {REST_DEFAULT_SECONDS}s
-          </button>
           <button type="button" onClick={requestClose} style={{ ...secondaryBtnStyle, color: 'var(--muted)' }}>
             Überspringen ›
           </button>
