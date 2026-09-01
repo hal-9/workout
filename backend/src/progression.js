@@ -1,6 +1,25 @@
 import { applyProposals, deloadWeek, evaluatePlan } from 'shared/progression';
 
 const HISTORY_LIMIT = 8; // reicht für after_success bis 8
+const TZ = 'Europe/Berlin'; // Wochengrenze wie im Scheduler
+
+// 'YYYY-MM-DD' in Berliner Zeit — Vergleiche laufen als String, keine TZ-Mathematik beim Lesen.
+export function localDay(nowMs = Date.now()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(nowMs);
+}
+
+/** Nächster Montag (Berlin) als 'YYYY-MM-DD'. Am Montag selbst ist ein Snooze bis dahin abgelaufen. */
+export function nextMondayKey(nowMs = Date.now()) {
+  const today = new Date(`${localDay(nowMs)}T00:00:00Z`);
+  const weekdayIdx = (today.getUTCDay() + 6) % 7; // 0 = Montag
+  today.setUTCDate(today.getUTCDate() + (7 - weekdayIdx));
+  return today.toISOString().slice(0, 10);
+}
 
 function activePlanRow(db, userId) {
   return db
@@ -60,12 +79,46 @@ export function buildProposalsForUser(db, userId) {
   const sessions = recentSessions(db, userId, row.id);
   const planStartMs = Date.parse(`${row.created_at.replace(' ', 'T')}Z`);
 
+  const today = localDay();
+  db.prepare('DELETE FROM progression_snoozes WHERE user_id = ? AND until_date <= ?').run(userId, today);
+  const snoozed = new Set(
+    db
+      .prepare('SELECT exercise_id FROM progression_snoozes WHERE user_id = ?')
+      .all(userId)
+      .map((r) => r.exercise_id)
+  );
+
   return {
     plan_id: row.id,
     plan_name: plan.name,
-    proposals: evaluatePlan(plan, sessions),
+    proposals: evaluatePlan(plan, sessions).filter((p) => !snoozed.has(p.exercise_id)),
     deload: deloadWeek(plan, Number.isNaN(planStartMs) ? null : planStartMs, Date.now()),
   };
+}
+
+/**
+ * Verschiebt Vorschläge bis zum nächsten Montag. Nur Übungen mit offenem Vorschlag
+ * werden verschoben — sonst wäre die Zeile ein Platzhalter für nichts.
+ */
+export function snoozeProposalsForUser(db, userId, exerciseIds) {
+  const row = activePlanRow(db, userId);
+  if (!row) return { error: 'no active plan' };
+
+  const plan = JSON.parse(row.json_payload);
+  const open = new Set(evaluatePlan(plan, recentSessions(db, userId, row.id)).map((p) => p.exercise_id));
+  const matching = exerciseIds.filter((id) => open.has(id));
+  if (!matching.length) return { error: 'no matching proposals' };
+
+  const until = nextMondayKey();
+  const stmt = db.prepare(
+    `INSERT INTO progression_snoozes (user_id, exercise_id, until_date) VALUES (?, ?, ?)
+     ON CONFLICT (user_id, exercise_id) DO UPDATE SET until_date = excluded.until_date`
+  );
+  db.transaction(() => {
+    for (const id of matching) stmt.run(userId, id, until);
+  })();
+
+  return { snoozed_until: until, exercise_ids: matching };
 }
 
 /**
@@ -88,6 +141,8 @@ export function applyProposalsForUser(db, userId, exerciseIds) {
   const nextPlan = applyProposals(plan, applied);
 
   const planId = db.transaction(() => {
+    const clearSnooze = db.prepare('DELETE FROM progression_snoozes WHERE user_id = ? AND exercise_id = ?');
+    for (const proposal of applied) clearSnooze.run(userId, proposal.exercise_id);
     db.prepare('UPDATE plans SET active = 0 WHERE user_id = ?').run(userId);
     const info = db
       .prepare(

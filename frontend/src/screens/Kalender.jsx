@@ -178,7 +178,7 @@ export default function Kalender() {
                       </span>
                     )}
                   </div>
-                ) : (
+                ) : doneSessions.length ? null : (
                   <div style={{ fontSize: 13, color: 'var(--muted)' }}>Pause</div>
                 )}
               </div>

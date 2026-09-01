@@ -131,11 +131,24 @@ export function evaluateExercise(exercise, sessionsOldestFirst = []) {
   const change = buildProposal(exercise, config);
   if (!change || change.to === change.from) return null;
 
+  const planned = plannedSets(exercise);
   const proposal = {
     exercise_id: exercise.id,
     name: exercise.name,
     type: config.type,
     sessions_in_streak: streak.length,
+    // Belege für das "Warum?" im UI: genau die Sessions, die die Serie bilden.
+    evidence: streak.map((session) => ({
+      session_id: session.session_id,
+      finished_at: session.finished_at ?? null,
+      sets: workingSets(session.sets)
+        .slice(0, planned)
+        .map((s) => ({
+          reps: s.reps ?? null,
+          weight_kg: s.weight_kg ?? null,
+          duration_s: s.duration_s ?? null,
+        })),
+    })),
     ...change,
   };
   proposal.rationale = proposalRationale(exercise, config, proposal);
@@ -153,6 +166,7 @@ export function evaluatePlan(plan, sessionsOldestFirst = []) {
       const perExercise = sessionsOldestFirst
         .map((session) => ({
           session_id: session.session_id,
+          finished_at: session.finished_at ?? null,
           sets: session.setsByExercise?.get(exercise.id) ?? [],
         }))
         .filter((s) => s.sets.length);

@@ -725,18 +725,22 @@ export default function Heute() {
               }}
             >
               <span style={{ display: 'flex', gap: 4 }} aria-hidden="true">
-                {orderedPlan.days.map((d) => (
-                  <span
-                    key={d.key}
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      background: doneThisWeek.has(d.key) ? 'var(--success)' : 'var(--surface2)',
-                      border: `1px solid ${doneThisWeek.has(d.key) ? 'var(--success)' : 'var(--line)'}`,
-                    }}
-                  />
-                ))}
+                {orderedPlan.days.map((d, i) => {
+                  // Zähler, keine Position: Reihenfolge der erledigten Workouts ist egal.
+                  const filled = i < progress.done;
+                  return (
+                    <span
+                      key={d.key}
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        background: filled ? 'var(--success)' : 'var(--surface2)',
+                        border: `1px solid ${filled ? 'var(--success)' : 'var(--line)'}`,
+                      }}
+                    />
+                  );
+                })}
               </span>
               <span
                 style={{
