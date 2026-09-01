@@ -13,12 +13,20 @@ function cookieOptions() {
   };
 }
 
+// In der DB liegt nur der SHA-256 des Tokens: ein DB-Leak liefert damit keine
+// benutzbaren Sessions. Das rohe Token existiert nur im Cookie.
+export function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 export function createSession(db, userId) {
+  db.prepare("DELETE FROM auth_sessions WHERE datetime(expires_at) < datetime('now')").run();
+
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
   db.prepare(
     'INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)'
-  ).run(token, userId, expiresAt);
+  ).run(hashToken(token), userId, expiresAt);
   return { token, expiresAt };
 }
 
@@ -45,7 +53,7 @@ export function requireAuth(db) {
          JOIN users ON users.id = auth_sessions.user_id
          WHERE auth_sessions.token = ?`
       )
-      .get(token);
+      .get(hashToken(token));
 
     if (!row || new Date(row.expires_at).getTime() < Date.now()) {
       return res.status(401).json({ error: 'unauthorized' });

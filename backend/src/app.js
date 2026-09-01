@@ -18,6 +18,10 @@ import { pushRouter } from './routes/push.js';
 export function createApp(db) {
   const app = express();
 
+  // Genau ein Proxy-Hop (Caddy): sonst sieht das Rate-Limit fuer alle
+  // Requests die Proxy-IP statt der Client-IP.
+  app.set('trust proxy', 1);
+
   app.use(express.json());
   app.use(cookieParser());
 

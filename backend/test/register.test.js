@@ -94,6 +94,16 @@ describe('registrierung', () => {
     expect(res.status).toBe(422);
   });
 
+  it('rate-limitet Registrierungen (11. Versuch -> 429)', async () => {
+    for (let i = 0; i < 10; i++) {
+      await request(app)
+        .post('/api/register')
+        .send({ ...VALID, invite_code: 'falsch' });
+    }
+    const blocked = await request(app).post('/api/register').send(VALID);
+    expect(blocked.status).toBe(429);
+  });
+
   it('neuer Nutzer sieht niemanden im Partner-Tab', async () => {
     const res = await request(app).post('/api/register').send(VALID);
     const cookie = res.headers['set-cookie'][0];

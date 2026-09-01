@@ -41,3 +41,13 @@ export function findUserForLogin(db, identifier) {
     db.prepare('SELECT * FROM users WHERE name = ? AND email IS NULL').get(value)
   );
 }
+
+// Digest zu "lilief-dummy-password-for-timing": unbekannte Nutzer kosten so
+// denselben bcrypt-Vergleich wie bekannte, sonst verraet die Antwortzeit,
+// welche E-Mails registriert sind.
+const DUMMY_DIGEST = '$2b$12$zqEScYkwzqXlXIKB/enZG.k60L/qpQVg6pQV5OqIbDQ9Wi.lXkKYa';
+
+export function verifyPassword(user, password) {
+  const digest = user ? user.password_digest : DUMMY_DIGEST;
+  return bcrypt.compareSync(String(password ?? ''), digest) && Boolean(user);
+}

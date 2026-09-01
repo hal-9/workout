@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import bcrypt from 'bcrypt';
+import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { THEME_MODES, THEME_PALETTE_IDS } from 'shared/themes';
 import {
@@ -7,6 +7,7 @@ import {
   setSessionCookie,
   clearSessionCookie,
   requireAuth,
+  hashToken,
   SESSION_COOKIE,
 } from '../auth.js';
 import {
@@ -15,6 +16,7 @@ import {
   inviteCodeMatches,
   createUser,
   findUserForLogin,
+  verifyPassword,
 } from '../accounts.js';
 
 const themeSchema = z.object({
@@ -49,7 +51,25 @@ function publicUser(db, userId) {
 export function authRouter(db) {
   const router = Router();
 
-  router.post('/register', (req, res) => {
+  // Limiter leben pro Router-Instanz, damit Tests sich nicht gegenseitig
+  // aussperren. Beim Login zaehlen nur Fehlversuche.
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    skipSuccessfulRequests: true,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'too many attempts' },
+  });
+  const registerLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'too many attempts' },
+  });
+
+  router.post('/register', registerLimiter, (req, res) => {
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(422).json({ error: 'validation failed', details: parsed.error.issues });
@@ -73,11 +93,11 @@ export function authRouter(db) {
     res.status(201).json(publicUser(db, user.id));
   });
 
-  router.post('/login', (req, res) => {
+  router.post('/login', loginLimiter, (req, res) => {
     const { email, name, password } = req.body || {};
     const user = findUserForLogin(db, email ?? name);
 
-    if (!user || !bcrypt.compareSync(password || '', user.password_digest)) {
+    if (!verifyPassword(user, password)) {
       return res.status(401).json({ error: 'unauthorized' });
     }
 
@@ -88,7 +108,7 @@ export function authRouter(db) {
 
   router.post('/logout', requireAuth(db), (req, res) => {
     const token = req.cookies[SESSION_COOKIE];
-    db.prepare('DELETE FROM auth_sessions WHERE token = ?').run(token);
+    db.prepare('DELETE FROM auth_sessions WHERE token = ?').run(hashToken(token));
     clearSessionCookie(res);
     res.status(204).end();
   });
