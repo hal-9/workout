@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import DayEditor from './DayEditor.jsx';
 import {
   clonePlan,
@@ -8,6 +8,7 @@ import {
 } from '../../lib/planDefaults.js';
 import { validatePlan } from '../../lib/planValidation.js';
 import { planDeloadWeeks, withPlanDeload } from '../../lib/progressionEdit.js';
+import { clearDraft, loadDraft, saveDraft } from '../../lib/planDraft.js';
 
 const inputStyle = {
   width: '100%',
@@ -49,8 +50,15 @@ export default function PlanEditor({
 }) {
   const [draft, setDraft] = useState(() => clonePlan(initialPlan));
   const [errors, setErrors] = useState([]);
+  // Wiederherstellbarer Entwurf: beim Öffnen anbieten, nicht stillschweigend
+  // laden — sonst wundert man sich über fremde Änderungen.
+  const [recoverable, setRecoverable] = useState(() => loadDraft());
 
   const isDirty = !plansEqual(draft, initialPlan);
+
+  useEffect(() => {
+    if (isDirty) saveDraft(draft);
+  }, [draft, isDirty]);
 
   const handleDayChange = (dayIndex, day) => {
     setDraft((prev) => ({
@@ -77,6 +85,7 @@ export default function PlanEditor({
 
   const handleCancel = () => {
     if (isDirty && !window.confirm('Ungespeicherte Änderungen verwerfen?')) return;
+    clearDraft();
     onCancel();
   };
 
@@ -98,6 +107,7 @@ export default function PlanEditor({
     }
 
     await onSave(validation.data);
+    clearDraft();
   };
 
   const allHaveWeekday = draft.days.length > 0 && draft.days.every((d) => d.weekday);
@@ -120,6 +130,45 @@ export default function PlanEditor({
           Abbrechen
         </button>
       </div>
+
+      {recoverable && !isDirty && (
+        <div
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--primary)',
+            borderRadius: 12,
+            padding: 12,
+            marginBottom: 12,
+            fontSize: 13,
+          }}
+        >
+          <div style={{ marginBottom: 8 }}>
+            Nicht gespeicherter Entwurf von {new Date(recoverable.saved_at).toLocaleString('de-DE')}.
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => {
+                setDraft(clonePlan(recoverable.plan));
+                setRecoverable(null);
+              }}
+              style={{ ...inputStyle, width: 'auto', cursor: 'pointer', fontSize: 13 }}
+            >
+              Entwurf laden
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                clearDraft();
+                setRecoverable(null);
+              }}
+              style={{ ...inputStyle, width: 'auto', cursor: 'pointer', fontSize: 13, color: 'var(--muted)' }}
+            >
+              Verwerfen
+            </button>
+          </div>
+        </div>
+      )}
 
       <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>
         Planname
@@ -217,9 +266,30 @@ export default function PlanEditor({
         </div>
       )}
 
-      <button type="submit" className="btn primary" style={primaryBtnStyle} disabled={saving}>
-        {saving ? 'Speichern…' : 'Plan speichern'}
-      </button>
+      {/* Speichern bleibt erreichbar, egal wie lang der Plan wird. */}
+      <div
+        style={{
+          position: 'sticky',
+          bottom: 'calc(var(--nav-h) + env(safe-area-inset-bottom))',
+          zIndex: 5,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          background: 'var(--surface)',
+          border: '1px solid var(--line)',
+          borderRadius: 14,
+          padding: 10,
+          marginTop: 8,
+          boxShadow: 'var(--shadow-card)',
+        }}
+      >
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+          {isDirty ? 'Nicht gespeichert' : 'Gespeichert'}
+        </span>
+        <button type="submit" className="btn primary" style={{ ...primaryBtnStyle, flex: 1, width: 'auto', padding: 12 }} disabled={saving}>
+          {saving ? 'Speichern…' : 'Plan speichern'}
+        </button>
+      </div>
     </form>
   );
 }

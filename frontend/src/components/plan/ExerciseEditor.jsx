@@ -24,25 +24,7 @@ const labelStyle = {
   marginTop: 10,
 };
 
-const smallBtnStyle = {
-  background: 'var(--surface2)',
-  border: '1px solid var(--line)',
-  borderRadius: 8,
-  padding: '6px 10px',
-  fontSize: 12,
-  cursor: 'pointer',
-  color: 'var(--text)',
-};
-
-export default function ExerciseEditor({
-  exercise,
-  index,
-  total,
-  onChange,
-  onRemove,
-  onMoveUp,
-  onMoveDown,
-}) {
+export default function ExerciseEditor({ exercise, onChange }) {
   const showReps = exercise.type === 'bw' || exercise.type === 'wt';
   const showWeight = exercise.type === 'wt';
   const showSeconds = exercise.type === 'time' || exercise.type === 'cardio';
@@ -69,50 +51,7 @@ export default function ExerciseEditor({
   };
 
   return (
-    <div
-      style={{
-        background: 'var(--surface2)',
-        border: '1px solid var(--line)',
-        borderRadius: 12,
-        padding: 12,
-        marginBottom: 10,
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <strong style={{ fontSize: 14 }}>
-          {isCooldown ? 'Cooldown' : 'Übung'} {index + 1}
-        </strong>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button
-            type="button"
-            onClick={onMoveUp}
-            disabled={index === 0}
-            style={smallBtnStyle}
-            aria-label="Übung nach oben"
-          >
-            ↑
-          </button>
-          <button
-            type="button"
-            onClick={onMoveDown}
-            disabled={index === total - 1}
-            style={smallBtnStyle}
-            aria-label="Übung nach unten"
-          >
-            ↓
-          </button>
-          <button
-            type="button"
-            onClick={onRemove}
-            disabled={total <= 1}
-            style={{ ...smallBtnStyle, color: 'var(--danger)' }}
-            aria-label="Übung entfernen"
-          >
-            Entfernen
-          </button>
-        </div>
-      </div>
-
+    <div>
       <label style={labelStyle}>Name</label>
       <input
         type="text"

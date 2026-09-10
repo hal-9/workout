@@ -5,6 +5,9 @@ import {
   createEmptyExercise,
 } from '../../lib/planDefaults.js';
 import ExerciseEditor from './ExerciseEditor.jsx';
+import ExerciseRow from './ExerciseRow.jsx';
+import Dialog from '../ui/Dialog.jsx';
+import Button from '../ui/Button.jsx';
 import ExerciseLibraryPicker from './ExerciseLibraryPicker.jsx';
 import { libraryEntryToExercise } from '../../lib/exerciseLibrary.js';
 
@@ -56,6 +59,8 @@ export default function DayEditor({
   const [open, setOpen] = useState(index === 0);
   const firstCooldownIndex = day.exercises.findIndex((ex) => ex.phase === 'cooldown');
   const [libraryOpen, setLibraryOpen] = useState(false);
+  // Index der Übung, die im Blatt bearbeitet wird — null = Liste.
+  const [editIndex, setEditIndex] = useState(null);
 
   const handleNameChange = (name) => {
     onChange({ ...day, name });
@@ -214,20 +219,13 @@ export default function DayEditor({
                 Cooldown
               </div>
             )}
-            <ExerciseEditor
+            <ExerciseRow
               exercise={exercise}
               index={exIndex}
               total={day.exercises.length}
-              onChange={(next) => handleExerciseChange(exIndex, next)}
-              onRemove={() => handleRemoveExercise(exIndex)}
-              onMoveUp={() => {
-                const exercises = moveItem(day.exercises, exIndex, exIndex - 1);
-                onChange({ ...day, exercises });
-              }}
-              onMoveDown={() => {
-                const exercises = moveItem(day.exercises, exIndex, exIndex + 1);
-                onChange({ ...day, exercises });
-              }}
+              onEdit={() => setEditIndex(exIndex)}
+              onMoveUp={() => onChange({ ...day, exercises: moveItem(day.exercises, exIndex, exIndex - 1) })}
+              onMoveDown={() => onChange({ ...day, exercises: moveItem(day.exercises, exIndex, exIndex + 1) })}
             />
           </Fragment>
         ))}
@@ -270,6 +268,37 @@ export default function DayEditor({
             usedNames={new Set(day.exercises.map((ex) => ex.name.toLowerCase()))}
           />
         )}
+
+        <Dialog
+          open={editIndex != null}
+          onClose={() => setEditIndex(null)}
+          title={day.exercises[editIndex]?.name || 'Übung'}
+        >
+          {editIndex != null && (
+            <>
+              <ExerciseEditor
+                exercise={day.exercises[editIndex]}
+                onChange={(next) => handleExerciseChange(editIndex, next)}
+              />
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    handleRemoveExercise(editIndex);
+                    setEditIndex(null);
+                  }}
+                  disabled={day.exercises.length <= 1}
+                  style={{ flex: 1, color: 'var(--danger)', fontSize: 13 }}
+                >
+                  Entfernen
+                </Button>
+                <Button onClick={() => setEditIndex(null)} style={{ flex: 1, fontSize: 13 }}>
+                  Fertig
+                </Button>
+              </div>
+            </>
+          )}
+        </Dialog>
       </div>
     </details>
   );

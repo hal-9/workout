@@ -31,6 +31,11 @@ export default function PlanOverview({ plan, onEdit, onNewPlan }) {
           <div style={{ color: 'var(--muted)', fontSize: 13 }}>
             {plan.days.length} Trainingstage
           </div>
+          {/* Plan und Kalender zeigen bewusst Verschiedenes — das war bisher nirgends gesagt. */}
+          <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 6 }}>
+            Das ist die übliche Woche. Wie diese Woche tatsächlich liegt — inklusive verschobener
+            Tage — steht im Kalender.
+          </div>
         </div>
       </div>
 

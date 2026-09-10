@@ -95,6 +95,12 @@ export default function Kalender() {
         )}
       </div>
 
+      {/* Gegenstück zum Hinweis im Plan: hier steht die angepasste Woche. */}
+      <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+        Diese Woche nach Plan und tatsächlichem Verlauf — verpasste Tage rutschen nach hinten. Die
+        übliche Wochenaufteilung steht im Plan.
+      </p>
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '12px 0' }}>
         <button onClick={() => setWeeksAgo((w) => w + 1)} aria-label="Vorherige Woche" style={pagerBtnStyle}>
           ‹
