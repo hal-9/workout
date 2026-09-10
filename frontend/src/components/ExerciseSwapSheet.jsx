@@ -3,6 +3,7 @@ import { formatDuration } from 'shared/duration';
 import { EQUIPMENT, ZONE_LABELS, exerciseZones } from 'shared/muscles';
 import { equipmentLabel, rankAlternatives } from '../lib/exerciseSwap.js';
 import { getSwapEquipment, setSwapEquipment } from '../lib/swapPrefs.js';
+import { useScrollLock } from '../lib/scrollLock.js';
 
 const INITIAL_VISIBLE = 8;
 
@@ -50,6 +51,7 @@ export default function ExerciseSwapSheet({
   const [equipment, setEquipment] = useState(() => new Set(getSwapEquipment()));
   const [query, setQuery] = useState('');
   const [showAll, setShowAll] = useState(false);
+  useScrollLock();
 
   const zones = exerciseZones(exercise);
   const excludeIds = useMemo(() => new Set(dayExercises.map((ex) => ex.id)), [dayExercises]);
@@ -106,7 +108,7 @@ export default function ExerciseSwapSheet({
           padding: '18px 18px calc(14px + env(safe-area-inset-bottom))',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexShrink: 0 }}>
           <div style={{ minWidth: 0 }}>
             <h3 style={{ margin: 0, fontSize: 17 }}>Übung tauschen</h3>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
@@ -139,6 +141,7 @@ export default function ExerciseSwapSheet({
             onClick={onRevert}
             style={{
               marginTop: 12,
+              flexShrink: 0,
               textAlign: 'left',
               background: 'var(--surface2)',
               border: '1px dashed var(--line)',
@@ -162,7 +165,8 @@ export default function ExerciseSwapSheet({
         )}
 
         <div
-          style={{ display: 'flex', gap: 6, overflowX: 'auto', margin: '12px -2px 0', padding: '0 2px 4px' }}
+          className="chip-rail"
+          style={{ margin: '12px -18px 0', padding: '2px 18px' }}
           aria-label="Gerät filtern"
         >
           <button type="button" onClick={() => toggleEquipment(null)} style={chipStyle(equipment.size === 0)}>
@@ -195,10 +199,11 @@ export default function ExerciseSwapSheet({
             padding: '9px 11px',
             fontSize: 15,
             marginTop: 8,
+            flexShrink: 0,
           }}
         />
 
-        <div style={{ marginTop: 10, overflowY: 'auto', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ marginTop: 10, overflowY: 'auto', overscrollBehavior: 'contain', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {visible.length === 0 && (
             <p style={{ color: 'var(--muted)', fontSize: 13, margin: '8px 0' }}>
               {equipment.size ? 'Keine passende Alternative mit diesem Gerät. Filter lockern?' : 'Nichts gefunden.'}

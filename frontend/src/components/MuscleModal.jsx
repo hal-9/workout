@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { ZONE_HINTS, ZONE_LABELS, exerciseZones } from 'shared/muscles';
+import { useScrollLock } from '../lib/scrollLock.js';
 
 // three.js ist ~150 KB gzipped — erst laden, wenn das Modell wirklich geöffnet wird.
 const MuscleBody3D = lazy(() => import('./MuscleBody3D.jsx'));
@@ -49,6 +50,7 @@ export default function MuscleModal({ exercise, onClose }) {
   // Teilzonen erklären, warum z. B. Seitheben ≠ Schulterdrücken ist.
   const hints = [...zones.primary, ...zones.secondary].filter((key) => ZONE_HINTS[key]);
   const [view, setView] = useState(backHeavy ? 'back' : 'front');
+  useScrollLock();
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -85,6 +87,7 @@ export default function MuscleModal({ exercise, onClose }) {
           maxWidth: 420,
           maxHeight: '90vh',
           overflowY: 'auto',
+          overscrollBehavior: 'contain',
           borderRadius: 20,
           padding: 16,
         }}

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { formatRecordValue } from '../lib/records.js';
 import TrainingTree from './TrainingTree.jsx';
+import { useScrollLock } from '../lib/scrollLock.js';
 
 const MuscleBody3D = lazy(() => import('./MuscleBody3D.jsx'));
 
@@ -39,6 +40,7 @@ function Slide({ kicker, children }) {
 export default function WrappedStory({ month, onClose }) {
   const queryClient = useQueryClient();
   const [index, setIndex] = useState(0);
+  useScrollLock();
 
   const { data } = useQuery({
     queryKey: ['wrapped', month],

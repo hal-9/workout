@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { completionHeadline, easeOutCubic, particleLayout, shouldCountUp } from '../lib/completion.js';
+import { useScrollLock } from '../lib/scrollLock.js';
 import { formatRecordValue } from '../lib/records.js';
 import { playWorkoutComplete } from '../lib/workoutSounds.js';
 import { shareCard, shareCardColors } from '../lib/shareCard.js';
@@ -71,6 +72,7 @@ function Stat({ label, value, unit }) {
 
 export default function WorkoutCompleteOverlay({ stats, records = [], dayName, onDone }) {
   const [reduced] = useState(prefersReducedMotion);
+  useScrollLock();
   const animate = !reduced;
   const [sharing, setSharing] = useState(false);
 

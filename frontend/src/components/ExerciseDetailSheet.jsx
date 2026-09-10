@@ -1,6 +1,7 @@
 import { formatTargetLabel } from '../lib/exerciseCompare.js';
 import { demoSearchUrl } from '../lib/exerciseLibrary.js';
 import { formatRecordValue, primaryBest } from '../lib/records.js';
+import { useScrollLock } from '../lib/scrollLock.js';
 
 const rowStyle = {
   display: 'flex',
@@ -15,6 +16,7 @@ const labelStyle = { color: 'var(--muted)' };
 const valueStyle = { fontFamily: 'var(--font-mono)', fontSize: 12, textAlign: 'right' };
 
 export default function ExerciseDetailSheet({ exercise, best, onClose }) {
+  useScrollLock();
   if (!exercise) return null;
 
   const target = formatTargetLabel(exercise);
@@ -49,6 +51,9 @@ export default function ExerciseDetailSheet({ exercise, best, onClose }) {
           margin: '0 auto',
           borderRadius: '20px 20px 0 0',
           padding: '18px 18px calc(18px + env(safe-area-inset-bottom))',
+          maxHeight: '88vh',
+          overflowY: 'auto',
+          overscrollBehavior: 'contain',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>

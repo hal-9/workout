@@ -11,6 +11,7 @@ import {
 } from '../lib/restTimer.js';
 import { equipmentLabel, stepForExercise } from '../lib/equipment.js';
 import { playRestEnd, playTick, unlockAudio } from '../lib/workoutSounds.js';
+import { useScrollLock } from '../lib/scrollLock.js';
 
 const HOLD_PREP_SECONDS = 3;
 
@@ -69,6 +70,7 @@ export default function ExerciseFocus({
   onPrev,
 }) {
   const [phase, setPhase] = useState('entering');
+  useScrollLock();
   const [editing, setEditing] = useState(null); // null | 'big' | 'kg'
   // Nachträglich einen erledigten Satz ansehen/ändern: null = aktueller offener Satz.
   const [selectedIndex, setSelectedIndex] = useState(null);
@@ -672,22 +674,28 @@ function RestPanel({ timerState, seconds, nextLabel, onChange, onSkip }) {
 // Direkte Eingabe statt nur Stepper: der Entwurf lebt lokal, damit halb
 // getippte Werte ("1" auf dem Weg zu "12") nicht sofort in den Satz wandern.
 function NumberEditor({ value, fontSize, minWidth, step, ariaLabel, onStep, onCommit, onDone }) {
-  const [draft, setDraft] = useState(String(value ?? ''));
+  // Leerer Entwurf + Platzhalter statt Select-All: Tippen ersetzt den Wert,
+  // ohne dass iOS eine Textmarkierung mit Griffen über die Zahl legt.
+  const [draft, setDraft] = useState('');
   const inputRef = useRef(null);
+  const lastValue = useRef(value);
 
   useEffect(() => {
     inputRef.current?.focus();
-    inputRef.current?.select();
   }, []);
 
+  // Nur eine echte Wertänderung (Stepper) schreibt in den Entwurf — sonst wäre
+  // der leere Startzustand nach dem ersten Effect-Lauf wieder überschrieben.
   useEffect(() => {
+    if (value === lastValue.current) return;
+    lastValue.current = value;
     setDraft(String(value ?? ''));
   }, [value]);
 
   function commit() {
     const parsed = Number(String(draft).replace(',', '.'));
     if (Number.isFinite(parsed) && String(draft).trim() !== '') onCommit(parsed);
-    else setDraft(String(value ?? ''));
+    else setDraft('');
   }
 
   function handleKeyDown(e) {
@@ -695,10 +703,13 @@ function NumberEditor({ value, fontSize, minWidth, step, ariaLabel, onStep, onCo
       commit();
       onDone();
     } else if (e.key === 'Escape') {
-      setDraft(String(value ?? ''));
+      setDraft('');
       onDone();
     }
   }
+
+  const shown = draft === '' ? String(value ?? '') : draft;
+  const width = Math.max(minWidth, Math.ceil(shown.length * fontSize * 0.62));
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -711,12 +722,13 @@ function NumberEditor({ value, fontSize, minWidth, step, ariaLabel, onStep, onCo
         inputMode="decimal"
         aria-label={ariaLabel}
         value={draft}
+        placeholder={String(value ?? '')}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={handleKeyDown}
+        className="number-editor-input"
         style={{
-          width: minWidth,
-          minWidth,
+          width,
           background: 'none',
           border: 'none',
           borderBottom: '2px solid var(--primary)',
@@ -728,6 +740,8 @@ function NumberEditor({ value, fontSize, minWidth, step, ariaLabel, onStep, onCo
           fontSize,
           lineHeight: 1,
           color: 'var(--text)',
+          caretColor: 'var(--primary)',
+          outline: 'none',
         }}
       />
       <button type="button" aria-label={`${ariaLabel} erhöhen`} onClick={() => onStep(step)} style={stepperStyle}>

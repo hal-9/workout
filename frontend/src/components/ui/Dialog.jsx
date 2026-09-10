@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
+import { useScrollLock } from '../../lib/scrollLock.js';
 
 const FOCUSABLE =
   'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export default function Dialog({ open, onClose, title, children, ariaLabel }) {
   const ref = useRef(null);
+  useScrollLock(open);
 
   useEffect(() => {
     if (!open) return;
@@ -80,6 +82,7 @@ export default function Dialog({ open, onClose, title, children, ariaLabel }) {
           width: 'min(92vw, 400px)',
           maxHeight: '85vh',
           overflow: 'auto',
+          overscrollBehavior: 'contain',
         }}
       >
         {title && <h2 style={{ margin: '0 0 14px', fontSize: 18 }}>{title}</h2>}
