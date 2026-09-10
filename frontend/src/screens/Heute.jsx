@@ -439,35 +439,54 @@ export default function Heute() {
     }, 600);
   }
 
-  function adjustWeight(exercise, index, delta) {
-    const rows = setsByExercise[exercise.id];
-    const current = Number(rows[index]?.weight_kg) || 0;
-    const next = Math.max(0, Math.round((current + delta) * 10) / 10);
-    setSetsByExercise((prev) => ({
-      ...prev,
-      [exercise.id]: prev[exercise.id].map((s, i) => (i === index ? { ...s, weight_kg: next } : s)),
-    }));
-    if (exercise.type === 'wt' && next && next !== Number(exercise.default_weight_kg)) {
-      setOverride(exercise.id, next);
-    }
-    if (rows[index]?.logged) schedulePersist(exercise, index);
-  }
-
-  function adjustBigNumber(exercise, index, delta) {
+  // `resolve` bekommt den aktuellen Wert aus dem State-Update selbst, damit
+  // schnelle Stepper-Taps nicht auf einem veralteten Render-Wert rechnen.
+  // Das Override landet im localStorage — derselbe Wert doppelt geschrieben
+  // (StrictMode ruft den Updater zweimal) ändert nichts.
+  function updateWeight(exercise, index, resolve) {
     setSetsByExercise((prev) => {
-      const rows = prev[exercise.id];
-      const isDurationType = exercise.type === 'time' || exercise.type === 'cardio';
-      const field = isDurationType ? 'duration' : 'reps';
+      const current = Number(prev[exercise.id]?.[index]?.weight_kg) || 0;
+      const next = Math.max(0, Math.round(resolve(current) * 10) / 10);
+      if (exercise.type === 'wt' && next && next !== Number(exercise.default_weight_kg)) {
+        setOverride(exercise.id, next);
+      }
       return {
         ...prev,
-        [exercise.id]: rows.map((s, i) => {
+        [exercise.id]: prev[exercise.id].map((s, i) => (i === index ? { ...s, weight_kg: next } : s)),
+      };
+    });
+    if (setsByExercise[exercise.id]?.[index]?.logged) schedulePersist(exercise, index);
+  }
+
+  function writeWeight(exercise, index, value) {
+    updateWeight(exercise, index, () => Number(value) || 0);
+  }
+
+  function adjustWeight(exercise, index, delta) {
+    updateWeight(exercise, index, (current) => current + delta);
+  }
+
+  function updateBigNumber(exercise, index, resolve) {
+    setSetsByExercise((prev) => {
+      const field = exercise.type === 'time' || exercise.type === 'cardio' ? 'duration' : 'reps';
+      return {
+        ...prev,
+        [exercise.id]: prev[exercise.id].map((s, i) => {
           if (i !== index) return s;
-          const current = Number(s[field]) || 0;
-          return { ...s, [field]: String(Math.max(0, current + delta)) };
+          const next = Math.max(0, resolve(Number(s[field]) || 0));
+          return { ...s, [field]: String(next) };
         }),
       };
     });
     if (setsByExercise[exercise.id]?.[index]?.logged) schedulePersist(exercise, index);
+  }
+
+  function writeBigNumber(exercise, index, value) {
+    updateBigNumber(exercise, index, () => Number(value) || 0);
+  }
+
+  function adjustBigNumber(exercise, index, delta) {
+    updateBigNumber(exercise, index, (current) => current + delta);
   }
 
   // Übungs-Tausch (nur diese Session). Der Ersatz übernimmt die Satzzahl des
@@ -1440,12 +1459,18 @@ export default function Heute() {
           disabled={focusDisabled}
           elapsedLabel={<ElapsedTimer startedAt={sessionStartedAt} />}
           restTimerActive={isRestTimerActive(restTimerState)}
+          restTimerState={restTimerState}
+          restSeconds={restSeconds}
+          onRestChange={setRestTimerState}
+          onRestSkip={() => setRestTimerState(null)}
           onClose={() => setFocusExerciseId(null)}
           replacedFrom={replacedNames.get(focusExercise.id) ?? null}
           onLogCurrentSet={() => handleLogFocusSet(focusExercise)}
           onRemoveSet={(i) => toggleSet(focusExercise, i)}
           onAdjustBigNumber={(delta, i) => adjustBigNumber(focusExercise, i ?? currentSetIndexFor(focusExercise.id), delta)}
           onAdjustWeight={(delta, i) => adjustWeight(focusExercise, i ?? currentSetIndexFor(focusExercise.id), delta)}
+          onSetBigNumber={(value, i) => writeBigNumber(focusExercise, i ?? currentSetIndexFor(focusExercise.id), value)}
+          onSetWeight={(value, i) => writeWeight(focusExercise, i ?? currentSetIndexFor(focusExercise.id), value)}
           onAddExtraSet={() => addExtraSet(focusExercise)}
           onSwap={focusDisabled ? null : () => setSwapTarget(focusExercise)}
           onStartRestTimer={() => {
@@ -1465,7 +1490,7 @@ export default function Heute() {
         />
       )}
 
-      {isRestTimerActive(restTimerState) && (
+      {isRestTimerActive(restTimerState) && !focusExercise && (
         <RestTimerBar
           timerState={restTimerState}
           seconds={restSeconds}

@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { durationUnitLabel, formatDuration, toInputValue } from 'shared/duration';
 import { parseTargetReps } from '../lib/exerciseCompare.js';
-import { REST_DEFAULT_SECONDS, remainingSeconds, startRestTimer } from '../lib/restTimer.js';
+import {
+  REST_DEFAULT_SECONDS,
+  extendRestTimer,
+  pauseRestTimer,
+  remainingSeconds,
+  resumeRestTimer,
+  startRestTimer,
+} from '../lib/restTimer.js';
+import { equipmentLabel, stepForExercise } from '../lib/equipment.js';
 import { playRestEnd, playTick, unlockAudio } from '../lib/workoutSounds.js';
 
 const HOLD_PREP_SECONDS = 3;
@@ -40,12 +48,18 @@ export default function ExerciseFocus({
   disabled,
   elapsedLabel,
   restTimerActive,
+  restTimerState,
+  restSeconds,
+  onRestChange,
+  onRestSkip,
   replacedFrom,
   onClose,
   onLogCurrentSet,
   onRemoveSet,
   onAdjustBigNumber,
   onAdjustWeight,
+  onSetBigNumber,
+  onSetWeight,
   onAddExtraSet,
   onStartRestTimer,
   onOpenMuscle,
@@ -218,17 +232,42 @@ export default function ExerciseFocus({
   if (!viewRow) return null;
 
   const targetParsed = parseTargetReps(exercise.target_reps);
-  const bigValue = isDurationType
-    ? viewRow.duration !== '' && viewRow.duration != null
-      ? viewRow.duration
-      : toInputValue(exercise.target_seconds, exercise.type)
-    : viewRow.reps !== '' && viewRow.reps != null
-      ? viewRow.reps
-      : targetParsed?.min ?? '';
-  const bigUnit = isDurationType
-    ? durationUnitLabel(exercise.type).replace('.', '').toUpperCase()
-    : 'WDH';
-  const kgValue = viewRow.weight_kg !== '' && viewRow.weight_kg != null ? viewRow.weight_kg : exercise.default_weight_kg ?? '';
+
+  function bigValueFor(row) {
+    if (isDurationType) {
+      return row.duration !== '' && row.duration != null ? row.duration : toInputValue(exercise.target_seconds, exercise.type);
+    }
+    return row.reps !== '' && row.reps != null ? row.reps : targetParsed?.min ?? '';
+  }
+
+  function kgValueFor(row) {
+    return row.weight_kg !== '' && row.weight_kg != null ? row.weight_kg : exercise.default_weight_kg ?? '';
+  }
+
+  const bigValue = bigValueFor(viewRow);
+  const unitLabel = isDurationType ? durationUnitLabel(exercise.type) : 'Wdh.';
+  const bigUnit = unitLabel.replace('.', '').toUpperCase();
+  const kgValue = kgValueFor(viewRow);
+  const weightStep = stepForExercise(exercise);
+  // Lange Namen drückten bisher alles nach unten — kleinere Stufe statt Umbruch auf drei Zeilen.
+  const nameFontSize = exercise.name.length > 34 ? 24 : exercise.name.length > 22 ? 28 : 32;
+  const targetLabel = isDurationType
+    ? exercise.target_seconds
+      ? `${exercise.sets} × ${toInputValue(exercise.target_seconds, exercise.type)} ${unitLabel}`
+      : null
+    : exercise.target_reps
+      ? `${exercise.sets} × ${exercise.target_reps}`
+      : null;
+  const setupLabel = [equipmentLabel(exercise), targetLabel].filter(Boolean).join(' · ') || null;
+  // Viele Sätze: Trefferfläche schrumpft auf 26px (WCAG 2.5.8 will 24), erst
+  // danach bricht die Reihe um.
+  const dotWidth = rows.length > 7 ? 26 : 32;
+  const nextRow = rows[activeIndex];
+  const nextSetPreview = nextRow
+    ? [`${bigValueFor(nextRow)} ${unitLabel}`, isWeighted && kgValueFor(nextRow) !== '' ? `${kgValueFor(nextRow)} kg` : null]
+        .filter(Boolean)
+        .join(' × ')
+    : '';
   const ctaMuted = restTimerActive || holdPhase;
 
   function selectDot(i) {
@@ -299,9 +338,14 @@ export default function ExerciseFocus({
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, color: 'var(--accent)', letterSpacing: 2, textTransform: 'uppercase' }}>
           ÜBUNG {index + 1}/{total} · {exercise.muscle}
         </div>
-        <div style={{ marginTop: 10, maxWidth: 300, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32, lineHeight: 1.1, letterSpacing: -0.5, textWrap: 'balance' }}>
+        <div style={{ marginTop: 10, maxWidth: 320, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: nameFontSize, lineHeight: 1.1, letterSpacing: -0.5, textWrap: 'balance' }}>
           {exercise.name}
         </div>
+        {setupLabel && (
+          <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, color: 'var(--muted)' }}>
+            {setupLabel}
+          </div>
+        )}
         {replacedFrom && (
           <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
             ⇄ statt {replacedFrom}
@@ -325,11 +369,16 @@ export default function ExerciseFocus({
                 {holdPhase === 'prep' ? holdSecondsLeft : formatDuration(holdSecondsLeft)}
               </div>
             ) : editing === 'big' ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <button type="button" onClick={() => onAdjustBigNumber(-1, viewIndex)} style={stepperStyle}>−</button>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 92, lineHeight: 1, minWidth: 100 }}>{bigValue}</div>
-                <button type="button" onClick={() => onAdjustBigNumber(1, viewIndex)} style={stepperStyle}>+</button>
-              </div>
+              <NumberEditor
+                value={bigValue}
+                fontSize={92}
+                minWidth={100}
+                step={1}
+                ariaLabel={isDurationType ? 'Dauer' : 'Wiederholungen'}
+                onStep={(delta) => onAdjustBigNumber(delta, viewIndex)}
+                onCommit={(next) => onSetBigNumber(next, viewIndex)}
+                onDone={() => setEditing(null)}
+              />
             ) : (
               <button
                 type="button"
@@ -367,11 +416,16 @@ export default function ExerciseFocus({
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 24, color: 'var(--line)' }}>×</div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 {editing === 'kg' ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <button type="button" onClick={() => onAdjustWeight(-2.5, viewIndex)} style={stepperStyle}>−</button>
-                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 44, lineHeight: 1, minWidth: 60 }}>{kgValue}</div>
-                    <button type="button" onClick={() => onAdjustWeight(2.5, viewIndex)} style={stepperStyle}>+</button>
-                  </div>
+                  <NumberEditor
+                    value={kgValue}
+                    fontSize={44}
+                    minWidth={64}
+                    step={weightStep}
+                    ariaLabel="Gewicht in Kilogramm"
+                    onStep={(delta) => onAdjustWeight(delta, viewIndex)}
+                    onCommit={(next) => onSetWeight(next, viewIndex)}
+                    onDone={() => setEditing(null)}
+                  />
                 ) : (
                   <button
                     type="button"
@@ -382,19 +436,21 @@ export default function ExerciseFocus({
                   </button>
                 )}
                 <div style={{ marginTop: 4, fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500, color: 'var(--muted)' }}>
-                  KG
+                  {editing === 'kg' ? `KG · ±${weightStep}` : 'KG'}
                 </div>
               </div>
             </>
           )}
         </div>
 
-        <div style={{ marginTop: 26, display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 2, alignItems: 'center' }}>
           {rows.map((row, i) => {
             const state = row.logged ? 'logged' : i === activeIndex ? 'current' : 'upcoming';
             const selectable = row.logged || i === activeIndex;
             const isViewed = i === viewIndex;
             return (
+              // Der Punkt bleibt klein, die Trefferfläche ist 32×44 — mit
+              // Schweiß an den Fingern ist 11px zu wenig.
               <button
                 key={row.set_number}
                 type="button"
@@ -403,19 +459,31 @@ export default function ExerciseFocus({
                 aria-label={`Satz ${row.set_number}${row.logged ? ' — erledigt, antippen zum Ansehen' : ''}`}
                 aria-pressed={isViewed}
                 style={{
-                  width: 11,
-                  height: 11,
-                  borderRadius: '50%',
+                  width: dotWidth,
+                  height: 44,
                   padding: 0,
-                  boxSizing: 'border-box',
-                  background: state === 'logged' ? 'var(--success)' : 'transparent',
-                  border: `2px solid ${state === 'logged' ? 'var(--success)' : state === 'current' ? CURRENT_ACCENT : 'var(--line)'}`,
-                  // Angesehener Satz bekommt einen Ring, damit klar ist, welcher Wert oben steht.
-                  boxShadow: isViewed && rows.length > 1 ? '0 0 0 3px var(--surface2), 0 0 0 4px var(--muted)' : 'none',
+                  border: 'none',
+                  background: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   cursor: selectable ? 'pointer' : 'default',
-                  transition: 'background 200ms, border-color 200ms, box-shadow 150ms',
                 }}
-              />
+              >
+                <span
+                  style={{
+                    width: 11,
+                    height: 11,
+                    borderRadius: '50%',
+                    boxSizing: 'border-box',
+                    background: state === 'logged' ? 'var(--success)' : 'transparent',
+                    border: `2px solid ${state === 'logged' ? 'var(--success)' : state === 'current' ? CURRENT_ACCENT : 'var(--line)'}`,
+                    // Angesehener Satz bekommt einen Ring, damit klar ist, welcher Wert oben steht.
+                    boxShadow: isViewed && rows.length > 1 ? '0 0 0 3px var(--focus-bg), 0 0 0 4px var(--muted)' : 'none',
+                    transition: 'background 200ms, border-color 200ms, box-shadow 150ms',
+                  }}
+                />
+              </button>
             );
           })}
           <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -429,16 +497,21 @@ export default function ExerciseFocus({
 
       <div
         style={{
-          padding: restTimerActive
-            ? '0 20px calc(170px + env(safe-area-inset-bottom))'
-            : '0 20px calc(26px + env(safe-area-inset-bottom))',
+          padding: '0 20px calc(26px + env(safe-area-inset-bottom))',
           display: 'flex',
           flexDirection: 'column',
           gap: 10,
-          transition: 'padding-bottom 150ms ease',
         }}
       >
-        {reviewing ? (
+        {restTimerActive ? (
+          <RestPanel
+            timerState={restTimerState}
+            seconds={restSeconds}
+            nextLabel={allLogged ? 'Übung erledigt' : `Danach: Satz ${nextRow.set_number} · ${nextSetPreview}`}
+            onChange={onRestChange}
+            onSkip={onRestSkip}
+          />
+        ) : reviewing ? (
           // Erledigten Satz ansehen: zurück zum offenen Satz bzw. Übung abschließen.
           <button
             type="button"
@@ -494,7 +567,7 @@ export default function ExerciseFocus({
           </button>
         )}
         <div style={{ display: 'flex', gap: 10 }}>
-          {reviewing ? (
+          {restTimerActive ? null : reviewing ? (
             <button
               type="button"
               onClick={() => onRemoveSet(viewIndex)}
@@ -517,6 +590,149 @@ export default function ExerciseFocus({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Pause im Aktionsbereich statt als schwebende Leiste über dem Button: der
+// Countdown ist hier das, was gerade zählt, samt Vorschau auf den nächsten Satz.
+function RestPanel({ timerState, seconds, nextLabel, onChange, onSkip }) {
+  const left = seconds ?? remainingSeconds(timerState);
+  const total = timerState?.totalSeconds || left || 1;
+  const progress = Math.max(0, Math.min(1, left / total));
+  const paused = Boolean(timerState?.pausedAtMs);
+  const ending = left <= 5;
+
+  return (
+    <div
+      role="timer"
+      aria-live="off"
+      aria-label={`Pause: ${left} Sekunden`}
+      style={{
+        borderRadius: 18,
+        border: '1px solid var(--line)',
+        background: 'var(--surface)',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ height: 3, background: 'var(--surface2)' }}>
+        <div
+          style={{
+            height: '100%',
+            width: `${progress * 100}%`,
+            background: 'var(--primary-grad)',
+            transition: 'width 500ms linear',
+          }}
+        />
+      </div>
+      <div style={{ padding: '12px 16px 14px', textAlign: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500, letterSpacing: 2, color: 'var(--muted)' }}>
+          {paused ? 'ANGEHALTEN' : 'PAUSE'}
+        </div>
+        <div
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 700,
+            fontSize: 52,
+            lineHeight: 1.1,
+            color: ending ? 'var(--accent)' : 'var(--primary)',
+          }}
+        >
+          {left}s
+        </div>
+        <div style={{ marginTop: 2, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{nextLabel}</div>
+        <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => onChange(paused ? resumeRestTimer(timerState) : pauseRestTimer(timerState))}
+            style={{ ...secondaryBtnStyle, color: 'var(--text)' }}
+          >
+            {paused ? '▶ Weiterlaufen' : '⏸ Anhalten'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange(extendRestTimer(timerState, 30))}
+            style={{ ...secondaryBtnStyle, color: 'var(--text)' }}
+          >
+            +30s
+          </button>
+          <button
+            type="button"
+            onClick={onSkip}
+            style={{ ...secondaryBtnStyle, background: 'var(--primary-grad)', color: 'var(--on-primary)', fontWeight: 600 }}
+          >
+            Weiter ›
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Direkte Eingabe statt nur Stepper: der Entwurf lebt lokal, damit halb
+// getippte Werte ("1" auf dem Weg zu "12") nicht sofort in den Satz wandern.
+function NumberEditor({ value, fontSize, minWidth, step, ariaLabel, onStep, onCommit, onDone }) {
+  const [draft, setDraft] = useState(String(value ?? ''));
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  useEffect(() => {
+    setDraft(String(value ?? ''));
+  }, [value]);
+
+  function commit() {
+    const parsed = Number(String(draft).replace(',', '.'));
+    if (Number.isFinite(parsed) && String(draft).trim() !== '') onCommit(parsed);
+    else setDraft(String(value ?? ''));
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') {
+      commit();
+      onDone();
+    } else if (e.key === 'Escape') {
+      setDraft(String(value ?? ''));
+      onDone();
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <button type="button" aria-label={`${ariaLabel} verringern`} onClick={() => onStep(-step)} style={stepperStyle}>
+        −
+      </button>
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="decimal"
+        aria-label={ariaLabel}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={handleKeyDown}
+        style={{
+          width: minWidth,
+          minWidth,
+          background: 'none',
+          border: 'none',
+          borderBottom: '2px solid var(--primary)',
+          borderRadius: 0,
+          padding: 0,
+          textAlign: 'center',
+          fontFamily: 'var(--font-display)',
+          fontWeight: 700,
+          fontSize,
+          lineHeight: 1,
+          color: 'var(--text)',
+        }}
+      />
+      <button type="button" aria-label={`${ariaLabel} erhöhen`} onClick={() => onStep(step)} style={stepperStyle}>
+        +
+      </button>
     </div>
   );
 }
