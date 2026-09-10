@@ -33,12 +33,13 @@ const LEGEND = [
   { label: 'Erholt', color: '#e8e2f2' },
 ];
 
-// Frische-Karte: färbt das 3D-Modell nach Stunden seit letztem Training.
-// Eingeklappt per Default — three.js lädt erst beim Öffnen.
-export default function RecoveryMap({ plan, sessions }) {
+// Trainingslast-Karte: färbt das 3D-Modell nach Stunden seit dem letzten
+// geloggten Satz, der die Region belastet hat. Eingeklappt per Default —
+// three.js lädt erst beim Öffnen.
+export default function RecoveryMap({ sessions }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState('front');
-  const heat = useMemo(() => buildFreshness(plan, sessions), [plan, sessions]);
+  const heat = useMemo(() => buildFreshness(sessions), [sessions]);
   const allFresh = Object.keys(heat).length === 0;
 
   return (
@@ -72,7 +73,9 @@ export default function RecoveryMap({ plan, sessions }) {
 
       {!open && (
         <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--muted)' }}>
-          {allFresh ? 'Alles erholt — freie Bahn.' : 'Welche Muskeln noch regenerieren.'}
+          {allFresh
+            ? 'Alles erholt — freie Bahn.'
+            : 'Geschätzt aus deinen geloggten Sätzen der letzten 72 Stunden.'}
         </p>
       )}
 
@@ -117,11 +120,11 @@ export default function RecoveryMap({ plan, sessions }) {
               </span>
             ))}
           </div>
-          {allFresh && (
-            <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--muted)' }}>
-              Alles erholt — kein Training in den letzten 72 Stunden.
-            </p>
-          )}
+          <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+            {allFresh
+              ? 'Alles erholt — kein geloggter Satz in den letzten 72 Stunden.'
+              : 'Zeit seit dem letzten geloggten Satz pro Region — eine Schätzung, kein Messwert.'}
+          </p>
         </>
       )}
     </div>

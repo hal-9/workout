@@ -188,6 +188,45 @@ describe('discard & range', () => {
       expect(outOfRange.body.sessions).toHaveLength(0);
     });
 
+    it('liefert je Session die geloggten Übungen mit Satzzahl', async () => {
+      const created = await request(app).post('/api/sessions').set('Cookie', cookie).send({ day_key: 'push' });
+      const sessionId = created.body.session_id;
+      for (const set_number of [1, 2]) {
+        await request(app)
+          .post(`/api/sessions/${sessionId}/sets`)
+          .set('Cookie', cookie)
+          .send({ exercise_id: 'pu', set_number, reps: 10, weight_kg: null, duration_s: null });
+      }
+      await request(app).post(`/api/sessions/${sessionId}/finish`).set('Cookie', cookie);
+
+      const res = await request(app)
+        .get('/api/sessions')
+        .query({ from: sqlUtc(-1), to: sqlUtc(1) })
+        .set('Cookie', cookie);
+
+      // Beide Sätze zählen als eine Übung; die nicht geloggte 'row' fehlt.
+      expect(res.body.sessions[0].exercises).toEqual([
+        { id: 'pu', name: 'Liegestütze', muscle: 'Brust', phase: 'main', sets: 2 },
+      ]);
+    });
+
+    it('geloggte Übung außerhalb des Plans behält nur die Id (Tausch)', async () => {
+      const created = await request(app).post('/api/sessions').set('Cookie', cookie).send({ day_key: 'push' });
+      const sessionId = created.body.session_id;
+      await request(app)
+        .post(`/api/sessions/${sessionId}/sets`)
+        .set('Cookie', cookie)
+        .send({ exercise_id: 'hack-squat', set_number: 1, reps: 10, weight_kg: 40, duration_s: null });
+      await request(app).post(`/api/sessions/${sessionId}/finish`).set('Cookie', cookie);
+
+      const res = await request(app)
+        .get('/api/sessions')
+        .query({ from: sqlUtc(-1), to: sqlUtc(1) })
+        .set('Cookie', cookie);
+
+      expect(res.body.sessions[0].exercises).toEqual([{ id: 'hack-squat', sets: 1 }]);
+    });
+
     it('fehlendes/fehlerhaftes from -> 422', async () => {
       const missing = await request(app).get('/api/sessions').query({ to: sqlUtc(1) }).set('Cookie', cookie);
       expect(missing.status).toBe(422);

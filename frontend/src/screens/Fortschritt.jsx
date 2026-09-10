@@ -316,7 +316,7 @@ export default function Fortschritt() {
     progression: progression?.proposals?.length > 0 && (
       <ProgressionProposals proposals={progression.proposals} deload={progression.deload} />
     ),
-    recovery: plan && heatmapRange && <RecoveryMap plan={plan} sessions={heatmapRange.sessions} />,
+    recovery: heatmapRange && <RecoveryMap sessions={heatmapRange.sessions} />,
     consistency: heatmapData && (
       <div style={cardStyle}>
         <h3 style={{ marginTop: 0 }}>Konsistenz (12 Wochen)</h3>

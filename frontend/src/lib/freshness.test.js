@@ -8,27 +8,15 @@ function sqlUtcHoursAgo(now, hours) {
 
 const NOW = new Date('2026-08-26T12:00:00Z');
 
-const plan = {
-  days: [
-    {
-      key: 'push',
-      exercises: [
-        { id: 'bp', name: 'Bankdrücken', type: 'wt', zones: { primary: ['brust'], secondary: ['trizeps'] } },
-        { id: 'st', name: 'Brust-Dehnung', type: 'time', phase: 'cooldown', zones: { primary: ['brust'], secondary: [] } },
-      ],
-    },
-    {
-      key: 'legs',
-      exercises: [{ id: 'sq', name: 'Kniebeuge', type: 'wt', zones: { primary: ['quads'], secondary: ['gesaess'] } }],
-    },
-  ],
-};
+const bench = { id: 'bp', name: 'Bankdrücken', type: 'wt', zones: { primary: ['brust'], secondary: ['trizeps'] }, sets: 3 };
+const stretch = { id: 'st', name: 'Brust-Dehnung', type: 'time', phase: 'cooldown', zones: { primary: ['brust'], secondary: [] }, sets: 1 };
+const squat = { id: 'sq', name: 'Kniebeuge', type: 'wt', zones: { primary: ['quads'], secondary: ['gesaess'] }, sets: 3 };
 
 describe('buildFreshness', () => {
-  it('mappt Sessions über day_key auf Zonen, Sekundär zählt halb', () => {
-    const sessions = [{ day_key: 'push', finished_at: sqlUtcHoursAgo(NOW, 10) }];
-    const heat = buildFreshness(plan, sessions, NOW);
-    // Dach-Zone „brust" im Plan färbt alle drei Brust-Teilzonen
+  it('leitet Zonen aus den geloggten Übungen ab, Sekundär zählt halb', () => {
+    const sessions = [{ finished_at: sqlUtcHoursAgo(NOW, 10), exercises: [bench, stretch] }];
+    const heat = buildFreshness(sessions, NOW);
+    // Dach-Zone „brust" färbt alle drei Brust-Teilzonen
     expect(heat.brust).toBeUndefined();
     expect(heat.brust_oben).toBeCloseTo(10, 3);
     expect(heat.brust_mitte).toBeCloseTo(10, 3);
@@ -39,27 +27,43 @@ describe('buildFreshness', () => {
 
   it('jüngste Session gewinnt pro Zone', () => {
     const sessions = [
-      { day_key: 'push', finished_at: sqlUtcHoursAgo(NOW, 60) },
-      { day_key: 'push', finished_at: sqlUtcHoursAgo(NOW, 10) },
+      { finished_at: sqlUtcHoursAgo(NOW, 60), exercises: [bench] },
+      { finished_at: sqlUtcHoursAgo(NOW, 10), exercises: [bench] },
     ];
-    const heat = buildFreshness(plan, sessions, NOW);
-    expect(heat.brust_mitte).toBeCloseTo(10, 3);
+    expect(buildFreshness(sessions, NOW).brust_mitte).toBeCloseTo(10, 3);
   });
 
   it('älter als Fenster gilt als erholt, auch für Sekundärzonen', () => {
     const sessions = [
-      { day_key: 'legs', finished_at: sqlUtcHoursAgo(NOW, FRESHNESS_WINDOW_HOURS + 1) },
-      { day_key: 'push', finished_at: sqlUtcHoursAgo(NOW, 40) },
+      { finished_at: sqlUtcHoursAgo(NOW, FRESHNESS_WINDOW_HOURS + 1), exercises: [squat] },
+      { finished_at: sqlUtcHoursAgo(NOW, 40), exercises: [bench] },
     ];
-    const heat = buildFreshness(plan, sessions, NOW);
+    const heat = buildFreshness(sessions, NOW);
     expect(heat.quads).toBeUndefined();
     expect(heat.brust_mitte).toBeCloseTo(40, 3);
     // Sekundär 40 h × 2 = 80 h ≥ 72 → raus
     expect(heat.trizeps).toBeUndefined();
   });
 
-  it('unbekannte day_keys und leere Eingaben fallen still raus', () => {
-    expect(buildFreshness(plan, [{ day_key: 'alt', finished_at: sqlUtcHoursAgo(NOW, 5) }], NOW)).toEqual({});
-    expect(buildFreshness(null, [], NOW)).toEqual({});
+  it('zählt nur geloggte Übungen — eine abgebrochene Session färbt den Rest nicht', () => {
+    const sessions = [{ finished_at: sqlUtcHoursAgo(NOW, 5), exercises: [bench] }];
+    const heat = buildFreshness(sessions, NOW);
+    expect(heat.brust_mitte).toBeCloseTo(5, 3);
+    expect(heat.quads).toBeUndefined();
+    expect(heat.gesaess_gross).toBeUndefined();
+  });
+
+  it('getauschte Übung ohne Plan-Zonen kommt über die Bibliothek', () => {
+    const sessions = [
+      { finished_at: sqlUtcHoursAgo(NOW, 6), exercises: [{ id: 'hack-squat', name: 'Hackenschmidt-Kniebeuge (Maschine)', sets: 3 }] },
+    ];
+    const heat = buildFreshness(sessions, NOW);
+    expect(heat.quads).toBeCloseTo(6, 3);
+    expect(heat.gesaess_gross).toBeCloseTo(12, 3);
+  });
+
+  it('Sessions ohne geloggte Sätze und leere Eingaben fallen still raus', () => {
+    expect(buildFreshness([{ finished_at: sqlUtcHoursAgo(NOW, 5), exercises: [] }], NOW)).toEqual({});
+    expect(buildFreshness(null, NOW)).toEqual({});
   });
 });

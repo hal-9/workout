@@ -78,6 +78,50 @@ function makeDayNameResolver(db) {
   };
 }
 
+// Übungs-Definition zu einer geloggten exercise_id: aus dem Plan-Snapshot der
+// Session, damit Pläne, die sich seither geändert haben, die Historie nicht
+// verfälschen. Getauschte Übungen stehen nicht im Plan — die löst die
+// Bibliothek im Frontend über die Id auf.
+function makeExerciseResolver(db) {
+  const byPlan = new Map();
+  return function exerciseDef(planId, exerciseId) {
+    if (!byPlan.has(planId)) {
+      const planRow = db.prepare('SELECT json_payload FROM plans WHERE id = ?').get(planId);
+      const days = planRow ? JSON.parse(planRow.json_payload).days : [];
+      byPlan.set(
+        planId,
+        new Map(days.flatMap((d) => (d.exercises ?? []).map((ex) => [ex.id, ex])))
+      );
+    }
+    const ex = byPlan.get(planId).get(exerciseId);
+    if (!ex) return { id: exerciseId };
+    return { id: ex.id, name: ex.name, muscle: ex.muscle, phase: ex.phase ?? 'main', zones: ex.zones };
+  };
+}
+
+// Geloggte Übungen je Session (nur was wirklich abgehakt wurde), inklusive
+// Satzzahl — Grundlage für die Trainingslast-Karte.
+function loggedExercisesBySession(db, userId, from, to) {
+  const rows = db
+    .prepare(
+      `SELECT sl.session_id, sl.exercise_id, COUNT(*) AS sets
+       FROM set_logs sl
+       JOIN sessions s ON s.id = sl.session_id
+       WHERE s.user_id = ? AND s.status = 'finished'
+         AND s.finished_at >= ? AND s.finished_at < ?
+       GROUP BY sl.session_id, sl.exercise_id
+       ORDER BY MIN(sl.set_number)`
+    )
+    .all(userId, from, to);
+
+  const bySession = new Map();
+  for (const row of rows) {
+    if (!bySession.has(row.session_id)) bySession.set(row.session_id, []);
+    bySession.get(row.session_id).push(row);
+  }
+  return bySession;
+}
+
 const sqlTs = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 const rangeSchema = z.object({
   from: z.string().regex(sqlTs),
@@ -229,6 +273,9 @@ export function sessionsRouter(db) {
       .all(req.user.id, from, to);
 
     const dayName = makeDayNameResolver(db);
+    const exerciseDef = makeExerciseResolver(db);
+    const logged = loggedExercisesBySession(db, req.user.id, from, to);
+
     res.json({
       sessions: rows.map((r) => ({
         session_id: r.id,
@@ -236,6 +283,10 @@ export function sessionsRouter(db) {
         day_name: dayName(r.plan_id, r.day_key),
         started_at: r.started_at,
         finished_at: r.finished_at,
+        exercises: (logged.get(r.id) ?? []).map((log) => ({
+          ...exerciseDef(r.plan_id, log.exercise_id),
+          sets: log.sets,
+        })),
       })),
     });
   });

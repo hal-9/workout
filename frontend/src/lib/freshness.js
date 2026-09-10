@@ -1,16 +1,20 @@
+// Import mit Nebenwirkung: registriert die Bibliothek als Zonen-Fallback für
+// exerciseZones — getauschte Übungen stehen in keinem Plan.
+import 'shared/library';
 import { exerciseZones, expandZones } from 'shared/muscles';
 import { isCooldownExercise } from './cooldown.js';
 import { parseUtc } from './dates.js';
 
-// Muskel-Frische: Stunden seit letztem Training pro Zone, rein abgeleitet.
-// Mapping über den aktiven Plan (day_key → Übungen → Zonen); Sessions älterer
-// Pläne mit fremden day_keys fallen still raus. Sekundärzonen zählen halb
-// belastet (Stunden verdoppelt). Ab FRESHNESS_WINDOW_HOURS gilt "erholt".
+// Trainingslast pro Zone: Stunden seit dem letzten Satz, der diese Zone
+// belastet hat. Grundlage sind die tatsächlich geloggten Übungen der Session
+// (`session.exercises`) — nicht der Plan. Getauschte Übungen, abgebrochene
+// Sessions und später geänderte Pläne bleiben damit korrekt abgebildet.
+// Sekundärzonen zählen halb belastet (Stunden verdoppelt). Ab
+// FRESHNESS_WINDOW_HOURS gilt "erholt".
 export const FRESHNESS_WINDOW_HOURS = 72;
 
-export function buildFreshness(plan, sessions, now = new Date()) {
-  if (!plan?.days?.length || !sessions?.length) return {};
-  const dayByKey = new Map(plan.days.map((d) => [d.key, d]));
+export function buildFreshness(sessions, now = new Date()) {
+  if (!sessions?.length) return {};
   const heat = {};
 
   function bump(zone, hours) {
@@ -22,9 +26,7 @@ export function buildFreshness(plan, sessions, now = new Date()) {
     if (!s.finished_at) continue;
     const hours = (now.getTime() - parseUtc(s.finished_at).getTime()) / 3600000;
     if (hours < 0 || hours >= FRESHNESS_WINDOW_HOURS) continue;
-    const day = dayByKey.get(s.day_key);
-    if (!day) continue;
-    for (const ex of day.exercises ?? []) {
+    for (const ex of s.exercises ?? []) {
       if (isCooldownExercise(ex)) continue;
       const zones = exerciseZones(ex);
       for (const z of expandZones(zones.primary)) bump(z, hours);
