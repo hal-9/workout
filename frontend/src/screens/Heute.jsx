@@ -16,6 +16,8 @@ import { formatDuration, toInputValue } from 'shared/duration';
 import { WEEKDAYS, WEEKDAY_LABELS, projectWeek, weekProgress, todayWeekday } from '../lib/schedule.js';
 import { getAllOverrides, getOverride, setOverride } from '../lib/weightOverrides.js';
 import { estimateWorkoutSeconds, formatEstimate } from '../lib/workoutEstimate.js';
+import { cacheGet, cacheSet, isOfflineError } from '../lib/offlineCache.js';
+import { clearResumeState, loadResumeState, saveResumeState } from '../lib/workoutResume.js';
 import { applyWeekOrder, clearWeekOrder, hasWeekOrder, swapWorkout } from '../lib/weekOrder.js';
 import { lightenExercise, lightWeight } from '../lib/lightMode.js';
 import { buildSetPayload } from '../components/SetRow.jsx';
@@ -81,11 +83,27 @@ const RPE_VALUES = [6, 7, 8, 9, 10];
 export default function Heute() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: plan, isLoading: planLoading, isError: planError, refetch: refetchPlan } = useQuery({ queryKey: ['plan'], queryFn: () => api.get('/plan'), retry: false });
-  const { data: recent } = useQuery({
+  const planQuery = useQuery({ queryKey: ['plan'], queryFn: () => api.get('/plan'), retry: false });
+  const recentQuery = useQuery({
     queryKey: ['sessions-recent'],
     queryFn: () => api.get('/sessions/recent'),
   });
+
+  useEffect(() => {
+    if (planQuery.data) cacheSet('plan', planQuery.data);
+  }, [planQuery.data]);
+  useEffect(() => {
+    if (recentQuery.data) cacheSet('sessions-recent', recentQuery.data);
+  }, [recentQuery.data]);
+
+  // Ohne Netz zählt der letzte bekannte Stand — ein 404/500 vom Server nicht.
+  const cachedPlan = isOfflineError(planQuery.error) ? cacheGet('plan') : null;
+  const cachedRecent = isOfflineError(recentQuery.error) ? cacheGet('sessions-recent') : null;
+  const plan = planQuery.data ?? cachedPlan;
+  const recent = recentQuery.data ?? cachedRecent;
+  const planLoading = planQuery.isLoading && !cachedPlan;
+  const planError = planQuery.isError && !cachedPlan;
+  const refetchPlan = planQuery.refetch;
   // Bestwerte vor dieser Session — für die Rekord-Vorschau in der Übungskarte.
   const { data: stats } = useQuery({ queryKey: ['stats'], queryFn: () => api.get('/stats'), retry: false });
   const { data: progression } = useQuery({
@@ -126,6 +144,23 @@ export default function Heute() {
   const [restTimerState, setRestTimerState] = useState(null);
   const [restSeconds, setRestSeconds] = useState(0);
   const [focusExerciseId, setFocusExerciseId] = useState(null);
+  const resumeAppliedRef = useRef(false);
+
+  // App mitten im Workout geschlossen: Fokus-Übung und laufende Pause kommen
+  // zurück, sobald die Session wieder bekannt ist.
+  useEffect(() => {
+    if (!sessionId || resumeAppliedRef.current) return;
+    resumeAppliedRef.current = true;
+    const saved = loadResumeState(sessionId);
+    if (!saved) return;
+    if (saved.rest) setRestTimerState(saved.rest);
+    if (saved.focusExerciseId) setFocusExerciseId(saved.focusExerciseId);
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    saveResumeState(sessionId, { focusExerciseId, rest: restTimerState });
+  }, [sessionId, focusExerciseId, restTimerState]);
   const [finishPending, setFinishPending] = useState(false);
   const [discardConfirm, setDiscardConfirm] = useState(false);
   const [finishError, setFinishError] = useState(null);
@@ -401,6 +436,7 @@ export default function Heute() {
     setSessionStartedAt(null);
     sessionPromiseRef.current = null;
     setRestTimerState(null);
+    clearResumeState();
     setUndoStack([]);
     setRpeByExercise({});
     setReadinessHints(null);
@@ -642,6 +678,7 @@ export default function Heute() {
 
       clearTimeout(noteSaveRef.current);
       setRestTimerState(null);
+      clearResumeState();
       const dayPlan = applyReplacements(plan?.days?.find((d) => d.key === dayKey), replaced);
       setCompletion({
         session_id: res.session_id,

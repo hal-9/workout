@@ -17,19 +17,27 @@ async function postFinish(sessionId, payload) {
 export default function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pending, setPending] = useState(0);
+  // „Synchronisiert" kurz zeigen, damit der Wechsel sichtbar ist und nicht
+  // nur das Verschwinden der Leiste.
+  const [justSynced, setJustSynced] = useState(false);
 
   async function refreshPending() {
     const entries = await getQueuedSets();
     setPending(entries.length);
+    return entries.length;
   }
 
   async function sync() {
+    const before = await refreshPending();
     await replayQueue({ postSet, deleteSet, postFinish });
-    await refreshPending();
+    const after = await refreshPending();
+    if (before > 0 && after === 0) {
+      setJustSynced(true);
+      setTimeout(() => setJustSynced(false), 2500);
+    }
   }
 
   useEffect(() => {
-    refreshPending();
     sync();
 
     function handleOnline() {
@@ -48,7 +56,15 @@ export default function OfflineIndicator() {
     };
   }, []);
 
-  if (isOnline && pending === 0) return null;
+  if (isOnline && pending === 0 && !justSynced) return null;
+
+  const label = !isOnline
+    ? pending > 0
+      ? `Offline · ${pending} Sätze auf diesem Gerät gespeichert`
+      : 'Offline · Sätze werden auf diesem Gerät gespeichert'
+    : pending > 0
+      ? `Sync läuft… · ${pending} Sätze`
+      : 'Synchronisiert';
 
   return (
     <div
@@ -67,9 +83,7 @@ export default function OfflineIndicator() {
         fontSize: 12,
       }}
     >
-      {!isOnline && 'Offline'}
-      {isOnline && pending > 0 && 'Sync läuft…'}
-      {pending > 0 && ` · ${pending} Sätze warten auf Sync`}
+      {label}
     </div>
   );
 }

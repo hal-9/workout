@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { THEME_PALETTES } from 'shared/themes';
 import { api } from '../api.js';
+import { cacheClear } from '../lib/offlineCache.js';
 import Logo from './Logo.jsx';
 import Dialog from './ui/Dialog.jsx';
 import Button from './ui/Button.jsx';
@@ -181,6 +182,7 @@ export default function Header() {
       // Cookie ist ggf. schon ungültig — trotzdem lokal ausloggen.
     }
     queryClient.clear();
+    cacheClear();
     navigate('/login', { replace: true });
   }
 

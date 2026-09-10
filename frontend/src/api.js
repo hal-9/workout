@@ -1,3 +1,5 @@
+import { cacheClear } from './lib/offlineCache.js';
+
 async function request(path, options = {}) {
   const res = await fetch(`/api${path}`, {
     credentials: 'include',
@@ -9,6 +11,8 @@ async function request(path, options = {}) {
 
   const data = await res.json().catch(() => null);
   if (!res.ok) {
+    // Nicht mehr eingeloggt: gecachte Daten dürfen nicht stehen bleiben.
+    if (res.status === 401) cacheClear();
     const error = new Error(data?.error || 'request failed');
     error.status = res.status;
     error.details = data?.details;

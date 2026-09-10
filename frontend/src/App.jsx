@@ -1,7 +1,8 @@
-import { Suspense, lazy, useRef } from 'react';
+import { Suspense, lazy, useEffect, useRef } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from './api.js';
+import { cacheGet, cacheSet, isOfflineError } from './lib/offlineCache.js';
 import BottomNav from './components/BottomNav.jsx';
 import Header from './components/Header.jsx';
 import OfflineIndicator from './components/OfflineIndicator.jsx';
@@ -20,11 +21,20 @@ import Auswertung from './screens/Auswertung.jsx';
 const MuscleDev = import.meta.env.DEV ? lazy(() => import('./screens/MuscleDev.jsx')) : null;
 
 function useMe() {
-  return useQuery({
+  const query = useQuery({
     queryKey: ['me'],
     queryFn: () => api.get('/me'),
     retry: false,
   });
+
+  useEffect(() => {
+    if (query.data) cacheSet('me', query.data);
+  }, [query.data]);
+
+  // Kaltstart ohne Netz: die letzte bekannte Anmeldung zählt. Bei 401 nicht —
+  // dann hat der Server widersprochen und der Cache ist ohnehin geräumt.
+  const cached = isOfflineError(query.error) ? cacheGet('me') : null;
+  return { ...query, data: query.data ?? cached, isError: query.isError && !cached };
 }
 
 function AuthGuard({ children }) {
