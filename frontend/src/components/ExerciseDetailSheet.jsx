@@ -34,6 +34,7 @@ export default function ExerciseDetailSheet({ exercise, best, onClose }) {
       style={{
         position: 'fixed',
         inset: 0,
+        height: '100dvh',
         zIndex: 80,
         display: 'flex',
         alignItems: 'flex-end',
@@ -51,7 +52,7 @@ export default function ExerciseDetailSheet({ exercise, best, onClose }) {
           margin: '0 auto',
           borderRadius: '20px 20px 0 0',
           padding: '18px 18px calc(18px + env(safe-area-inset-bottom))',
-          maxHeight: '88vh',
+          maxHeight: '88dvh',
           overflowY: 'auto',
           overscrollBehavior: 'contain',
         }}

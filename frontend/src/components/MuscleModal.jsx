@@ -66,6 +66,7 @@ export default function MuscleModal({ exercise, onClose }) {
       style={{
         position: 'fixed',
         inset: 0,
+        height: '100dvh',
         zIndex: 90,
         display: 'flex',
         alignItems: 'center',
@@ -85,7 +86,7 @@ export default function MuscleModal({ exercise, onClose }) {
         style={{
           width: '100%',
           maxWidth: 420,
-          maxHeight: '90vh',
+          maxHeight: '90dvh',
           overflowY: 'auto',
           overscrollBehavior: 'contain',
           borderRadius: 20,

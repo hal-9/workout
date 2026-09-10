@@ -83,6 +83,7 @@ export default function ExerciseSwapSheet({
       style={{
         position: 'fixed',
         inset: 0,
+        height: '100dvh',
         zIndex: 80,
         display: 'flex',
         alignItems: 'flex-end',
@@ -101,7 +102,7 @@ export default function ExerciseSwapSheet({
           width: '100%',
           maxWidth: 560,
           margin: '0 auto',
-          maxHeight: '88vh',
+          maxHeight: '88dvh',
           display: 'flex',
           flexDirection: 'column',
           borderRadius: '20px 20px 0 0',

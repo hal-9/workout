@@ -60,6 +60,7 @@ export default function Dialog({ open, onClose, title, children, ariaLabel }) {
       style={{
         position: 'fixed',
         inset: 0,
+        height: '100dvh',
         zIndex: 70,
         background: 'rgba(46,36,64,.35)',
         WebkitBackdropFilter: 'blur(6px)',
@@ -80,7 +81,7 @@ export default function Dialog({ open, onClose, title, children, ariaLabel }) {
           borderRadius: 20,
           padding: 20,
           width: 'min(92vw, 400px)',
-          maxHeight: '85vh',
+          maxHeight: '85dvh',
           overflow: 'auto',
           overscrollBehavior: 'contain',
         }}

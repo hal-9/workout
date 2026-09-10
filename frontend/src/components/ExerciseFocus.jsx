@@ -288,6 +288,7 @@ export default function ExerciseFocus({
       style={{
         position: 'fixed',
         inset: 0,
+        height: '100dvh',
         zIndex: 60,
         background: 'var(--focus-bg)',
         display: 'flex',
