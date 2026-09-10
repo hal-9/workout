@@ -15,6 +15,7 @@ import MuscleModal from '../components/MuscleModal.jsx';
 import { formatDuration, toInputValue } from 'shared/duration';
 import { WEEKDAYS, WEEKDAY_LABELS, projectWeek, weekProgress, todayWeekday } from '../lib/schedule.js';
 import { getAllOverrides, getOverride, setOverride } from '../lib/weightOverrides.js';
+import { estimateWorkoutSeconds, formatEstimate } from '../lib/workoutEstimate.js';
 import { applyWeekOrder, clearWeekOrder, hasWeekOrder, swapWorkout } from '../lib/weekOrder.js';
 import { lightenExercise, lightWeight } from '../lib/lightMode.js';
 import { buildSetPayload } from '../components/SetRow.jsx';
@@ -28,6 +29,7 @@ import ReadinessDialog, { readinessAdaptations } from '../components/ReadinessDi
 import WrappedStory, { monthLabel } from '../components/WrappedStory.jsx';
 import ProgressionProposals from '../components/ProgressionProposals.jsx';
 import PageHeader from '../components/ui/PageHeader.jsx';
+import TodayCta from '../components/TodayCta.jsx';
 import Dialog from '../components/ui/Dialog.jsx';
 import Button from '../components/ui/Button.jsx';
 import LoadingScreen from '../components/ui/LoadingScreen.jsx';
@@ -97,6 +99,7 @@ export default function Heute() {
     retry: false,
   });
   const [wrappedOpen, setWrappedOpen] = useState(false);
+  const [proposalsOpen, setProposalsOpen] = useState(false);
 
   const [dayKey, setDayKey] = useState(null);
   const [sessionId, setSessionId] = useState(null);
@@ -791,6 +794,7 @@ export default function Heute() {
   const { main: mainExercises, cooldown: cooldownExercises } = splitPhases(day?.exercises ?? []);
   const bests = bestsByExerciseId(stats?.records);
   const deloadHint = deloadMessage(progression?.deload);
+  const proposalCount = Math.min(progression?.proposals?.length ?? 0, 2);
 
   const totalPlannedSets = mainExercises.reduce((sum, ex) => sum + (ex.sets ?? 0), 0);
   const loggedSetCount = mainExercises.reduce(
@@ -822,6 +826,78 @@ export default function Heute() {
     return rows.length > 0 && rows.every((r) => r.logged);
   }).length;
   const anyExerciseLogged = mainExercises.some((ex) => (setsByExercise[ex.id] ?? []).some((r) => r.logged));
+
+  // Nächste offene Übung — Ziel des „Weiter"-Buttons.
+  const nextOpenExercise =
+    mainExercises.find((ex) => {
+      const rows = setsByExercise[ex.id] ?? [];
+      return !(rows.length > 0 && rows.every((r) => r.logged));
+    }) ?? null;
+  const estimateLabel = formatEstimate(estimateWorkoutSeconds(mainExercises, cooldownExercises));
+  const cta = buildCta();
+
+  // Ein Zustand, eine Aktion: vor dem Training, laufende Session, alles
+  // erledigt, Pausentag. Der Rest der Seite bleibt Kontext.
+  function buildCta() {
+    if (!day) return null;
+    if (showRestartGate) {
+      return {
+        label: 'Nochmal starten',
+        sublabel: `Diese Woche erledigt (${dayDoneAt.toLocaleDateString('de-DE', { weekday: 'short' })})`,
+        variant: 'secondary',
+        disabled: !isOnline,
+        onClick: () => ensureSession().catch(() => {}),
+      };
+    }
+    if (mainDone) {
+      return {
+        label: finishPending ? 'Wird abgeschlossen…' : 'Workout abschließen',
+        sublabel: cooldownExercises.length
+          ? `Alle ${totalPlannedSets} Sätze erledigt · Cooldown ${cooldownDone}/${cooldownExercises.length}`
+          : `Alle ${totalPlannedSets} Sätze erledigt`,
+        variant: 'primary',
+        disabled: finishPending || !sessionId,
+        onClick: finishWorkout,
+      };
+    }
+    if (sessionId && anyExerciseLogged) {
+      return {
+        label: `Weiter: ${nextOpenExercise.name}`,
+        sublabel: `Satz ${loggedSetCount}/${totalPlannedSets} erledigt`,
+        variant: 'primary',
+        disabled: focusDisabled,
+        onClick: () => setFocusExerciseId(nextOpenExercise.id),
+      };
+    }
+    const exerciseWord = mainExercises.length === 1 ? 'Übung' : 'Übungen';
+    const startSublabel = [estimateLabel, `${totalPlannedSets} Sätze`, `${mainExercises.length} ${exerciseWord}`]
+      .filter(Boolean)
+      .join(' · ');
+    if (isRestToday && !sessionId) {
+      return {
+        label: 'Trotzdem trainieren',
+        sublabel: startSublabel,
+        variant: 'secondary',
+        disabled: focusDisabled || !nextOpenExercise,
+        onClick: startWorkout,
+      };
+    }
+    return {
+      label: sessionId ? 'Erste Übung öffnen' : 'Workout starten',
+      sublabel: startSublabel,
+      variant: 'primary',
+      disabled: focusDisabled || !nextOpenExercise,
+      onClick: startWorkout,
+    };
+  }
+
+  function startWorkout() {
+    if (!nextOpenExercise) return;
+    ensureSession().catch(() => {
+      /* offline: Sätze landen in der Queue, der Fokus geht trotzdem auf */
+    });
+    setFocusExerciseId(nextOpenExercise.id);
+  }
 
   return (
     <div className="wrap">
@@ -876,244 +952,30 @@ export default function Heute() {
         }
       />
 
-      {wrappedLatest?.available && !wrappedLatest.seen && !wrappedOpen && (
-        <button
-          type="button"
-          onClick={() => setWrappedOpen(true)}
-          style={{
-            width: '100%',
-            background: 'var(--primary-grad)',
-            border: 'none',
-            borderRadius: 14,
-            padding: '13px 16px',
-            marginBottom: 12,
-            color: 'var(--on-primary)',
-            fontWeight: 600,
-            fontSize: 14,
-            textAlign: 'left',
-            cursor: 'pointer',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <span>🎁 Dein Rückblick für {monthLabel(wrappedLatest.month)} ist da</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, opacity: 0.9 }}>Ansehen →</span>
-        </button>
-      )}
-
-      {sessionId && !readinessHints && (
-        <Button variant="secondary" onClick={() => setReadinessOpen(true)} style={{ marginBottom: 12, fontSize: 13, minHeight: 40 }}>
-          Tagesform checken
-        </Button>
-      )}
-
-      {readinessHints && (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: 12, marginBottom: 12, fontSize: 13 }}>
-          <strong>Hinweise:</strong> {readinessHints.join(' · ')}
-        </div>
-      )}
-
-      {lightOffer && !lightMode && (
+      {isRestToday && !sessionId && (
         <div
           style={{
             background: 'var(--surface)',
-            border: '1px solid var(--primary)',
-            borderRadius: 14,
-            padding: 14,
-            marginBottom: 12,
-            fontSize: 13,
-          }}
-        >
-          <div style={{ marginBottom: 10 }}>
-            <strong>Wenig Energie?</strong> Leichte Version: −10 % Gewicht, −1 Satz pro Übung — zählt ganz
-            normal.
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button onClick={() => applyLightMode(true)} style={{ fontSize: 13, minHeight: 40 }}>
-              Leicht trainieren
-            </Button>
-            <Button variant="secondary" onClick={() => setLightOffer(false)} style={{ fontSize: 13, minHeight: 40 }}>
-              Nein, normal
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {lightMode && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8,
-            background: 'var(--primary-dim)',
-            border: '1px solid var(--primary)',
-            color: 'var(--primary)',
-            borderRadius: 12,
-            padding: '8px 12px',
-            marginBottom: 12,
-            fontSize: 13,
-          }}
-        >
-          <span>
-            <strong>Leichte Version aktiv</strong> · −10 % Gewicht, −1 Satz
-          </span>
-          <button
-            onClick={() => applyLightMode(false)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'inherit',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 12,
-              textDecoration: 'underline',
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          >
-            Zurücksetzen
-          </button>
-        </div>
-      )}
-
-      {progression?.proposals?.length > 0 && (
-        <ProgressionProposals proposals={progression.proposals.slice(0, 2)} deload={progression.deload} />
-      )}
-
-      {sessionId && undoStack.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-          <Button variant="secondary" onClick={undoLastSet} style={{ fontSize: 12, minHeight: 36, padding: '8px 12px' }}>
-            ↶ Rückgängig
-          </Button>
-        </div>
-      )}
-
-      {isRestToday && (
-        <div style={{ fontSize: 13, color: 'var(--muted)', margin: '12px 0 0' }}>
-          Heute Pause · {nextOpenEntry.name} geplant für{' '}
-          {WEEKDAY_LABELS[WEEKDAYS[nextOpenEntry.projectedIdx]]}
-        </div>
-      )}
-
-      {showRestartGate && (
-        <div
-          style={{
-            background: 'var(--success-dim)',
-            border: '1px solid var(--success)',
+            border: '1px solid var(--line)',
             borderRadius: 16,
             padding: 16,
-            margin: '16px 0 12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
+            marginBottom: 12,
           }}
         >
-          <div style={{ color: 'var(--success)', fontSize: 13 }}>
-            ✓ Diese Woche erledigt ({dayDoneAt.toLocaleDateString('de-DE', { weekday: 'short' })}).
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: 1, color: 'var(--muted)' }}>
+            HEUTE · PAUSE
           </div>
-          <button
-            onClick={() => ensureSession().catch(() => {})}
-            disabled={!isOnline}
-            style={{
-              flex: '0 0 auto',
-              background: 'var(--surface2)',
-              border: '1px solid var(--line)',
-              color: 'var(--text)',
-              borderRadius: 9,
-              padding: '7px 11px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 12,
-              cursor: isOnline ? 'pointer' : 'not-allowed',
-            }}
-          >
-            Nochmal starten
-          </button>
+          <div style={{ marginTop: 6, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1.15 }}>
+            Ruhetag
+          </div>
+          <div style={{ marginTop: 6, fontSize: 13, color: 'var(--muted)' }}>
+            Als Nächstes: {nextOpenEntry.name} am {WEEKDAY_LABELS[WEEKDAYS[nextOpenEntry.projectedIdx]]}.
+          </div>
         </div>
       )}
 
       {day && (
         <>
-          {sessionId && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-                gap: 12,
-                fontFamily: 'var(--font-mono)',
-                fontSize: 12,
-                color: 'var(--muted)',
-                marginBottom: 10,
-              }}
-            >
-              <span>
-                {sessionStartedAt && (
-                  <>
-                    <ElapsedTimer startedAt={sessionStartedAt} variant="minutes" /> ·{' '}
-                  </>
-                )}
-                Satz {loggedSetCount}/{totalPlannedSets}
-              </span>
-              <button
-                onClick={() => (discardConfirm ? discardSession() : setDiscardConfirm(true))}
-                onBlur={() => setDiscardConfirm(false)}
-                disabled={!isOnline}
-                style={{
-                  flex: '0 0 auto',
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  fontFamily: 'inherit',
-                  fontSize: 12,
-                  color: discardConfirm ? 'var(--danger)' : 'var(--muted)',
-                  textDecoration: 'underline',
-                  cursor: isOnline ? 'pointer' : 'not-allowed',
-                }}
-              >
-                {discardConfirm ? 'Wirklich verwerfen?' : 'Session verwerfen'}
-              </button>
-            </div>
-          )}
-
-          {activeOverrides.length > 0 && (
-            <div
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--line)',
-                borderRadius: 12,
-                padding: '10px 12px',
-                marginBottom: 12,
-                fontSize: 12,
-                color: 'var(--muted)',
-              }}
-            >
-              {activeOverrides.map((ex) => (
-                <div key={ex.id}>
-                  {ex.name}: {weightOverrides[ex.id]} kg <span style={{ color: 'var(--primary)' }}>(angepasst)</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {deloadHint && (
-            <div
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--accent)',
-                borderRadius: 14,
-                padding: '11px 13px',
-                marginBottom: 12,
-                fontSize: 12,
-                color: 'var(--text)',
-              }}
-            >
-              <strong style={{ color: 'var(--accent)' }}>Deload</strong> · {deloadHint}
-            </div>
-          )}
-
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, margin: '18px 0 8px' }}>
             <div
               style={{
@@ -1182,7 +1044,9 @@ export default function Heute() {
           </button>
           <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 11, color: 'var(--muted)' }}>
-              HEUTE · {WEEKDAY_LABELS[todayWeekday()].toUpperCase()}
+              {isRestToday && !sessionId
+                ? `GEPLANT · ${WEEKDAY_LABELS[WEEKDAYS[nextOpenEntry.projectedIdx]].toUpperCase()}`
+                : `HEUTE · ${WEEKDAY_LABELS[todayWeekday()].toUpperCase()}`}
             </span>
           </div>
           <div style={{ marginTop: 18, display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -1200,9 +1064,239 @@ export default function Heute() {
               {doneExerciseCount}/{mainExercises.length} ÜBUNGEN
             </div>
           </div>
-          {!anyExerciseLogged && (
+          {sessionId && !anyExerciseLogged && (
             <div style={{ marginTop: 12, fontFamily: 'var(--font-display)', fontSize: 11, color: 'var(--muted)' }}>
               Übung antippen, um Sätze zu loggen
+            </div>
+          )}
+          <TodayCta
+            label={cta.label}
+            sublabel={cta.sublabel}
+            variant={cta.variant}
+            disabled={cta.disabled}
+            onClick={cta.onClick}
+          />
+        </>
+      )}
+
+      {/* Woche durch: ohne offenen Tag gibt es sonst nur eine leere Seite. */}
+      {!day && !isRestToday && progress.total > 0 && (
+        <div
+          style={{
+            background: 'var(--success-dim)',
+            border: '1px solid var(--success)',
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 12,
+          }}
+        >
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1.15, color: 'var(--success)' }}>
+            Woche geschafft
+          </div>
+          <div style={{ marginTop: 6, fontSize: 13, color: 'var(--muted)' }}>
+            Alle {progress.total} Workouts erledigt. Nächste Woche geht es von vorn los.
+          </div>
+          <Button
+            variant="secondary"
+            onClick={() => setSwitcherOpen(true)}
+            style={{ marginTop: 12, fontSize: 13, minHeight: 40 }}
+          >
+            Workout wählen
+          </Button>
+        </div>
+      )}
+
+      {sessionId && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            gap: 12,
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            color: 'var(--muted)',
+            marginBottom: 10,
+          }}
+        >
+          {/* Satzzahl steht im CTA-Sublabel — hier bleibt die Laufzeit. */}
+          <span>{sessionStartedAt && <ElapsedTimer startedAt={sessionStartedAt} variant="minutes" />}</span>
+          <button
+            onClick={() => (discardConfirm ? discardSession() : setDiscardConfirm(true))}
+            onBlur={() => setDiscardConfirm(false)}
+            disabled={!isOnline}
+            style={{
+              flex: '0 0 auto',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              fontFamily: 'inherit',
+              fontSize: 12,
+              color: discardConfirm ? 'var(--danger)' : 'var(--muted)',
+              textDecoration: 'underline',
+              cursor: isOnline ? 'pointer' : 'not-allowed',
+            }}
+          >
+            {discardConfirm ? 'Wirklich verwerfen?' : 'Session verwerfen'}
+          </button>
+        </div>
+      )}
+
+      {progression?.proposals?.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <button
+            type="button"
+            onClick={() => setProposalsOpen((o) => !o)}
+            aria-expanded={proposalsOpen}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              background: 'var(--surface)',
+              border: '1px solid var(--line)',
+              borderRadius: 12,
+              padding: '10px 12px',
+              minHeight: 44,
+              color: 'var(--text)',
+              fontSize: 13,
+              cursor: 'pointer',
+            }}
+          >
+            <span>
+              {proposalCount === 1 ? '1 Vorschlag' : `${proposalCount} Vorschläge`} zum Steigern
+            </span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--primary)' }}>
+              {proposalsOpen ? 'Zuklappen ▴' : 'Ansehen ▾'}
+            </span>
+          </button>
+          {proposalsOpen && (
+            <div style={{ marginTop: 10 }}>
+              <ProgressionProposals proposals={progression.proposals.slice(0, 2)} deload={progression.deload} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {sessionId && !readinessHints && (
+      <Button variant="secondary" onClick={() => setReadinessOpen(true)} style={{ marginBottom: 12, fontSize: 13, minHeight: 40 }}>
+        Tagesform checken
+      </Button>
+      )}
+
+      {readinessHints && (
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: 12, marginBottom: 12, fontSize: 13 }}>
+        <strong>Hinweise:</strong> {readinessHints.join(' · ')}
+      </div>
+      )}
+
+      {lightOffer && !lightMode && (
+      <div
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--primary)',
+          borderRadius: 14,
+          padding: 14,
+          marginBottom: 12,
+          fontSize: 13,
+        }}
+      >
+        <div style={{ marginBottom: 10 }}>
+          <strong>Wenig Energie?</strong> Leichte Version: −10 % Gewicht, −1 Satz pro Übung — zählt ganz
+          normal.
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button onClick={() => applyLightMode(true)} style={{ fontSize: 13, minHeight: 40 }}>
+            Leicht trainieren
+          </Button>
+          <Button variant="secondary" onClick={() => setLightOffer(false)} style={{ fontSize: 13, minHeight: 40 }}>
+            Nein, normal
+          </Button>
+        </div>
+      </div>
+      )}
+
+      {lightMode && (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+          background: 'var(--primary-dim)',
+          border: '1px solid var(--primary)',
+          color: 'var(--primary)',
+          borderRadius: 12,
+          padding: '8px 12px',
+          marginBottom: 12,
+          fontSize: 13,
+        }}
+      >
+        <span>
+          <strong>Leichte Version aktiv</strong> · −10 % Gewicht, −1 Satz
+        </span>
+        <button
+          onClick={() => applyLightMode(false)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'inherit',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            textDecoration: 'underline',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          Zurücksetzen
+        </button>
+      </div>
+      )}
+
+      {sessionId && undoStack.length > 0 && (
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        <Button variant="secondary" onClick={undoLastSet} style={{ fontSize: 12, minHeight: 36, padding: '8px 12px' }}>
+          ↶ Rückgängig
+        </Button>
+      </div>
+      )}
+
+      {day && (
+        <>
+          {activeOverrides.length > 0 && (
+            <div
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--line)',
+                borderRadius: 12,
+                padding: '10px 12px',
+                marginBottom: 12,
+                fontSize: 12,
+                color: 'var(--muted)',
+              }}
+            >
+              {activeOverrides.map((ex) => (
+                <div key={ex.id}>
+                  {ex.name}: {weightOverrides[ex.id]} kg <span style={{ color: 'var(--primary)' }}>(angepasst)</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {deloadHint && (
+            <div
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--accent)',
+                borderRadius: 14,
+                padding: '11px 13px',
+                marginBottom: 12,
+                fontSize: 12,
+                color: 'var(--text)',
+              }}
+            >
+              <strong style={{ color: 'var(--accent)' }}>Deload</strong> · {deloadHint}
             </div>
           )}
 
@@ -1427,14 +1521,11 @@ export default function Heute() {
             </button>
           )}
 
-          <Button
-            onClick={finishWorkout}
-            disabled={finishPending || !sessionId}
-            fullWidth
-            style={{ margin: '6px 0 4px' }}
-          >
-            {finishPending ? 'Wird abgeschlossen…' : 'Workout abschließen'}
-          </Button>
+          {sessionId && (
+            <Button onClick={finishWorkout} disabled={finishPending} fullWidth style={{ margin: '6px 0 4px' }}>
+              {finishPending ? 'Wird abgeschlossen…' : 'Workout abschließen'}
+            </Button>
+          )}
           {finishError && (
             <p style={{ textAlign: 'center', color: 'var(--danger)', fontSize: 12, margin: '0 0 8px' }}>
               {finishError}
@@ -1446,6 +1537,33 @@ export default function Heute() {
             </p>
           )}
         </>
+      )}
+
+      {wrappedLatest?.available && !wrappedLatest.seen && !wrappedOpen && (
+        <button
+          type="button"
+          onClick={() => setWrappedOpen(true)}
+          style={{
+            width: '100%',
+            background: 'var(--primary-grad)',
+            border: 'none',
+            borderRadius: 14,
+            padding: '13px 16px',
+            marginBottom: 12,
+            color: 'var(--on-primary)',
+            fontWeight: 600,
+            fontSize: 14,
+            textAlign: 'left',
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <span>🎁 Dein Rückblick für {monthLabel(wrappedLatest.month)} ist da</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, opacity: 0.9 }}>Ansehen →</span>
+        </button>
       )}
 
       {focusExercise && focusCompare && (
