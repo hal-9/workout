@@ -13,7 +13,9 @@
     "./setTypes": "./setTypes.js",
     "./themes": "./themes.js",
     "./plateCalc": "./plateCalc.js",
-    "./warmupCalc": "./warmupCalc.js"
+    "./warmupCalc": "./warmupCalc.js",
+    "./library": "./library.js",
+    "./exercises.json": "./exercises.json"
   },
   "dependencies": {
     "zod": "^3.23.8"

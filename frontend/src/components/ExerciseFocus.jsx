@@ -40,20 +40,24 @@ export default function ExerciseFocus({
   disabled,
   elapsedLabel,
   restTimerActive,
+  replacedFrom,
   onClose,
   onLogCurrentSet,
-  onToggleDot,
+  onRemoveSet,
   onAdjustBigNumber,
   onAdjustWeight,
   onAddExtraSet,
   onStartRestTimer,
   onOpenMuscle,
   onOpenDetail,
+  onSwap,
   onNext,
   onPrev,
 }) {
   const [phase, setPhase] = useState('entering');
   const [editing, setEditing] = useState(null); // null | 'big' | 'kg'
+  // Nachträglich einen erledigten Satz ansehen/ändern: null = aktueller offener Satz.
+  const [selectedIndex, setSelectedIndex] = useState(null);
   const [justLogged, setJustLogged] = useState(false);
   const [holdPhase, setHoldPhase] = useState(null); // null | 'prep' | 'hold'
   const [holdTimerState, setHoldTimerState] = useState(null);
@@ -185,10 +189,17 @@ export default function ExerciseFocus({
 
   const firstOpenIndex = rows.findIndex((r) => !r.logged);
   const activeIndex = firstOpenIndex === -1 ? rows.length - 1 : firstOpenIndex;
-  const activeRow = rows[activeIndex];
+  const allLogged = firstOpenIndex === -1 && rows.length > 0;
+  // Angezeigter Satz: ausgewählter erledigter Satz, sonst der aktuelle offene.
+  const viewIndex = selectedIndex != null && selectedIndex < rows.length ? selectedIndex : activeIndex;
+  const viewRow = rows[viewIndex];
+  const reviewing = Boolean(viewRow?.logged);
 
+  // Neuer aktueller Satz (geloggt/entfernt) oder andere Übung: Auswahl und
+  // Editor zurücksetzen — sonst zeigt die große Zahl einen fremden Satz.
   useEffect(() => {
     setEditing(null);
+    setSelectedIndex(null);
     stopHold();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex, exercise.id]);
@@ -204,20 +215,31 @@ export default function ExerciseFocus({
     return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [editing]);
 
-  if (!activeRow) return null;
+  if (!viewRow) return null;
 
   const targetParsed = parseTargetReps(exercise.target_reps);
   const bigValue = isDurationType
-    ? activeRow.duration !== '' && activeRow.duration != null
-      ? activeRow.duration
+    ? viewRow.duration !== '' && viewRow.duration != null
+      ? viewRow.duration
       : toInputValue(exercise.target_seconds, exercise.type)
-    : activeRow.reps !== '' && activeRow.reps != null
-      ? activeRow.reps
+    : viewRow.reps !== '' && viewRow.reps != null
+      ? viewRow.reps
       : targetParsed?.min ?? '';
   const bigUnit = isDurationType
     ? durationUnitLabel(exercise.type).replace('.', '').toUpperCase()
     : 'WDH';
-  const kgValue = activeRow.weight_kg !== '' && activeRow.weight_kg != null ? activeRow.weight_kg : exercise.default_weight_kg ?? '';
+  const kgValue = viewRow.weight_kg !== '' && viewRow.weight_kg != null ? viewRow.weight_kg : exercise.default_weight_kg ?? '';
+  const ctaMuted = restTimerActive || holdPhase;
+
+  function selectDot(i) {
+    if (rows[i].logged) {
+      setEditing(null);
+      setSelectedIndex(i);
+    } else if (i === activeIndex) {
+      setEditing(null);
+      setSelectedIndex(null);
+    }
+  }
 
   return (
     <div
@@ -280,12 +302,20 @@ export default function ExerciseFocus({
         <div style={{ marginTop: 10, maxWidth: 300, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32, lineHeight: 1.1, letterSpacing: -0.5, textWrap: 'balance' }}>
           {exercise.name}
         </div>
+        {replacedFrom && (
+          <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+            ⇄ statt {replacedFrom}
+          </div>
+        )}
         {compare.lastSummary && (
           <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>Letzte: {compare.lastSummary}</div>
         )}
         <div style={{ marginTop: 10, display: 'flex', gap: 16 }}>
           <button type="button" onClick={onOpenMuscle} style={{ ...linkStyle, fontSize: 15, fontWeight: 600 }}>Muskeln</button>
           <button type="button" onClick={onOpenDetail} style={{ ...linkStyle, fontSize: 15, fontWeight: 600 }}>Details</button>
+          {onSwap && (
+            <button type="button" onClick={onSwap} style={{ ...linkStyle, fontSize: 15, fontWeight: 600 }}>Tauschen</button>
+          )}
         </div>
 
         <div ref={editAreaRef} style={{ marginTop: 32, display: 'flex', alignItems: 'baseline', gap: 16 }}>
@@ -296,19 +326,19 @@ export default function ExerciseFocus({
               </div>
             ) : editing === 'big' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <button type="button" onClick={() => onAdjustBigNumber(-1)} style={stepperStyle}>−</button>
+                <button type="button" onClick={() => onAdjustBigNumber(-1, viewIndex)} style={stepperStyle}>−</button>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 92, lineHeight: 1, minWidth: 100 }}>{bigValue}</div>
-                <button type="button" onClick={() => onAdjustBigNumber(1)} style={stepperStyle}>+</button>
+                <button type="button" onClick={() => onAdjustBigNumber(1, viewIndex)} style={stepperStyle}>+</button>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={() => setEditing('big')}
                 style={{
-                  background: 'var(--primary-grad)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  color: 'transparent',
+                  background: reviewing ? 'none' : 'var(--primary-grad)',
+                  WebkitBackgroundClip: reviewing ? undefined : 'text',
+                  backgroundClip: reviewing ? undefined : 'text',
+                  color: reviewing ? 'var(--success)' : 'transparent',
                   border: 'none',
                   padding: 0,
                   fontFamily: 'var(--font-display)',
@@ -321,8 +351,14 @@ export default function ExerciseFocus({
                 {bigValue}
               </button>
             )}
-            <div style={{ marginTop: 4, fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500, color: 'var(--muted)' }}>
-              {holdPhase === 'prep' ? 'GLEICH GEHT’S LOS' : holdPhase === 'hold' ? 'HALTEN' : `${bigUnit} · TIPPEN ZUM ÄNDERN`}
+            <div style={{ marginTop: 4, fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500, color: reviewing ? 'var(--success)' : 'var(--muted)' }}>
+              {holdPhase === 'prep'
+                ? 'GLEICH GEHT’S LOS'
+                : holdPhase === 'hold'
+                  ? 'HALTEN'
+                  : reviewing
+                    ? `SATZ ${viewRow.set_number} ERLEDIGT · TIPPEN ZUM ÄNDERN`
+                    : `${bigUnit} · TIPPEN ZUM ÄNDERN`}
             </div>
           </div>
 
@@ -332,9 +368,9 @@ export default function ExerciseFocus({
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 {editing === 'kg' ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <button type="button" onClick={() => onAdjustWeight(-2.5)} style={stepperStyle}>−</button>
+                    <button type="button" onClick={() => onAdjustWeight(-2.5, viewIndex)} style={stepperStyle}>−</button>
                     <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 44, lineHeight: 1, minWidth: 60 }}>{kgValue}</div>
-                    <button type="button" onClick={() => onAdjustWeight(2.5)} style={stepperStyle}>+</button>
+                    <button type="button" onClick={() => onAdjustWeight(2.5, viewIndex)} style={stepperStyle}>+</button>
                   </div>
                 ) : (
                   <button
@@ -356,13 +392,16 @@ export default function ExerciseFocus({
         <div style={{ marginTop: 26, display: 'flex', gap: 8, alignItems: 'center' }}>
           {rows.map((row, i) => {
             const state = row.logged ? 'logged' : i === activeIndex ? 'current' : 'upcoming';
+            const selectable = row.logged || i === activeIndex;
+            const isViewed = i === viewIndex;
             return (
               <button
                 key={row.set_number}
                 type="button"
-                onClick={row.logged ? () => onToggleDot(i) : undefined}
-                disabled={!row.logged}
-                aria-label={`Satz ${row.set_number}${row.logged ? ' — antippen zum Entfernen' : ''}`}
+                onClick={selectable ? () => selectDot(i) : undefined}
+                disabled={!selectable}
+                aria-label={`Satz ${row.set_number}${row.logged ? ' — erledigt, antippen zum Ansehen' : ''}`}
+                aria-pressed={isViewed}
                 style={{
                   width: 11,
                   height: 11,
@@ -371,15 +410,17 @@ export default function ExerciseFocus({
                   boxSizing: 'border-box',
                   background: state === 'logged' ? 'var(--success)' : 'transparent',
                   border: `2px solid ${state === 'logged' ? 'var(--success)' : state === 'current' ? CURRENT_ACCENT : 'var(--line)'}`,
-                  cursor: row.logged ? 'pointer' : 'default',
-                  transition: 'background 200ms, border-color 200ms',
+                  // Angesehener Satz bekommt einen Ring, damit klar ist, welcher Wert oben steht.
+                  boxShadow: isViewed && rows.length > 1 ? '0 0 0 3px var(--surface2), 0 0 0 4px var(--muted)' : 'none',
+                  cursor: selectable ? 'pointer' : 'default',
+                  transition: 'background 200ms, border-color 200ms, box-shadow 150ms',
                 }}
               />
             );
           })}
           <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-              SATZ {Math.min(activeIndex + 1, rows.length)}/{rows.length}
+              SATZ {viewIndex + 1}/{rows.length}
             </span>
             <button type="button" onClick={onAddExtraSet} style={{ ...linkStyle, fontSize: 10 }}>+ Satz</button>
           </div>
@@ -397,46 +438,72 @@ export default function ExerciseFocus({
           transition: 'padding-bottom 150ms ease',
         }}
       >
-        <button
-          type="button"
-          onClick={canHoldTimer && !holdPhase ? handleStartHold : handleLogSet}
-          disabled={disabled || restTimerActive || !!holdPhase}
-          className={justLogged ? 'set-logged-pulse' : undefined}
-          style={{
-            height: 58,
-            borderRadius: 18,
-            border: 'none',
-            background: justLogged
-              ? 'var(--success)'
-              : restTimerActive || holdPhase
-                ? 'var(--surface2)'
-                : 'var(--primary-grad)',
-            fontFamily: 'var(--font-display)',
-            fontWeight: 700,
-            fontSize: 17,
-            color: justLogged ? '#fff' : restTimerActive || holdPhase ? 'var(--muted)' : '#fff',
-            boxShadow: justLogged
-              ? '0 8px 30px rgba(52,211,153,.35)'
-              : restTimerActive || holdPhase
-                ? 'none'
-                : '0 8px 30px rgba(236,72,153,.28)',
-            cursor: disabled || restTimerActive || holdPhase ? 'not-allowed' : 'pointer',
-            opacity: disabled ? 0.55 : 1,
-            transition: 'background 250ms ease, box-shadow 250ms ease, color 250ms ease',
-          }}
-        >
-          {justLogged
-            ? 'Satz geschafft ✓'
-            : holdPhase
-              ? '⏱ Timer läuft …'
-              : restTimerActive
-                ? '⏱ Pause läuft …'
-                : canHoldTimer
-                  ? '▶ Start'
-                  : 'Satz geschafft ✓'}
-        </button>
+        {reviewing ? (
+          // Erledigten Satz ansehen: zurück zum offenen Satz bzw. Übung abschließen.
+          <button
+            type="button"
+            onClick={allLogged ? requestClose : () => setSelectedIndex(null)}
+            style={{
+              height: 58,
+              borderRadius: 18,
+              border: '1px solid var(--primary)',
+              background: 'var(--primary-dim)',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 17,
+              color: 'var(--primary)',
+              cursor: 'pointer',
+            }}
+          >
+            {allLogged ? 'Alle Sätze erledigt · Fertig ›' : `Weiter mit Satz ${activeIndex + 1} ›`}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={canHoldTimer && !holdPhase ? handleStartHold : handleLogSet}
+            disabled={disabled || restTimerActive || !!holdPhase}
+            className={justLogged ? 'set-logged-pulse' : undefined}
+            style={{
+              height: 58,
+              borderRadius: 18,
+              border: 'none',
+              background: justLogged ? 'var(--success)' : ctaMuted ? 'var(--surface2)' : 'var(--primary-grad)',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 17,
+              color: justLogged ? '#fff' : ctaMuted ? 'var(--muted)' : '#fff',
+              boxShadow: justLogged
+                ? '0 8px 30px rgba(52,211,153,.35)'
+                : ctaMuted
+                  ? 'none'
+                  : '0 8px 30px rgba(236,72,153,.28)',
+              cursor: disabled || ctaMuted ? 'not-allowed' : 'pointer',
+              opacity: disabled ? 0.55 : 1,
+              transition: 'background 250ms ease, box-shadow 250ms ease, color 250ms ease',
+            }}
+          >
+            {justLogged
+              ? 'Satz geschafft ✓'
+              : holdPhase
+                ? '⏱ Timer läuft …'
+                : restTimerActive
+                  ? '⏱ Pause läuft …'
+                  : canHoldTimer
+                    ? '▶ Start'
+                    : 'Satz geschafft ✓'}
+          </button>
+        )}
         <div style={{ display: 'flex', gap: 10 }}>
-          {holdPhase ? (
+          {reviewing ? (
+            <button
+              type="button"
+              onClick={() => onRemoveSet(viewIndex)}
+              disabled={disabled}
+              style={{ ...secondaryBtnStyle, color: 'var(--danger)', cursor: disabled ? 'not-allowed' : 'pointer' }}
+            >
+              Satz {viewRow.set_number} entfernen
+            </button>
+          ) : holdPhase ? (
             <button type="button" onClick={stopHold} style={{ ...secondaryBtnStyle, color: 'var(--muted)' }}>
               ✕ Abbrechen
             </button>
@@ -446,7 +513,7 @@ export default function ExerciseFocus({
             </button>
           )}
           <button type="button" onClick={requestClose} style={{ ...secondaryBtnStyle, color: 'var(--muted)' }}>
-            Überspringen ›
+            {reviewing ? 'Schließen' : 'Überspringen ›'}
           </button>
         </div>
       </div>

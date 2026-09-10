@@ -28,7 +28,11 @@ describe('buildFreshness', () => {
   it('mappt Sessions über day_key auf Zonen, Sekundär zählt halb', () => {
     const sessions = [{ day_key: 'push', finished_at: sqlUtcHoursAgo(NOW, 10) }];
     const heat = buildFreshness(plan, sessions, NOW);
-    expect(heat.brust).toBeCloseTo(10, 3);
+    // Dach-Zone „brust" im Plan färbt alle drei Brust-Teilzonen
+    expect(heat.brust).toBeUndefined();
+    expect(heat.brust_oben).toBeCloseTo(10, 3);
+    expect(heat.brust_mitte).toBeCloseTo(10, 3);
+    expect(heat.brust_unten).toBeCloseTo(10, 3);
     expect(heat.trizeps).toBeCloseTo(20, 3);
     expect(heat.quads).toBeUndefined();
   });
@@ -39,7 +43,7 @@ describe('buildFreshness', () => {
       { day_key: 'push', finished_at: sqlUtcHoursAgo(NOW, 10) },
     ];
     const heat = buildFreshness(plan, sessions, NOW);
-    expect(heat.brust).toBeCloseTo(10, 3);
+    expect(heat.brust_mitte).toBeCloseTo(10, 3);
   });
 
   it('älter als Fenster gilt als erholt, auch für Sekundärzonen', () => {
@@ -49,7 +53,7 @@ describe('buildFreshness', () => {
     ];
     const heat = buildFreshness(plan, sessions, NOW);
     expect(heat.quads).toBeUndefined();
-    expect(heat.brust).toBeCloseTo(40, 3);
+    expect(heat.brust_mitte).toBeCloseTo(40, 3);
     // Sekundär 40 h × 2 = 80 h ≥ 72 → raus
     expect(heat.trizeps).toBeUndefined();
   });

@@ -20,6 +20,8 @@ import { lightenExercise, lightWeight } from '../lib/lightMode.js';
 import { buildSetPayload } from '../components/SetRow.jsx';
 import ExerciseListCard, { buildCardSubline } from '../components/ExerciseListCard.jsx';
 import ExerciseFocus from '../components/ExerciseFocus.jsx';
+import ExerciseSwapSheet from '../components/ExerciseSwapSheet.jsx';
+import { applyReplacements, buildReplacement } from '../lib/exerciseSwap.js';
 import ElapsedTimer from '../components/ElapsedTimer.jsx';
 import RestTimerBar from '../components/RestTimerBar.jsx';
 import ReadinessDialog, { readinessAdaptations } from '../components/ReadinessDialog.jsx';
@@ -134,6 +136,18 @@ export default function Heute() {
   const [muscleExercise, setMuscleExercise] = useState(null);
   const [rpeByExercise, setRpeByExercise] = useState({});
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  // Übungs-Tausch nur für diese Session: [{ original_id, exercise }] — Sätze
+  // laufen unter der Ersatz-Id, Persistenz in sessions.adaptations_json.replaced.
+  const [replaced, setReplaced] = useState([]);
+  const [swapTarget, setSwapTarget] = useState(null);
+  // Nachträglich geänderte, schon geloggte Sätze werden verzögert neu gepostet.
+  const persistTimersRef = useRef({});
+  const setsRef = useRef({});
+  useEffect(() => {
+    setsRef.current = setsByExercise;
+  }, [setsByExercise]);
+  useEffect(() => () => Object.values(persistTimersRef.current).forEach(clearTimeout), []);
+  const replacedExerciseById = new Map(replaced.map((r) => [r.exercise.id, r.exercise]));
   const [note, setNote] = useState('');
   const [noteOpen, setNoteOpen] = useState(false);
   const noteSaveRef = useRef(null);
@@ -180,12 +194,16 @@ export default function Heute() {
     let cancelled = false;
 
     async function load() {
-      const historyRes = await api.get(`/history?day_key=${encodeURIComponent(dayKey)}`);
+      const active = freshActiveSession();
+      const resumed = active?.day_key === dayKey ? active : null;
+      const replacedList = Array.isArray(resumed?.adaptations?.replaced) ? resumed.adaptations.replaced : [];
+      const extraIds = replacedList.map((r) => r.exercise?.id).filter(Boolean);
+      const historyRes = await api.get(
+        `/history?day_key=${encodeURIComponent(dayKey)}${extraIds.length ? `&exercise_ids=${encodeURIComponent(extraIds.join(','))}` : ''}`
+      );
       if (cancelled) return;
       setHistoryRes(historyRes);
 
-      const active = freshActiveSession();
-      const resumed = active?.day_key === dayKey ? active : null;
       setSessionId(resumed ? resumed.session_id : null);
       sessionPromiseRef.current = null;
 
@@ -200,12 +218,13 @@ export default function Heute() {
       setLightOffer(false);
       setReadinessHints(resumed?.readiness ? readinessAdaptations(resumed.readiness) : null);
 
-      const day = plan.days.find((d) => d.key === dayKey);
+      const day = applyReplacements(plan.days.find((d) => d.key === dayKey), replacedList);
       const initial = {};
       for (const ex of day.exercises) {
         initial[ex.id] = buildInitialSets(ex, historyRes.prefill[ex.id], resumedByExercise[ex.id], light);
       }
       setSetsByExercise(initial);
+      setReplaced(replacedList);
       setRpeByExercise(
         Object.fromEntries((resumed?.rpe ?? []).map((entry) => [entry.exercise_id, entry.rpe]))
       );
@@ -279,7 +298,9 @@ export default function Heute() {
     if (!focusExerciseId) return;
     const rows = setsByExercise[focusExerciseId];
     if (!rows) return;
-    let exercise = plan?.days?.flatMap((d) => d.exercises ?? []).find((e) => e.id === focusExerciseId);
+    let exercise =
+      replaced.find((r) => r.exercise.id === focusExerciseId)?.exercise ??
+      plan?.days?.flatMap((d) => d.exercises ?? []).find((e) => e.id === focusExerciseId);
     if (!exercise) return;
     if (lightMode) exercise = lightenExercise(exercise);
     const idx = rows.findIndex((r) => !r.logged);
@@ -308,7 +329,7 @@ export default function Heute() {
         [focusExerciseId]: prev[focusExerciseId].map((r, i) => (i === targetIndex ? { ...r, ...updates } : r)),
       }));
     }
-  }, [focusExerciseId, setsByExercise, plan, lightMode]);
+  }, [focusExerciseId, setsByExercise, plan, lightMode, replaced]);
 
   async function toggleSet(exercise, index) {
     const row = setsByExercise[exercise.id][index];
@@ -385,19 +406,37 @@ export default function Heute() {
     setNote('');
     setNoteOpen(false);
     setFocusExerciseId(null);
-    setSetsByExercise((prev) => {
-      if (!lightMode) {
-        return Object.fromEntries(
-          Object.entries(prev).map(([exId, rows]) => [exId, rows.map((r) => ({ ...r, logged: false }))])
-        );
-      }
-      // Leichte Version war aktiv — Rows zurück auf Planwerte.
-      const dayPlan = plan?.days?.find((d) => d.key === dayKey);
-      return Object.fromEntries(
+    setReplaced([]);
+    setSwapTarget(null);
+    // Rows zurück auf Planwerte — auch getauschte Übungen fallen damit weg.
+    const dayPlan = plan?.days?.find((d) => d.key === dayKey);
+    setSetsByExercise(
+      Object.fromEntries(
         (dayPlan?.exercises ?? []).map((ex) => [ex.id, buildInitialSets(ex, historyRes?.prefill?.[ex.id], null, false)])
-      );
-    });
+      )
+    );
     queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
+  }
+
+  // Erledigter Satz nachträglich geändert: Upsert an den Server, entprellt pro Satz.
+  // Gleicher Offline-Fallback wie beim Loggen (Queue statt Verlust).
+  function schedulePersist(exercise, index) {
+    const key = `${exercise.id}:${index}`;
+    clearTimeout(persistTimersRef.current[key]);
+    persistTimersRef.current[key] = setTimeout(async () => {
+      delete persistTimersRef.current[key];
+      const row = setsRef.current[exercise.id]?.[index];
+      if (!row?.logged || !sessionId) return;
+      const payload = buildSetPayload(exercise, row);
+      try {
+        await api.post(`/sessions/${sessionId}/sets`, payload);
+      } catch (err) {
+        if (err.status) return;
+        const setKey = { exercise_id: exercise.id, set_number: row.set_number };
+        await cancelQueuedSet(sessionId, setKey);
+        await enqueueSet(sessionId, payload);
+      }
+    }, 600);
   }
 
   function adjustWeight(exercise, index, delta) {
@@ -411,6 +450,7 @@ export default function Heute() {
     if (exercise.type === 'wt' && next && next !== Number(exercise.default_weight_kg)) {
       setOverride(exercise.id, next);
     }
+    if (rows[index]?.logged) schedulePersist(exercise, index);
   }
 
   function adjustBigNumber(exercise, index, delta) {
@@ -427,6 +467,60 @@ export default function Heute() {
         }),
       };
     });
+    if (setsByExercise[exercise.id]?.[index]?.logged) schedulePersist(exercise, index);
+  }
+
+  // Übungs-Tausch (nur diese Session). Der Ersatz übernimmt die Satzzahl des
+  // Originals, loggt aber unter eigener Id — Historie des Originals bleibt sauber.
+  function persistReplaced(next) {
+    ensureSession()
+      .then((sid) => api.post(`/sessions/${sid}/adaptations`, { replaced: next }))
+      .catch(() => {
+        /* best effort — lokal bereits aktiv, Reload verliert den Tausch */
+      });
+  }
+
+  async function applySwap(current, entry) {
+    const planDayRaw = plan?.days?.find((d) => d.key === dayKey);
+    const originalId = replaced.find((r) => r.exercise.id === current.id)?.original_id ?? current.id;
+    const original = planDayRaw?.exercises.find((e) => e.id === originalId) ?? current;
+    const planIds = new Set((plan?.days ?? []).flatMap((d) => d.exercises.map((e) => e.id)));
+    const replacement = buildReplacement(original, entry, planIds);
+    const next = [...replaced.filter((r) => r.original_id !== originalId), { original_id: originalId, exercise: replacement }];
+
+    let prefill = null;
+    try {
+      const res = await api.get(
+        `/history?day_key=${encodeURIComponent(dayKey)}&exercise_ids=${encodeURIComponent(replacement.id)}`
+      );
+      prefill = res?.prefill?.[replacement.id] ?? null;
+    } catch {
+      /* ohne Prefill weiter */
+    }
+    setSetsByExercise((prev) => ({ ...prev, [replacement.id]: buildInitialSets(replacement, prefill, null, lightMode) }));
+    setReplaced(next);
+    setSwapTarget(null);
+    if (focusExerciseId === current.id) setFocusExerciseId(replacement.id);
+    persistReplaced(next);
+  }
+
+  function revertSwap(current) {
+    const entry = replaced.find((r) => r.exercise.id === current.id);
+    if (!entry) return;
+    const planDayRaw = plan?.days?.find((d) => d.key === dayKey);
+    const original = planDayRaw?.exercises.find((e) => e.id === entry.original_id);
+    const next = replaced.filter((r) => r.original_id !== entry.original_id);
+    if (original) {
+      setSetsByExercise((prev) =>
+        prev[original.id]
+          ? prev
+          : { ...prev, [original.id]: buildInitialSets(original, historyRes?.prefill?.[original.id], null, lightMode) }
+      );
+    }
+    setReplaced(next);
+    setSwapTarget(null);
+    if (focusExerciseId === current.id && original) setFocusExerciseId(original.id);
+    persistReplaced(next);
   }
 
   function currentSetIndexFor(exerciseId) {
@@ -458,10 +552,10 @@ export default function Heute() {
   async function undoLastSet() {
     const last = undoStack[undoStack.length - 1];
     if (!last || !plan) return;
-    let exercise = null;
+    let exercise = replacedExerciseById.get(last.exerciseId) ?? null;
     for (const d of plan.days ?? []) {
-      exercise = d.exercises?.find((e) => e.id === last.exerciseId);
       if (exercise) break;
+      exercise = d.exercises?.find((e) => e.id === last.exerciseId);
     }
     if (!exercise) return;
     setUndoStack((prev) => prev.slice(0, -1));
@@ -491,7 +585,7 @@ export default function Heute() {
   async function applyLightMode(next) {
     setLightMode(next);
     setLightOffer(false);
-    const dayPlan = plan?.days?.find((d) => d.key === dayKey);
+    const dayPlan = applyReplacements(plan?.days?.find((d) => d.key === dayKey), replaced);
     setSetsByExercise((prev) => {
       const out = {};
       for (const ex of dayPlan?.exercises ?? []) {
@@ -526,7 +620,7 @@ export default function Heute() {
 
       clearTimeout(noteSaveRef.current);
       setRestTimerState(null);
-      const dayPlan = plan?.days?.find((d) => d.key === dayKey);
+      const dayPlan = applyReplacements(plan?.days?.find((d) => d.key === dayKey), replaced);
       setCompletion({
         session_id: res.session_id,
         summary: res.summary,
@@ -661,7 +755,13 @@ export default function Heute() {
     );
   }
 
-  const planDay = plan.days.find((d) => d.key === dayKey);
+  const planDayRaw = plan.days.find((d) => d.key === dayKey);
+  // Session-Tausche zuerst (Ersatz steht an der Stelle des Originals), dann ggf.
+  // leichte Version — beides abgeleitet, der Plan selbst bleibt unangetastet.
+  const planDay = applyReplacements(planDayRaw, replaced);
+  const replacedNames = new Map(
+    replaced.map((r) => [r.exercise.id, planDayRaw?.exercises.find((e) => e.id === r.original_id)?.name ?? null])
+  );
   // Leichte Version: abgeleitete Übungsobjekte, damit Karten, Fokus-Ansicht und
   // Fortschrittszähler denselben reduzierten Plan sehen.
   const day = planDay && lightMode ? { ...planDay, exercises: planDay.exercises.map(lightenExercise) } : planDay;
@@ -1093,7 +1193,8 @@ export default function Heute() {
               const allLogged = rows.length > 0 && rows.every((r) => r.logged);
               const prefillSets = historyRes?.prefill?.[ex.id];
               const compare = compareExercise(ex, rows, prefillSets);
-              const subline = buildCardSubline(ex, rows, compare);
+              const fromName = replacedNames.get(ex.id);
+              const subline = fromName ? `⇄ statt ${fromName} · ${buildCardSubline(ex, rows, compare)}` : buildCardSubline(ex, rows, compare);
               return (
                 <div key={ex.id}>
                   <ExerciseListCard
@@ -1340,11 +1441,13 @@ export default function Heute() {
           elapsedLabel={<ElapsedTimer startedAt={sessionStartedAt} />}
           restTimerActive={isRestTimerActive(restTimerState)}
           onClose={() => setFocusExerciseId(null)}
+          replacedFrom={replacedNames.get(focusExercise.id) ?? null}
           onLogCurrentSet={() => handleLogFocusSet(focusExercise)}
-          onToggleDot={(i) => toggleSet(focusExercise, i)}
-          onAdjustBigNumber={(delta) => adjustBigNumber(focusExercise, currentSetIndexFor(focusExercise.id), delta)}
-          onAdjustWeight={(delta) => adjustWeight(focusExercise, currentSetIndexFor(focusExercise.id), delta)}
+          onRemoveSet={(i) => toggleSet(focusExercise, i)}
+          onAdjustBigNumber={(delta, i) => adjustBigNumber(focusExercise, i ?? currentSetIndexFor(focusExercise.id), delta)}
+          onAdjustWeight={(delta, i) => adjustWeight(focusExercise, i ?? currentSetIndexFor(focusExercise.id), delta)}
           onAddExtraSet={() => addExtraSet(focusExercise)}
+          onSwap={focusDisabled ? null : () => setSwapTarget(focusExercise)}
           onStartRestTimer={() => {
             unlockAudio();
             setRestTimerState(startRestTimer(REST_DEFAULT_SECONDS));
@@ -1460,6 +1563,18 @@ export default function Heute() {
       />
       {muscleExercise && (
         <MuscleModal exercise={muscleExercise} onClose={() => setMuscleExercise(null)} />
+      )}
+
+      {swapTarget && (
+        <ExerciseSwapSheet
+          exercise={swapTarget}
+          originalName={replacedNames.get(swapTarget.id) ?? null}
+          dayExercises={day?.exercises ?? []}
+          loggedCount={(setsByExercise[swapTarget.id] ?? []).filter((r) => r.logged).length}
+          onPick={(entry) => applySwap(swapTarget, entry)}
+          onRevert={replacedNames.has(swapTarget.id) ? () => revertSwap(swapTarget) : null}
+          onClose={() => setSwapTarget(null)}
+        />
       )}
 
       {detailExercise && (

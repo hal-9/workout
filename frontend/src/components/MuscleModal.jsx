@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
-import { ZONE_LABELS, exerciseZones } from 'shared/muscles';
+import { ZONE_HINTS, ZONE_LABELS, exerciseZones } from 'shared/muscles';
 
 // three.js ist ~150 KB gzipped — erst laden, wenn das Modell wirklich geöffnet wird.
 const MuscleBody3D = lazy(() => import('./MuscleBody3D.jsx'));
@@ -41,7 +41,13 @@ export default function MuscleModal({ exercise, onClose }) {
   // Rückseitige Zonen zeigen von vorne nichts — dann direkt von hinten starten.
   const zones = exerciseZones(exercise ?? {});
   const backHeavy = zones.primary.length > 0
-    && zones.primary.every((key) => ['ruecken', 'unterer_ruecken', 'gesaess', 'hamstrings', 'waden', 'trizeps'].includes(key));
+    && zones.primary.every((key) => [
+      'ruecken', 'ruecken_lat', 'ruecken_oben', 'unterer_ruecken',
+      'gesaess', 'gesaess_gross', 'gesaess_seite', 'hamstrings',
+      'waden', 'waden_gastro', 'waden_soleus', 'trizeps', 'schultern_hinten',
+    ].includes(key));
+  // Teilzonen erklären, warum z. B. Seitheben ≠ Schulterdrücken ist.
+  const hints = [...zones.primary, ...zones.secondary].filter((key) => ZONE_HINTS[key]);
   const [view, setView] = useState(backHeavy ? 'back' : 'front');
 
   useEffect(() => {
@@ -147,6 +153,15 @@ export default function MuscleModal({ exercise, onClose }) {
           {!zones.primary.length && !zones.secondary.length && (
             <div style={{ fontSize: 12, color: 'var(--muted)' }}>
               Für diese Übung sind keine Muskelgruppen hinterlegt.
+            </div>
+          )}
+          {hints.length > 0 && (
+            <div style={{ marginTop: 6, display: 'grid', gap: 4, fontSize: 11, color: 'var(--muted)' }}>
+              {hints.map((key) => (
+                <div key={key}>
+                  <strong style={{ color: 'var(--text)', fontWeight: 600 }}>{ZONE_LABELS[key]}:</strong> {ZONE_HINTS[key]}
+                </div>
+              ))}
             </div>
           )}
         </div>

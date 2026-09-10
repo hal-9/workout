@@ -23,8 +23,18 @@ export function historyRouter(db) {
       return res.status(422).json({ error: 'unknown day_key' });
     }
 
+    // Zusätzliche Ids (im Workout getauschte Übungen) bekommen ebenfalls die
+    // letzten Werte — sie stehen nicht im Plan, wohl aber in der Historie.
+    const extraIds = String(req.query.exercise_ids ?? '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .slice(0, 30);
+    const planIds = new Set(day.exercises.map((ex) => ex.id));
+    const targets = [...day.exercises, ...extraIds.filter((id) => !planIds.has(id)).map((id) => ({ id }))];
+
     const prefill = {};
-    for (const ex of day.exercises) {
+    for (const ex of targets) {
       const lastSession = db
         .prepare(
           `SELECT sessions.id FROM sessions

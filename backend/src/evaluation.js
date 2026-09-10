@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { formatDuration } from 'shared/duration';
+import { parseAdaptations, sessionExerciseMeta } from './sessionExercises.js';
 
 const MODEL = 'gemini-2.5-flash';
 const MAX_OUTPUT_TOKENS = 600;
@@ -65,15 +66,22 @@ function formatExerciseSets(db, sessionId, exerciseMeta) {
 
 export function buildAggregate(db, session, plan) {
   const day = plan.days.find((d) => d.key === session.day_key);
-  const exerciseMeta = new Map(day.exercises.map((e) => [e.id, e]));
 
   const previousSessions = db
     .prepare(
-      `SELECT id, started_at, note FROM sessions
+      `SELECT id, started_at, note, adaptations_json FROM sessions
        WHERE user_id = ? AND day_key = ? AND status = 'finished' AND id != ?
        ORDER BY finished_at DESC LIMIT 5`
     )
     .all(session.user_id, session.day_key, session.id);
+
+  // Getauschte Übungen (dieser und früherer Sessions) brauchen Namen im Prompt.
+  const exerciseMeta = sessionExerciseMeta(day, parseAdaptations(session.adaptations_json));
+  for (const prev of previousSessions) {
+    for (const [id, exercise] of sessionExerciseMeta(null, parseAdaptations(prev.adaptations_json))) {
+      if (!exerciseMeta.has(id)) exerciseMeta.set(id, exercise);
+    }
+  }
 
   const bodyweightLog = db
     .prepare(

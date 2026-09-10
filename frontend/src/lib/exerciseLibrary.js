@@ -1,4 +1,4 @@
-import library from '../data/exercises.json' with { type: 'json' };
+import { LIBRARY as library } from 'shared/library';
 import { uniqueSlug } from './planDefaults.js';
 
 export const STRETCH_GROUP = 'Dehnung';
@@ -22,17 +22,32 @@ function hits(text, keywords) {
 
 const ZONE_TO_GROUP = {
   brust: 'Brust',
+  brust_oben: 'Brust',
+  brust_mitte: 'Brust',
+  brust_unten: 'Brust',
   schultern: 'Schultern',
+  schultern_vorn: 'Schultern',
+  schultern_seite: 'Schultern',
+  schultern_hinten: 'Schultern',
   bizeps: 'Arme',
   trizeps: 'Arme',
   unterarme: 'Arme',
   core: 'Core',
+  core_gerade: 'Core',
+  core_seitlich: 'Core',
   ruecken: 'Rücken',
+  ruecken_lat: 'Rücken',
+  ruecken_oben: 'Rücken',
   unterer_ruecken: 'Rücken',
   gesaess: 'Gesäß & Hüfte',
+  gesaess_gross: 'Gesäß & Hüfte',
+  gesaess_seite: 'Gesäß & Hüfte',
+  adduktoren: 'Gesäß & Hüfte',
   quads: 'Beine',
   hamstrings: 'Beine',
   waden: 'Beine',
+  waden_gastro: 'Beine',
+  waden_soleus: 'Beine',
 };
 
 export function muscleGroup(entry) {
@@ -96,6 +111,7 @@ export function libraryEntryToExercise(entry, existingIds = new Set()) {
     phase: entry.phase === 'cooldown' ? 'cooldown' : 'main',
     zones: entry.zones,
     equipment: entry.equipment,
+    pattern: entry.pattern,
   };
   return exercise;
 }

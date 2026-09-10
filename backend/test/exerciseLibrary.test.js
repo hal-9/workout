@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { planSchema } from 'shared';
+import { EQUIPMENT_KEYS, LEAF_ZONES, MUSCLE_ZONES, PATTERN_KEYS, ZONE_CHILDREN } from 'shared/muscles';
 import {
   demoSearchUrl,
   libraryEntries,
@@ -123,5 +124,83 @@ describe('demoSearchUrl', () => {
   it('nutzt video_query, sonst den Namen', () => {
     expect(demoSearchUrl({ video_query: 'bench press form' })).toContain('bench%20press%20form');
     expect(demoSearchUrl({ name: 'Goblet Squat', video_query: '' })).toContain('Goblet%20Squat%20Technik');
+  });
+});
+
+// Invarianten der Übungsbibliothek (shared/exercises.json). Die Bibliothek
+// speist Plan-Wizard, Picker und den Übungs-Tausch im Workout — deshalb muss
+// jeder Eintrag Zonen, Gerät und Bewegungsmuster tragen und jede Zone genug
+// Alternativen haben (auch ohne Gerät, für Training unterwegs).
+describe('Bibliotheks-Invarianten', () => {
+  const entries = libraryEntries();
+  const main = entries.filter((e) => e.phase === 'main');
+
+  it('jeder Eintrag hat gültige Zonen, Gerät und Bewegungsmuster', () => {
+    for (const entry of entries) {
+      expect(entry.zones?.primary?.length, `${entry.id}: primary zones`).toBeGreaterThan(0);
+      for (const key of [...entry.zones.primary, ...(entry.zones.secondary ?? [])]) {
+        expect(MUSCLE_ZONES, `${entry.id}: zone ${key}`).toContain(key);
+      }
+      expect(EQUIPMENT_KEYS, `${entry.id}: equipment`).toContain(entry.equipment);
+      expect(PATTERN_KEYS, `${entry.id}: pattern ${entry.pattern}`).toContain(entry.pattern);
+      expect(entry.cue?.length, `${entry.id}: cue`).toBeGreaterThan(10);
+      expect(entry.video_query?.length, `${entry.id}: video_query`).toBeGreaterThan(3);
+    }
+  });
+
+  it('Dehnungen sind mobility, Hauptübungen nicht', () => {
+    for (const entry of entries) {
+      if (entry.phase === 'cooldown') expect(entry.pattern, entry.id).toBe('mobility');
+      else expect(entry.pattern, entry.id).not.toBe('mobility');
+    }
+  });
+
+  // Hauptübungen benennen den Anteil (obere Brust, Latissimus, …) statt des
+  // Dach-Keys. Ausnahme nur, wo keine Teilzone passt (Tibialis = Schienbein,
+  // keine eigene Zone am Modell).
+  const UMBRELLA_PRIMARY_ALLOWED = new Set(['tibialis-raise']);
+  it('Hauptübungen nutzen Teilzonen statt Dach-Keys als primär', () => {
+    const umbrellas = Object.keys(ZONE_CHILDREN);
+    for (const entry of main) {
+      if (UMBRELLA_PRIMARY_ALLOWED.has(entry.id)) continue;
+      for (const key of entry.zones.primary) {
+        expect(umbrellas, `${entry.id}: primary „${key}" → Teilzone nutzen`).not.toContain(key);
+      }
+    }
+  });
+
+  it('Aliase sind eindeutig und kollidieren nicht mit Namen', () => {
+    const seen = new Map();
+    for (const entry of entries) {
+      const keys = [entry.name, ...(entry.aliases ?? [])].map((s) => s.toLowerCase().trim());
+      for (const key of keys) {
+        expect(seen.has(key) && seen.get(key) !== entry.id, `${key}: ${seen.get(key)} vs ${entry.id}`).toBe(false);
+        seen.set(key, entry.id);
+      }
+    }
+  });
+
+  it('jede Teilzone hat mindestens 6 Hauptübungen und 3 davon mit Körpergewicht', () => {
+    for (const zone of LEAF_ZONES) {
+      const hits = main.filter((e) => e.zones.primary.includes(zone));
+      const bodyweight = hits.filter((e) => e.equipment === 'koerpergewicht' || e.equipment === 'band');
+      expect(hits.length, `${zone}: Hauptübungen`).toBeGreaterThanOrEqual(6);
+      expect(bodyweight.length, `${zone}: Körpergewicht/Band-Alternativen`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('jedes Kraft-Bewegungsmuster hat mindestens 2 Übungen mit unterschiedlichem Gerät', () => {
+    const skip = new Set(['mobility', 'cardio']);
+    for (const pattern of PATTERN_KEYS) {
+      if (skip.has(pattern)) continue;
+      const hits = main.filter((e) => e.pattern === pattern);
+      const equipment = new Set(hits.map((e) => e.equipment));
+      expect(equipment.size, `${pattern}: Geräte-Varianten (${[...equipment].join(',')})`).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('libraryEntryToExercise übernimmt das Bewegungsmuster', () => {
+    const entry = main[0];
+    expect(libraryEntryToExercise(entry).pattern).toBe(entry.pattern);
   });
 });

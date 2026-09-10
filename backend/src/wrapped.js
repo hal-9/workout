@@ -1,5 +1,6 @@
 import { isCooldown } from 'shared/exerciseProgress';
 import { exerciseZones, ZONE_LABELS } from 'shared/muscles';
+import { replacedExercisesForUser } from './sessionExercises.js';
 import { mergeBests, pickRecord, sessionMetrics, sessionTonnage } from 'shared/records';
 
 // Monats-Rückblick (Wrapped): reine Aggregation über finished-Sessions.
@@ -32,6 +33,9 @@ function exerciseMetaForUser(db, userId) {
     .prepare('SELECT json_payload FROM plans WHERE user_id = ? ORDER BY active ASC, id ASC')
     .all(userId);
   const meta = new Map();
+  for (const [id, exercise] of replacedExercisesForUser(db, userId)) {
+    if (!isCooldown(exercise)) meta.set(id, exercise);
+  }
   for (const row of rows) {
     let plan;
     try {

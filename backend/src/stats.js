@@ -1,17 +1,22 @@
 import { isCooldown } from 'shared/exerciseProgress';
 import { bestsForExercise, mergeBests, pickRecord, sessionMetrics, sessionTonnage } from 'shared/records';
+import { replacedExercisesForUser } from './sessionExercises.js';
 
 const SESSION_WINDOW_DAYS = 84; // 12 Wochen für Heatmap und Tonnage-Trend
 const MUSCLE_WINDOW_DAYS = 28;
 
 // Übungs-Metadaten aus allen Plan-Versionen des Nutzers, damit auch ältere Sessions
-// noch eine Muskelgruppe und einen Typ haben. Der aktive Plan gewinnt.
+// noch eine Muskelgruppe und einen Typ haben. Der aktive Plan gewinnt. Im Workout
+// getauschte Übungen kommen aus den Sessions selbst (kein Plan kennt sie).
 function exerciseMetaForUser(db, userId) {
   const rows = db
     .prepare('SELECT json_payload, active FROM plans WHERE user_id = ? ORDER BY active ASC, id ASC')
     .all(userId);
 
   const meta = new Map();
+  for (const [id, exercise] of replacedExercisesForUser(db, userId)) {
+    if (!isCooldown(exercise)) meta.set(id, exercise);
+  }
   for (const row of rows) {
     let plan;
     try {

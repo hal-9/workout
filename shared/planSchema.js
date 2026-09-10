@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EQUIPMENT_KEYS, MUSCLE_ZONES } from './muscles.js';
+import { EQUIPMENT_KEYS, MUSCLE_ZONES, PATTERN_KEYS } from './muscles.js';
 
 // Muskelzonen für das 3D-Highlight. Fehlt das Feld, wird aus `muscle` geraten.
 const zonesSchema = z.object({
@@ -32,8 +32,12 @@ const exerciseSchema = z.object({
   phase: z.enum(['main', 'cooldown']).default('main'),
   zones: zonesSchema.optional(),
   equipment: z.enum(EQUIPMENT_KEYS).optional(),
+  // Bewegungsmuster — Grundlage für Übungs-Alternativen (Tausch im Workout).
+  pattern: z.enum(PATTERN_KEYS).optional(),
   progression: progressionSchema.nullable().optional(),
 }).strip();
+
+export { exerciseSchema };
 
 const daySchema = z.object({
   key: z.string().min(1),

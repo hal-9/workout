@@ -4,6 +4,8 @@ import { requireAuth } from '../auth.js';
 import { detectNewRecords } from 'shared/records';
 import { runEvaluation } from '../evaluation.js';
 import { notifyFriendsOfFinish } from '../push.js';
+import { exerciseSchema } from 'shared';
+import { parseAdaptations, sessionExerciseMeta } from '../sessionExercises.js';
 
 function getActivePlan(db, userId) {
   const row = db
@@ -113,8 +115,16 @@ const setSchema = setKeySchema
     message: 'exactly one of reps/duration_s must be set',
   });
 
+// Übungs-Tausch im Workout: `original_id` = Plan-Übung, `exercise` = Ersatz mit
+// eigener Id (die Sätze loggen unter der Ersatz-Id). Gilt nur für diese Session.
+const replacementSchema = z.object({
+  original_id: z.string().min(1),
+  exercise: exerciseSchema,
+});
+
 const adaptationsSchema = z.object({
   light: z.boolean().optional(),
+  replaced: z.array(replacementSchema).max(30).optional(),
   skipped: z.array(z.string()).optional(),
   order: z.array(z.string()).optional(),
   added: z.array(z.object({
@@ -242,7 +252,8 @@ export function sessionsRouter(db) {
     const planRow = db.prepare('SELECT json_payload FROM plans WHERE id = ?').get(session.plan_id);
     const days = planRow ? JSON.parse(planRow.json_payload).days : [];
     const day = days.find((d) => d.key === session.day_key);
-    const exerciseNames = new Map((day?.exercises ?? []).map((e) => [e.id, e.name]));
+    const exerciseMeta = sessionExerciseMeta(day, parseAdaptations(session.adaptations_json));
+    const exerciseNames = new Map([...exerciseMeta].map(([id, e]) => [id, e.name]));
 
     const logs = setLogsForSession(db, session.id);
     const summary = {
@@ -436,9 +447,11 @@ export function sessionsRouter(db) {
       return res.status(422).json({ error: 'validation failed', details: parsed.error.issues });
     }
 
-    const json = JSON.stringify(parsed.data);
-    db.prepare('UPDATE sessions SET adaptations_json = ? WHERE id = ?').run(json, session.id);
-    res.json({ ok: true, adaptations: parsed.data });
+    // Flach mergen: „leichte Version" und Übungs-Tausch werden unabhängig
+    // voneinander geschickt und dürfen sich nicht gegenseitig löschen.
+    const merged = { ...(parseAdaptations(session.adaptations_json) ?? {}), ...parsed.data };
+    db.prepare('UPDATE sessions SET adaptations_json = ? WHERE id = ?').run(JSON.stringify(merged), session.id);
+    res.json({ ok: true, adaptations: merged });
   });
 
   router.post('/sessions/:id/readiness', (req, res) => {

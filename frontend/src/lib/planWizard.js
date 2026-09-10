@@ -1,4 +1,4 @@
-import { ZONE_LABELS } from 'shared/muscles';
+import { ZONE_LABELS, zoneOverlap } from 'shared/muscles';
 import { libraryEntries, libraryEntryToExercise } from './exerciseLibrary.js';
 
 // Ein Block = eine Muskelgruppe innerhalb eines Tages. `count` ist die Empfehlung,
@@ -110,7 +110,8 @@ export function proposalsFor(zone, equipment, entries = libraryEntries()) {
   const available = equipment instanceof Set ? equipment : new Set(equipment ?? []);
   return entries
     .filter((entry) => entry.phase === 'main')
-    .filter((entry) => entry.zones?.primary?.includes(zone))
+    // Dach-Zone „Schultern" im Split trifft auch Übungen mit Teilzone (vorn/seite/hinten).
+    .filter((entry) => (entry.zones?.primary ?? []).some((key) => zoneOverlap(key, zone) > 0))
     .filter((entry) => available.size === 0 || available.has(entry.equipment))
     .sort((a, b) => proposalRank(a) - proposalRank(b) || a.name.localeCompare(b.name, 'de'));
 }

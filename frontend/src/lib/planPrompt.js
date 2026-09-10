@@ -102,6 +102,7 @@ ${contextLines(input)}
 - \`phase\`: \`main\` für das Training, \`cooldown\` für Dehnübungen am Ende (zählen nicht in Volumen, Rekorde und Progression). Höchstens 4 Cooldown-Übungen pro Tag, jeweils \`sets: 1\`.
 - \`zones\`: Muskelgruppen für die 3D-Anzeige. \`primary\` = direkt belastet, \`secondary\` = mitarbeitend. Erlaubte Werte (nur diese, exakt so geschrieben):
   ${MUSCLE_ZONES.join(', ')}
+  Bevorzuge die Teilzonen (z. B. \`brust_oben\`, \`schultern_seite\`, \`ruecken_lat\`, \`core_seitlich\`, \`gesaess_seite\`, \`waden_soleus\`); die Sammel-Keys \`brust\`, \`schultern\`, \`core\`, \`ruecken\`, \`gesaess\`, \`waden\` nur, wenn die Übung den ganzen Muskel gleichmäßig trifft.
 - \`equipment\`: genau einer von: ${Object.keys(EQUIPMENT_LABELS).join(', ')}.
 
 ## Beispiel (gültiges Minimalformat)

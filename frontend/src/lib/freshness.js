@@ -1,4 +1,4 @@
-import { exerciseZones } from 'shared/muscles';
+import { exerciseZones, expandZones } from 'shared/muscles';
 import { isCooldownExercise } from './cooldown.js';
 import { parseUtc } from './dates.js';
 
@@ -27,8 +27,8 @@ export function buildFreshness(plan, sessions, now = new Date()) {
     for (const ex of day.exercises ?? []) {
       if (isCooldownExercise(ex)) continue;
       const zones = exerciseZones(ex);
-      for (const z of zones.primary) bump(z, hours);
-      for (const z of zones.secondary) bump(z, hours * 2);
+      for (const z of expandZones(zones.primary)) bump(z, hours);
+      for (const z of expandZones(zones.secondary)) bump(z, hours * 2);
     }
   }
   return heat;

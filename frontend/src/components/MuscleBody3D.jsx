@@ -19,7 +19,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { MUSCLE_ZONES, resolveZoneKeys } from 'shared/muscles';
+import { MUSCLE_ZONES, expandZones, resolveZoneKeys } from 'shared/muscles';
 import { ZONE_REGIONS } from '../lib/muscleRegions.js';
 
 const MODEL_URL = '/models/muscle-body.glb';
@@ -34,7 +34,17 @@ const COL = {
   primary:   { color: 0xf4506a, emissive: 0xe11d48, intensity: 0.45 },
   secondary: { color: 0xf0955f, emissive: 0xc2551f, intensity: 0.16 },
 };
-const DEBUG_COLORS = [0xe6194b, 0x3cb44b, 0xffe119, 0x4363d8, 0xf58231, 0x911eb4, 0x46f0f0, 0xf032e6, 0xbcf60c, 0x008080, 0x9a6324, 0x800000];
+// Eine Farbe je MUSCLE_ZONES-Index (Dach-Keys haben keine Faces, verbrauchen aber einen Slot).
+const DEBUG_COLORS = [
+  0xe6194b, 0xff7f7f, 0xc00040, 0x8b0000, // brust*, oben/mitte/unten
+  0x3cb44b, 0xffe119, 0x4363d8, 0xf58231, // schultern*, vorn/seite/hinten
+  0x911eb4, 0x46f0f0, 0xf032e6, // bizeps, trizeps, unterarme
+  0xbcf60c, 0x7fbf00, 0xd2ff7f, // core*, gerade/seitlich
+  0x008080, 0x00b3b3, 0x2f4f4f, 0x9a6324, // ruecken*, lat/oben, unterer_ruecken
+  0x800000, 0xb5651d, 0xffa07a, 0xff69b4, // gesaess*, gross/seite, adduktoren
+  0x1e90ff, 0x228b22, // quads, hamstrings
+  0xffd700, 0xdaa520, 0x8b6914, // waden*, gastro/soleus
+];
 
 // Frische-Rampe: <24 h heiß, 24–48 h warm, 48–72 h ausklingend, danach Körperfarbe.
 export const HEAT_STEPS = [
@@ -129,6 +139,8 @@ function loadGroupedGeometry() {
       geo.addGroup(start, offset - start, slot);
     }
     geo.setIndex(new THREE.BufferAttribute(newIndex, 1));
+    // Kalibrierhilfe für /dev/muskeln: Geometrie im normalisierten Raum zugreifbar machen.
+    if (import.meta.env.DEV) window.__muscleGeometry = { positions: arr, index: newIndex, slotOf, zones: MUSCLE_ZONES };
     return geo;
   });
   return modelPromise;
@@ -202,16 +214,21 @@ export default function MuscleBody3D({
       const { primary: p, secondary: s, heat: h } = wantRef.current;
       if (h) {
         // Frische-Modus: statische Färbung nach Stunden, kein Puls (zoneState bleibt 'off').
+        // Dach-Keys (schultern) färben ihre Teilzonen, sofern die nicht selbst frischer sind.
         MUSCLE_ZONES.forEach((key2, i) => {
           zoneState[key2] = 'off';
-          const c = heatStyle(h[key2]);
+          const parentHours = Object.entries(h)
+            .filter(([k]) => expandZones([k]).includes(key2))
+            .map(([, v]) => v);
+          const hours = parentHours.length ? Math.min(...parentHours) : null;
+          const c = heatStyle(hours);
           const mat = zoneMats[i];
           mat.color.setHex(c.color); mat.emissive.setHex(c.emissive); mat.emissiveIntensity = c.intensity;
         });
         return;
       }
-      const prim = new Set(resolveZoneKeys(p));
-      const sec = new Set(resolveZoneKeys(s).filter((k) => !prim.has(k)));
+      const prim = new Set(expandZones(resolveZoneKeys(p)));
+      const sec = new Set(expandZones(resolveZoneKeys(s)).filter((k) => !prim.has(k)));
       MUSCLE_ZONES.forEach((key2, i) => {
         const state = prim.has(key2) ? 'primary' : sec.has(key2) ? 'secondary' : 'off';
         zoneState[key2] = state;
