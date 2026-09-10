@@ -20,6 +20,8 @@ import TrainingTree from '../components/TrainingTree.jsx';
 import WrappedStory, { monthLabel } from '../components/WrappedStory.jsx';
 import ProgressionProposals from '../components/ProgressionProposals.jsx';
 import ProgressLayoutEditor from '../components/ProgressLayoutEditor.jsx';
+import ProgressSummary from '../components/ProgressSummary.jsx';
+import { buildProgressSummary } from '../lib/progressSummary.js';
 import PageHeader from '../components/ui/PageHeader.jsx';
 import Button from '../components/ui/Button.jsx';
 
@@ -47,16 +49,16 @@ const tabButtonStyle = (active) => ({
 // Karten des eigenen Fortschritt-Tabs: Reihenfolge + Sichtbarkeit sind pro
 // User anpassbar (Anpassen-Modus), Titel dienen auch den eingeklappten Zeilen.
 const CARD_TITLES = {
-  tree: 'Trainingsbaum',
-  progression: 'Nächste Session',
-  recovery: 'Erholung',
-  consistency: 'Konsistenz',
-  maxtests: 'Max-Tests & Körpergewicht',
-  weeks: 'Trainingswochen',
-  stats: 'Statistiken',
   exercises: 'Übungs-Fortschritt',
-  wrapped: 'Monats-Rückblick',
+  consistency: 'Konsistenz',
+  weeks: 'Trainingswochen',
+  tree: 'Trainingsbaum',
+  recovery: 'Erholung',
+  stats: 'Statistiken',
+  progression: 'Nächste Session',
+  maxtests: 'Max-Tests & Körpergewicht',
   recent: 'Auswertungen',
+  wrapped: 'Monats-Rückblick',
 };
 const CARD_IDS = Object.keys(CARD_TITLES);
 
@@ -127,6 +129,7 @@ export default function Fortschritt() {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [showAllExercises, setShowAllExercises] = useState(false);
   const [wrappedOpen, setWrappedOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [layout, setLayout] = useState(() => mergeLayout(CARD_IDS, getStoredLayout()));
   // Entfernte Freunde verschwinden aus der Liste — dann zurueck auf die eigene Ansicht.
@@ -241,6 +244,12 @@ export default function Fortschritt() {
 
   const heatmapData =
     plan && heatmapRange ? buildConsistencyHeatmap(plan, heatmapRange.sessions, 12) : null;
+
+  const summaryItems = buildProgressSummary({
+    weekRecap,
+    exercises,
+    proposals: progression?.proposals,
+  });
 
   const handleExportJson = async () => {
     const data = await api.get('/export');
@@ -431,31 +440,56 @@ export default function Fortschritt() {
         title="Fortschritt"
         action={
           !viewPartner && (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Button variant="secondary" onClick={handleExportJson} style={{ padding: '8px 12px', fontSize: 12, minHeight: 36 }}>
-                JSON
-              </Button>
-              <a
-                href="/api/export.csv"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '8px 12px',
-                  fontSize: 12,
-                  borderRadius: 13,
-                  background: 'var(--surface2)',
-                  border: '1px solid var(--line)',
-                  color: 'var(--text)',
-                  textDecoration: 'none',
-                  minHeight: 36,
-                }}
-              >
-                CSV
-              </a>
-            </div>
+            <Button
+              variant="secondary"
+              onClick={() => setExportOpen((o) => !o)}
+              ariaLabel="Daten exportieren"
+              ariaPressed={exportOpen}
+              style={{ padding: '8px 12px', fontSize: 12, minHeight: 36 }}
+            >
+              ⋯
+            </Button>
           )
         }
       />
+
+      {/* Exporte sind selten gebraucht — sie stehen nicht mehr neben dem Titel. */}
+      {!viewPartner && exportOpen && (
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            alignItems: 'center',
+            background: 'var(--surface)',
+            border: '1px solid var(--line)',
+            borderRadius: 12,
+            padding: 12,
+            marginBottom: 12,
+          }}
+        >
+          <span style={{ fontSize: 12, color: 'var(--muted)', marginRight: 'auto' }}>Daten exportieren</span>
+          <Button variant="secondary" onClick={handleExportJson} style={{ padding: '8px 12px', fontSize: 12, minHeight: 36 }}>
+            JSON
+          </Button>
+          <a
+            href="/api/export.csv"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '8px 12px',
+              fontSize: 12,
+              borderRadius: 13,
+              background: 'var(--surface2)',
+              border: '1px solid var(--line)',
+              color: 'var(--text)',
+              textDecoration: 'none',
+              minHeight: 36,
+            }}
+          >
+            CSV
+          </a>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', margin: '0 0 16px' }}>
         <button type="button" onClick={() => setSelectedUserId(null)} style={tabButtonStyle(!viewPartner)}>
@@ -491,6 +525,8 @@ export default function Fortschritt() {
           onChange={applyLayout}
         />
       )}
+
+      {!viewPartner && !editMode && <ProgressSummary items={summaryItems} />}
 
       {!viewPartner &&
         !editMode &&
