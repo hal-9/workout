@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { durationUnitLabel, formatDuration, toInputValue } from 'shared/duration';
+import { durationUnitLabel, formatDuration, fromInputValue, toInputValue } from 'shared/duration';
 import { parseTargetReps } from '../lib/exerciseCompare.js';
 import {
   REST_DEFAULT_SECONDS,
@@ -83,6 +83,9 @@ export default function ExerciseFocus({
   const editAreaRef = useRef(null);
   const touchStartRef = useRef(null);
   const wakeLockRef = useRef(null);
+  // Dauer des laufenden Halte-Timers — vom aktuellen Satz (bearbeitete große
+  // Zahl), nicht vom Plan-Ziel, sonst zählt der Timer die alte Dauer.
+  const holdSecondsRef = useRef(0);
 
   function acquireWakeLock() {
     if (!('wakeLock' in navigator)) return;
@@ -131,7 +134,7 @@ export default function ExerciseFocus({
       }
       if (holdPhase === 'prep') {
         setHoldPhase('hold');
-        setHoldTimerState(startRestTimer(exercise.target_seconds));
+        setHoldTimerState(startRestTimer(holdSecondsRef.current));
         return;
       }
       playRestEnd();
@@ -154,8 +157,9 @@ export default function ExerciseFocus({
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [holdPhase]);
 
-  function handleStartHold() {
+  function handleStartHold(seconds) {
     if (disabled || restTimerActive || holdPhase) return;
+    holdSecondsRef.current = seconds;
     unlockAudio();
     acquireWakeLock();
     setHoldPhase('prep');
@@ -201,7 +205,6 @@ export default function ExerciseFocus({
 
   const isDurationType = exercise.type === 'time' || exercise.type === 'cardio';
   const isWeighted = exercise.type === 'wt';
-  const canHoldTimer = isDurationType && exercise.target_seconds > 0;
 
   const firstOpenIndex = rows.findIndex((r) => !r.logged);
   const activeIndex = firstOpenIndex === -1 ? rows.length - 1 : firstOpenIndex;
@@ -250,6 +253,8 @@ export default function ExerciseFocus({
   const unitLabel = isDurationType ? durationUnitLabel(exercise.type) : 'Wdh.';
   const bigUnit = unitLabel.replace('.', '').toUpperCase();
   const kgValue = kgValueFor(viewRow);
+  const holdSeconds = isDurationType ? fromInputValue(bigValue, exercise.type) ?? 0 : 0;
+  const canHoldTimer = holdSeconds > 0;
   const weightStep = stepForExercise(exercise);
   // Lange Namen drückten bisher alles nach unten — kleinere Stufe statt Umbruch auf drei Zeilen.
   const nameFontSize = exercise.name.length > 34 ? 24 : exercise.name.length > 22 ? 28 : 32;
@@ -536,7 +541,7 @@ export default function ExerciseFocus({
         ) : (
           <button
             type="button"
-            onClick={canHoldTimer && !holdPhase ? handleStartHold : handleLogSet}
+            onClick={canHoldTimer && !holdPhase ? () => handleStartHold(holdSeconds) : handleLogSet}
             disabled={disabled || restTimerActive || !!holdPhase}
             className={justLogged ? 'set-logged-pulse' : undefined}
             style={{
