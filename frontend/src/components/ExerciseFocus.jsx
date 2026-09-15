@@ -227,6 +227,10 @@ export default function ExerciseFocus({
     if (!editing) return;
     function handlePointerDown(e) {
       if (editAreaRef.current && !editAreaRef.current.contains(e.target)) {
+        // iOS nimmt dem Input beim Tippen auf einen Button den Fokus nicht weg,
+        // und beim Unmount feuert kein blur — der getippte Wert wäre verloren
+        // (Timer lief mit der alten Dauer). Explizit committen, dann schließen.
+        editAreaRef.current.querySelector('input')?.blur();
         setEditing(null);
       }
     }

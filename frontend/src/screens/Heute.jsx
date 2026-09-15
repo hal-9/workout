@@ -15,6 +15,7 @@ import MuscleModal from '../components/MuscleModal.jsx';
 import { formatDuration, toInputValue } from 'shared/duration';
 import { WEEKDAYS, WEEKDAY_LABELS, projectWeek, weekProgress, todayWeekday } from '../lib/schedule.js';
 import { getAllOverrides, getOverride, setOverride } from '../lib/weightOverrides.js';
+import { applyBigNumber } from '../lib/setRows.js';
 import { estimateWorkoutSeconds, formatEstimate } from '../lib/workoutEstimate.js';
 import { cacheGet, cacheSet, isOfflineError } from '../lib/offlineCache.js';
 import { clearResumeState, loadResumeState, saveResumeState } from '../lib/workoutResume.js';
@@ -507,15 +508,13 @@ export default function Heute() {
 
   function updateBigNumber(exercise, index, resolve) {
     setSetsByExercise((prev) => {
-      const field = exercise.type === 'time' || exercise.type === 'cardio' ? 'duration' : 'reps';
-      return {
-        ...prev,
-        [exercise.id]: prev[exercise.id].map((s, i) => {
-          if (i !== index) return s;
-          const next = Math.max(0, resolve(Number(s[field]) || 0));
-          return { ...s, [field]: String(next) };
-        }),
-      };
+      const isDuration = exercise.type === 'time' || exercise.type === 'cardio';
+      const field = isDuration ? 'duration' : 'reps';
+      // Leere Sätze zeigen den Plan-Zielwert — der zählt beim Vergleich mit.
+      const fallback = isDuration
+        ? toInputValue(exercise.target_seconds, exercise.type)
+        : parseTargetReps(exercise.target_reps)?.min ?? '';
+      return { ...prev, [exercise.id]: applyBigNumber(prev[exercise.id], index, field, resolve, fallback) };
     });
     if (setsByExercise[exercise.id]?.[index]?.logged) schedulePersist(exercise, index);
   }
