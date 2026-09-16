@@ -160,7 +160,7 @@ describe('RPE und Notizen', () => {
         .send({ note: 'Wenig geschlafen' });
 
       const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(sessionId);
-      const aggregate = buildAggregate(db, session, plan());
+      const { aggregate } = buildAggregate(db, session, plan());
 
       expect(aggregate.current_session.note).toBe('Wenig geschlafen');
       const bench = aggregate.current_session.exercises.find((e) => e.id === 'bench');

@@ -15,7 +15,8 @@ import MuscleModal from '../components/MuscleModal.jsx';
 import { formatDuration, toInputValue } from 'shared/duration';
 import { WEEKDAYS, WEEKDAY_LABELS, projectWeek, weekProgress, todayWeekday } from '../lib/schedule.js';
 import { getAllOverrides, getOverride, setOverride } from '../lib/weightOverrides.js';
-import { applyBigNumber } from '../lib/setRows.js';
+import { applyBigNumber, withCoachHint } from '../lib/setRows.js';
+import { describeHint } from '../lib/coachSummary.js';
 import { estimateWorkoutSeconds, formatEstimate } from '../lib/workoutEstimate.js';
 import { cacheGet, cacheSet, isOfflineError } from '../lib/offlineCache.js';
 import { clearResumeState, loadResumeState, saveResumeState } from '../lib/workoutResume.js';
@@ -45,7 +46,7 @@ import {
 import { playRestEnd, playTick, unlockAudio } from '../lib/workoutSounds.js';
 import { timerPushWanted } from '../lib/push.js';
 
-function buildInitialSets(exercise, prefillSets, resumedSets, light = false) {
+function buildInitialSets(exercise, prefillSets, resumedSets, light = false, hint = null) {
   const source = resumedSets?.length ? resumedSets : prefillSets;
   // Leichte Version: −1 Satz, −10 % Gewicht — Prefill-Länge zählt dann nicht mehr,
   // sonst würde der gestrichene Satz über die Historie wieder auftauchen.
@@ -63,18 +64,24 @@ function buildInitialSets(exercise, prefillSets, resumedSets, light = false) {
     if (applyLight && !isResumed && exercise.type === 'wt' && fromSource?.weight_kg != null) {
       weight = lightWeight(fromSource.weight_kg);
     }
-    rows.push({
-      set_number: i,
-      reps: fromSource?.reps ?? '',
-      weight_kg: weight,
-      duration: toInputValue(
-        fromSource?.duration_s ?? (isCooldownExercise(exercise) ? exercise.target_seconds : null),
-        exercise.type
-      ),
-      set_type: fromSource?.set_type ?? 'working',
-      superset_group: fromSource?.superset_group ?? null,
-      logged: Boolean(isResumed),
-    });
+    rows.push(
+      // Übernommener Coach-Tipp schlägt Historie und Plan-Vorgabe — nur für offene Sätze.
+      withCoachHint(
+        {
+          set_number: i,
+          reps: fromSource?.reps ?? '',
+          weight_kg: weight,
+          duration: toInputValue(
+            fromSource?.duration_s ?? (isCooldownExercise(exercise) ? exercise.target_seconds : null),
+            exercise.type
+          ),
+          set_type: fromSource?.set_type ?? 'working',
+          superset_group: fromSource?.superset_group ?? null,
+          logged: Boolean(isResumed),
+        },
+        hint
+      )
+    );
   }
   return rows;
 }
@@ -260,7 +267,7 @@ export default function Heute() {
       const day = applyReplacements(plan.days.find((d) => d.key === dayKey), replacedList);
       const initial = {};
       for (const ex of day.exercises) {
-        initial[ex.id] = buildInitialSets(ex, historyRes.prefill[ex.id], resumedByExercise[ex.id], light);
+        initial[ex.id] = buildInitialSets(ex, historyRes.prefill[ex.id], resumedByExercise[ex.id], light, historyRes.hints?.[ex.id]);
       }
       setSetsByExercise(initial);
       setReplaced(replacedList);
@@ -452,7 +459,7 @@ export default function Heute() {
     const dayPlan = plan?.days?.find((d) => d.key === dayKey);
     setSetsByExercise(
       Object.fromEntries(
-        (dayPlan?.exercises ?? []).map((ex) => [ex.id, buildInitialSets(ex, historyRes?.prefill?.[ex.id], null, false)])
+        (dayPlan?.exercises ?? []).map((ex) => [ex.id, buildInitialSets(ex, historyRes?.prefill?.[ex.id], null, false, historyRes?.hints?.[ex.id])])
       )
     );
     queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
@@ -546,15 +553,17 @@ export default function Heute() {
     const next = [...replaced.filter((r) => r.original_id !== originalId), { original_id: originalId, exercise: replacement }];
 
     let prefill = null;
+    let hint = null;
     try {
       const res = await api.get(
         `/history?day_key=${encodeURIComponent(dayKey)}&exercise_ids=${encodeURIComponent(replacement.id)}`
       );
       prefill = res?.prefill?.[replacement.id] ?? null;
+      hint = res?.hints?.[replacement.id] ?? null;
     } catch {
       /* ohne Prefill weiter */
     }
-    setSetsByExercise((prev) => ({ ...prev, [replacement.id]: buildInitialSets(replacement, prefill, null, lightMode) }));
+    setSetsByExercise((prev) => ({ ...prev, [replacement.id]: buildInitialSets(replacement, prefill, null, lightMode, hint) }));
     setReplaced(next);
     setSwapTarget(null);
     if (focusExerciseId === current.id) setFocusExerciseId(replacement.id);
@@ -571,7 +580,7 @@ export default function Heute() {
       setSetsByExercise((prev) =>
         prev[original.id]
           ? prev
-          : { ...prev, [original.id]: buildInitialSets(original, historyRes?.prefill?.[original.id], null, lightMode) }
+          : { ...prev, [original.id]: buildInitialSets(original, historyRes?.prefill?.[original.id], null, lightMode, historyRes?.hints?.[original.id]) }
       );
     }
     setReplaced(next);
@@ -646,7 +655,7 @@ export default function Heute() {
     setSetsByExercise((prev) => {
       const out = {};
       for (const ex of dayPlan?.exercises ?? []) {
-        const fresh = buildInitialSets(ex, historyRes?.prefill?.[ex.id], null, next);
+        const fresh = buildInitialSets(ex, historyRes?.prefill?.[ex.id], null, next, historyRes?.hints?.[ex.id]);
         const byNumber = new Map(fresh.map((r) => [r.set_number, r]));
         for (const r of prev[ex.id] ?? []) {
           if (r.logged) byNumber.set(r.set_number, r);
@@ -1343,7 +1352,9 @@ export default function Heute() {
               const prefillSets = historyRes?.prefill?.[ex.id];
               const compare = compareExercise(ex, rows, prefillSets);
               const fromName = replacedNames.get(ex.id);
-              const subline = fromName ? `⇄ statt ${fromName} · ${buildCardSubline(ex, rows, compare)}` : buildCardSubline(ex, rows, compare);
+              const coachHint = allLogged ? null : describeHint(historyRes?.hints?.[ex.id]);
+              const baseSubline = fromName ? `⇄ statt ${fromName} · ${buildCardSubline(ex, rows, compare)}` : buildCardSubline(ex, rows, compare);
+              const subline = coachHint ? `★ ${coachHint} · ${baseSubline}` : baseSubline;
               return (
                 <div key={ex.id}>
                   <ExerciseListCard

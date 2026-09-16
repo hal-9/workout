@@ -6,6 +6,7 @@ import { runEvaluation } from '../evaluation.js';
 import { notifyFriendsOfFinish } from '../push.js';
 import { exerciseSchema } from 'shared';
 import { parseAdaptations, sessionExerciseMeta } from '../sessionExercises.js';
+import { previousSessionsForRecords } from '../sessionHistory.js';
 
 function getActivePlan(db, userId) {
   const row = db
@@ -38,34 +39,6 @@ function rpeForSession(db, sessionId) {
 }
 
 // Alle früheren beendeten Sessions des Nutzers, gruppiert für die Rekord-Erkennung.
-function previousSessionsForRecords(db, userId, currentSessionId) {
-  const rows = db
-    .prepare(
-      `SELECT s.id AS session_id, sl.exercise_id, sl.set_number, sl.reps, sl.weight_kg, sl.duration_s
-       FROM sessions s
-       JOIN set_logs sl ON sl.session_id = s.id
-       WHERE s.user_id = ? AND s.status = 'finished' AND s.id != ?
-       ORDER BY s.finished_at ASC`
-    )
-    .all(userId, currentSessionId);
-
-  const sessions = new Map();
-  for (const row of rows) {
-    if (!sessions.has(row.session_id)) {
-      sessions.set(row.session_id, { session_id: row.session_id, setsByExercise: new Map() });
-    }
-    const bucket = sessions.get(row.session_id).setsByExercise;
-    if (!bucket.has(row.exercise_id)) bucket.set(row.exercise_id, []);
-    bucket.get(row.exercise_id).push({
-      set_number: row.set_number,
-      reps: row.reps,
-      weight_kg: row.weight_kg,
-      duration_s: row.duration_s,
-    });
-  }
-  return [...sessions.values()];
-}
-
 function makeDayNameResolver(db) {
   const dayNamesByPlan = new Map();
   return function dayName(planId, dayKey) {
@@ -574,6 +547,10 @@ export function sessionsRouter(db) {
           `INSERT INTO evaluations (session_id, model, status) VALUES (?, ?, 'pending')`
         ).run(session.id, 'gemini-2.5-flash');
       }
+
+      // Coach-Tipps gelten genau für die nächste Session mit der Übung — die ist jetzt vorbei.
+      const clearHint = db.prepare('DELETE FROM coach_hints WHERE user_id = ? AND exercise_id = ?');
+      for (const exerciseId of new Set(logs.map((l) => l.exercise_id))) clearHint.run(req.user.id, exerciseId);
     })();
 
     if (logs.length > 0) {
@@ -647,7 +624,11 @@ export function sessionsRouter(db) {
       return res.status(404).json({ error: 'not found' });
     }
     if (evaluation.status === 'ok') {
-      return res.json({ status: 'ok', summary_md: evaluation.summary_md });
+      return res.json({
+        status: 'ok',
+        summary_md: evaluation.summary_md,
+        summary: evaluation.summary_json ? JSON.parse(evaluation.summary_json) : null,
+      });
     }
     if (evaluation.status === 'failed') {
       return res.json({ status: 'failed', error: evaluation.error });

@@ -14,6 +14,7 @@ import { statsRouter } from './routes/stats.js';
 import { exportRouter } from './routes/export.js';
 import { wrappedRouter } from './routes/wrapped.js';
 import { pushRouter } from './routes/push.js';
+import { coachRouter } from './routes/coach.js';
 
 export function createApp(db) {
   const app = express();
@@ -43,6 +44,7 @@ export function createApp(db) {
   app.use('/api', exportRouter(db));
   app.use('/api', wrappedRouter(db));
   app.use('/api', pushRouter(db));
+  app.use('/api', coachRouter(db));
 
   app.use('/api', (req, res) => {
     res.status(404).json({ error: 'not found' });

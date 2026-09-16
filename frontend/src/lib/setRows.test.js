@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyBigNumber } from './setRows.js';
+import { applyBigNumber, withCoachHint } from './setRows.js';
 
 const row = (reps, logged = false) => ({ reps, weight_kg: '', duration: '', logged });
 
@@ -39,5 +39,20 @@ describe('applyBigNumber', () => {
     const rows = [row(''), row(''), row('8')];
     const out = applyBigNumber(rows, 0, 'reps', () => 5);
     expect(out.map((r) => r.reps)).toEqual(['5', '5', '8']);
+  });
+});
+
+describe('withCoachHint', () => {
+  const row = { set_number: 1, reps: 8, weight_kg: 40, duration: '', logged: false };
+
+  it('ersetzt Gewicht, Wiederholungen oder Dauer aus dem Tipp', () => {
+    expect(withCoachHint(row, { weight_kg: 42.5 })).toMatchObject({ weight_kg: 42.5, reps: 8 });
+    expect(withCoachHint(row, { reps: 10 })).toMatchObject({ weight_kg: 40, reps: 10 });
+    expect(withCoachHint(row, { duration_s: 45 })).toMatchObject({ duration: '45' });
+  });
+
+  it('lässt geloggte Sätze und Sätze ohne Tipp unangetastet', () => {
+    expect(withCoachHint({ ...row, logged: true }, { weight_kg: 42.5 })).toEqual({ ...row, logged: true });
+    expect(withCoachHint(row, null)).toBe(row);
   });
 });

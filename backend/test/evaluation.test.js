@@ -64,6 +64,21 @@ async function login(app) {
   return res.headers['set-cookie'][0];
 }
 
+function modelReply(overrides = {}) {
+  return {
+    text: JSON.stringify({
+      headline: 'Liegestütze: +2 Wdh.',
+      verdict: 'Solide Session.',
+      exercises: [{ exercise_id: 'pu', trend: 'up', text: '+2 Wdh. im letzten Satz' }],
+      recommendations: [
+        { text: 'Nächstes Mal 12 Wdh. pro Satz.', exercise_id: 'pu', field: 'reps', value: 12 },
+        { text: 'Pausen auf 90 s halten.' },
+      ],
+      ...overrides,
+    }),
+  };
+}
+
 async function waitForEvaluationStatus(db, sessionId, status, timeoutMs = 1000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -96,15 +111,79 @@ describe('evaluation', () => {
     return session.body.session_id;
   }
 
-  it('finish -> Evaluation wird ok mit summary_md (Mock-Antwort)', async () => {
-    generateContentMock.mockResolvedValueOnce({ text: '## Gute Session' });
+  it('finish -> Evaluation wird ok mit summary_json (Mock-Antwort), JSON-Schema + Thinking aus', async () => {
+    generateContentMock.mockResolvedValueOnce(modelReply());
     const sessionId = await createFinishedSession();
 
     const res = await request(app).post(`/api/sessions/${sessionId}/finish`).set('Cookie', cookie);
     expect(res.status).toBe(200);
 
     const row = await waitForEvaluationStatus(db, sessionId, 'ok');
-    expect(row.summary_md).toBe('## Gute Session');
+    const summary = JSON.parse(row.summary_json);
+    expect(summary.headline).toBe('Liegestütze: +2 Wdh.');
+    expect(summary.exercises).toEqual([{ exercise_id: 'pu', name: 'Liegestütze', trend: 'up', text: '+2 Wdh. im letzten Satz' }]);
+    expect(summary.recommendations[0]).toEqual({
+      text: 'Nächstes Mal 12 Wdh. pro Satz.',
+      exercise_id: 'pu',
+      exercise_name: 'Liegestütze',
+      field: 'reps',
+      value: 12,
+    });
+    expect(summary.recommendations[1]).toEqual({ text: 'Pausen auf 90 s halten.' });
+
+    const config = generateContentMock.mock.calls[0][0].config;
+    expect(config.thinkingConfig).toEqual({ thinkingBudget: 0 });
+    expect(config.responseMimeType).toBe('application/json');
+    expect(config.responseSchema.type).toBe('OBJECT');
+
+    const api = await request(app).get(`/api/sessions/${sessionId}/evaluation`).set('Cookie', cookie);
+    expect(api.body.status).toBe('ok');
+    expect(api.body.summary.headline).toBe('Liegestütze: +2 Wdh.');
+  });
+
+  it('Empfehlung mit fremder Id oder falschem Feld verliert nur die Übernahme-Daten', async () => {
+    generateContentMock.mockResolvedValueOnce(
+      modelReply({
+        exercises: [
+          { exercise_id: 'pu', trend: 'flat', text: 'gleich' },
+          { exercise_id: 'ghost', trend: 'up', text: 'gibt es nicht' },
+        ],
+        recommendations: [
+          { text: 'Gewicht rauf', exercise_id: 'pu', field: 'weight_kg', value: 10 }, // bw-Übung: kein Gewicht
+          { text: 'Ghost', exercise_id: 'ghost', field: 'reps', value: 8 },
+          { text: 'Zu viel', exercise_id: 'pu', field: 'reps', value: 500 },
+        ],
+      })
+    );
+    const sessionId = await createFinishedSession();
+    await request(app).post(`/api/sessions/${sessionId}/finish`).set('Cookie', cookie);
+
+    const summary = JSON.parse((await waitForEvaluationStatus(db, sessionId, 'ok')).summary_json);
+    expect(summary.exercises.map((e) => e.exercise_id)).toEqual(['pu']);
+    expect(summary.recommendations).toEqual([{ text: 'Gewicht rauf' }, { text: 'Ghost' }, { text: 'Zu viel' }]);
+  });
+
+  it('Antwort ohne gültiges JSON -> failed', async () => {
+    generateContentMock.mockResolvedValueOnce({ text: '## Gute Session' });
+    const sessionId = await createFinishedSession();
+    await request(app).post(`/api/sessions/${sessionId}/finish`).set('Cookie', cookie);
+
+    const row = await waitForEvaluationStatus(db, sessionId, 'failed');
+    expect(row.error).toMatch(/JSON/);
+  });
+
+  it('finishReason MAX_TOKENS -> failed statt abgeschnittener Text, Thinking ist aus', async () => {
+    generateContentMock.mockResolvedValueOnce({
+      text: 'Abgeschnittener Sa',
+      candidates: [{ finishReason: 'MAX_TOKENS' }],
+    });
+    const sessionId = await createFinishedSession();
+
+    await request(app).post(`/api/sessions/${sessionId}/finish`).set('Cookie', cookie);
+
+    const row = await waitForEvaluationStatus(db, sessionId, 'failed');
+    expect(row.error).toMatch(/MAX_TOKENS/);
+    expect(row.summary_json).toBeNull();
   });
 
   it('Mock wirft Fehler -> failed + error, finish-Response war trotzdem 200', async () => {
@@ -162,9 +241,15 @@ describe('evaluation', () => {
         );
       }
 
-      const aggregate = buildAggregate(db, current, testPlan);
+      const { aggregate } = buildAggregate(db, current, testPlan);
 
       expect(aggregate.day).toBe('Push');
+      expect(aggregate.session_number_for_day).toBe(7);
+      const pu = aggregate.current_session.exercises[0];
+      expect(pu.metrics).toEqual({ max_reps: 5 });
+      expect(pu.vs_last).toEqual({ date: '2026-01-06', max_reps: 0 });
+      expect(pu.best_before).toEqual({ max_reps: 5 });
+      expect(pu.new_record).toBeUndefined();
       expect(aggregate.previous_sessions).toHaveLength(5);
       expect(aggregate.previous_sessions.every((s) => s.exercises[0].id === 'pu')).toBe(true);
       expect(aggregate.previous_sessions.some((s) => s.date === '2026-01-08')).toBe(false);
@@ -180,13 +265,13 @@ describe('evaluation', () => {
       await request(app).post(`/api/sessions/${sessionId}/finish`).set('Cookie', cookie);
       await waitForEvaluationStatus(db, sessionId, 'failed');
 
-      generateContentMock.mockResolvedValueOnce({ text: 'ok now' });
+      generateContentMock.mockResolvedValueOnce(modelReply());
       const res = await request(app).post(`/api/sessions/${sessionId}/evaluate`).set('Cookie', cookie);
       expect(res.status).toBe(202);
       expect(res.body).toEqual({ status: 'pending' });
 
       const row = await waitForEvaluationStatus(db, sessionId, 'ok');
-      expect(row.summary_md).toBe('ok now');
+      expect(JSON.parse(row.summary_json).headline).toBe('Liegestütze: +2 Wdh.');
     });
 
     it('bei pending -> 409', async () => {
@@ -199,7 +284,7 @@ describe('evaluation', () => {
     });
 
     it('bei ok -> 409', async () => {
-      generateContentMock.mockResolvedValueOnce({ text: 'done' });
+      generateContentMock.mockResolvedValueOnce(modelReply());
       const sessionId = await createFinishedSession();
       await request(app).post(`/api/sessions/${sessionId}/finish`).set('Cookie', cookie);
       await waitForEvaluationStatus(db, sessionId, 'ok');
@@ -225,13 +310,16 @@ describe('evaluation', () => {
         .set('Cookie', cookie);
       expect(pendingRes.body).toEqual({ status: 'pending' });
 
-      generateContentMock.mockResolvedValueOnce({ text: 'summary text' });
+      generateContentMock.mockResolvedValueOnce(modelReply());
       const okSessionId = await createFinishedSession('pull', 'row');
       await request(app).post(`/api/sessions/${okSessionId}/finish`).set('Cookie', cookie);
       await waitForEvaluationStatus(db, okSessionId, 'ok');
 
       const okRes = await request(app).get(`/api/sessions/${okSessionId}/evaluation`).set('Cookie', cookie);
-      expect(okRes.body).toEqual({ status: 'ok', summary_md: 'summary text' });
+      expect(okRes.body.status).toBe('ok');
+      expect(okRes.body.summary_md).toBeNull();
+      // Modell hat 'pu' genannt, Session war aber 'row' → gefiltert.
+      expect(okRes.body.summary.exercises).toEqual([]);
 
       generateContentMock.mockRejectedValueOnce(new Error('boom'));
       const failedSessionId = await createFinishedSession('push');

@@ -19,6 +19,7 @@ import Auswertung from './screens/Auswertung.jsx';
 
 // Kalibrierseite für die Muskelzonen — nur im Dev-Server, nie im Build.
 const MuscleDev = import.meta.env.DEV ? lazy(() => import('./screens/MuscleDev.jsx')) : null;
+const CoachDev = import.meta.env.DEV ? lazy(() => import('./screens/CoachDev.jsx')) : null;
 
 function useMe() {
   const query = useQuery({
@@ -92,6 +93,9 @@ export default function App() {
       <Route path="/session/:id/auswertung" element={<AuthGuard><Auswertung /></AuthGuard>} />
       {MuscleDev && (
         <Route path="/dev/muskeln" element={<Suspense fallback={null}><MuscleDev /></Suspense>} />
+      )}
+      {CoachDev && (
+        <Route path="/dev/coach" element={<Suspense fallback={null}><CoachDev /></Suspense>} />
       )}
       <Route path="*" element={<Navigate to="/heute" replace />} />
     </Routes>

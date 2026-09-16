@@ -14,3 +14,15 @@ export function applyBigNumber(rows, index, field, resolve, fallback = '') {
     return s;
   });
 }
+
+// Übernommener Coach-Tipp (aus /history.hints) für einen offenen Satz: der
+// Zielwert ersetzt Prefill bzw. Plan-Vorgabe. Schon geloggte (resumed) Sätze
+// bleiben, wie sie sind — der Tipp gilt nur für das, was noch kommt.
+export function withCoachHint(row, hint) {
+  if (!hint || row.logged) return row;
+  const next = { ...row };
+  if (hint.weight_kg != null) next.weight_kg = hint.weight_kg;
+  if (hint.reps != null) next.reps = hint.reps;
+  if (hint.duration_s != null) next.duration = String(hint.duration_s);
+  return next;
+}

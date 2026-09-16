@@ -76,7 +76,15 @@ export function historyRouter(db) {
         .all(s.id),
     }));
 
-    res.json({ prefill, recent_sessions });
+    // Übernommene Coach-Tipps: { exercise_id: { weight_kg?, reps?, duration_s? } }.
+    const hints = {};
+    for (const row of db
+      .prepare('SELECT exercise_id, field, value FROM coach_hints WHERE user_id = ?')
+      .all(req.user.id)) {
+      hints[row.exercise_id] = { ...hints[row.exercise_id], [row.field]: row.value };
+    }
+
+    res.json({ prefill, recent_sessions, hints });
   });
 
   return router;

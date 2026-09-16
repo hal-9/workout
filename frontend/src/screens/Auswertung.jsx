@@ -7,6 +7,8 @@ import { formatDuration } from 'shared/duration';
 import { formatProposalChange, proposalReason } from '../lib/progressionView.js';
 import { clearOverride } from '../lib/weightOverrides.js';
 import { shareCard, shareCardColors } from '../lib/shareCard.js';
+import CoachSummary from '../components/CoachSummary.jsx';
+import { hintKey } from '../lib/coachSummary.js';
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 60000;
@@ -29,6 +31,22 @@ export default function Auswertung() {
   const [selectedIds, setSelectedIds] = useState(null);
   const [applyState, setApplyState] = useState({ status: 'idle', error: null, count: 0 });
   const [sharing, setSharing] = useState(false);
+  const [hintStates, setHintStates] = useState({});
+
+  // Coach-Empfehlung → Zielwert für die nächste Session mit der Übung.
+  async function applyHint(rec) {
+    const key = hintKey(rec);
+    setHintStates((prev) => ({ ...prev, [key]: 'saving' }));
+    try {
+      await api.post('/coach/hints', {
+        session_id: Number(id),
+        hints: [{ exercise_id: rec.exercise_id, field: rec.field, value: rec.value }],
+      });
+      setHintStates((prev) => ({ ...prev, [key]: 'done' }));
+    } catch {
+      setHintStates((prev) => ({ ...prev, [key]: 'error' }));
+    }
+  }
 
   // Share-Card gibt es nur direkt nach dem Finish — new_records entstehen
   // ausschließlich zur Finish-Zeit und kommen über den Navigation-State mit.
@@ -188,7 +206,12 @@ export default function Auswertung() {
 
       {hasEvaluation && evaluation?.status === 'ok' && (
         <div style={{ marginBottom: 20 }}>
-          <ReactMarkdown>{evaluation.summary_md}</ReactMarkdown>
+          {evaluation.summary ? (
+            <CoachSummary summary={evaluation.summary} hintStates={hintStates} onApply={applyHint} />
+          ) : (
+            // Auswertungen vor der strukturierten Version liegen nur als Markdown vor.
+            <ReactMarkdown>{evaluation.summary_md}</ReactMarkdown>
+          )}
         </div>
       )}
 
