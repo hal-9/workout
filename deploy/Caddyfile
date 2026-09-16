@@ -19,3 +19,12 @@ dienstplan.tunikb.com {
     file_server
   }
 }
+
+diary.tunikb.com {
+  handle /api/* {
+    reverse_proxy diary-api:3003
+  }
+  handle {
+    respond "diary" 200
+  }
+}
