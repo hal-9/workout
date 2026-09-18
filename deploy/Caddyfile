@@ -28,3 +28,7 @@ diary.tunikb.com {
     respond "diary" 200
   }
 }
+
+paperless.tunikb.com {
+  reverse_proxy paperless-web:8000
+}
