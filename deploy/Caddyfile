@@ -32,3 +32,14 @@ diary.tunikb.com {
 paperless.tunikb.com {
   reverse_proxy paperless-web:8000
 }
+
+einkauf.tunikb.com {
+  handle /api/* {
+    reverse_proxy einkauf-api:3004
+  }
+  handle {
+    root * /srv/einkauf
+    try_files {path} /index.html
+    file_server
+  }
+}
