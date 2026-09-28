@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { durationUnitLabel, formatDuration, fromInputValue, toInputValue } from 'shared/duration';
 import { parseTargetReps } from '../lib/exerciseCompare.js';
+import { sideLabel } from '../lib/setRows.js';
 import {
   REST_DEFAULT_SECONDS,
   extendRestTimer,
@@ -266,6 +267,7 @@ export default function ExerciseFocus({
   const effectiveKg = isBanded ? effectiveLoadKg(bodyweightKg, bandCount, bandKg) : null;
   const bwShare = isBanded ? bodyweightShare(bodyweightKg, Number(bigValue), bandCount, bandKg) : null;
   const bandLabel = (n) => (n === 1 ? 'BAND' : 'BÄNDER');
+  const viewSide = sideLabel(exercise, viewRow.set_number);
   const unitLabel = isDurationType ? durationUnitLabel(exercise.type) : 'Wdh.';
   const bigUnit = unitLabel.replace('.', '').toUpperCase();
   const kgValue = kgValueFor(viewRow);
@@ -281,7 +283,9 @@ export default function ExerciseFocus({
     : exercise.target_reps
       ? `${exercise.sets} × ${exercise.target_reps}`
       : null;
-  const setupLabel = [equipmentLabel(exercise), targetLabel].filter(Boolean).join(' · ') || null;
+  const sideSuffix = (setNumber) => (exercise.unilateral ? ` · ${sideLabel(exercise, setNumber)}` : '');
+  const perSide = exercise.unilateral && targetLabel && !/seite/i.test(targetLabel) ? `${targetLabel} pro Seite` : targetLabel;
+  const setupLabel = [equipmentLabel(exercise), perSide].filter(Boolean).join(' · ') || null;
   // Viele Sätze: Trefferfläche schrumpft auf 26px (WCAG 2.5.8 will 24), erst
   // danach bricht die Reihe um.
   const dotWidth = rows.length > 7 ? 26 : 32;
@@ -379,6 +383,24 @@ export default function ExerciseFocus({
             ⇄ statt {replacedFrom}
           </div>
         )}
+        {viewSide && (
+          <div
+            style={{
+              marginTop: 14,
+              padding: '6px 16px',
+              borderRadius: 999,
+              background: reviewing ? 'var(--success-dim)' : 'var(--primary-dim)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: 2,
+              textTransform: 'uppercase',
+              color: reviewing ? 'var(--success)' : 'var(--primary)',
+            }}
+          >
+            {viewSide === 'links' ? '◀ LINKS' : 'RECHTS ▶'}
+          </div>
+        )}
         {compare.lastSummary && (
           <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>Letzte: {compare.lastSummary}</div>
         )}
@@ -434,7 +456,7 @@ export default function ExerciseFocus({
                 : holdPhase === 'hold'
                   ? 'HALTEN'
                   : reviewing
-                    ? `SATZ ${viewRow.set_number} ERLEDIGT · TIPPEN ZUM ÄNDERN`
+                    ? `SATZ ${viewRow.set_number}${sideSuffix(viewRow.set_number).toUpperCase()} ERLEDIGT · TIPPEN ZUM ÄNDERN`
                     : `${bigUnit} · TIPPEN ZUM ÄNDERN`}
             </div>
           </div>
@@ -544,7 +566,7 @@ export default function ExerciseFocus({
                 type="button"
                 onClick={selectable ? () => selectDot(i) : undefined}
                 disabled={!selectable}
-                aria-label={`Satz ${row.set_number}${row.logged ? ' — erledigt, antippen zum Ansehen' : ''}`}
+                aria-label={`Satz ${row.set_number}${sideSuffix(row.set_number)}${row.logged ? ' — erledigt, antippen zum Ansehen' : ''}`}
                 aria-pressed={isViewed}
                 style={{
                   width: dotWidth,
@@ -576,7 +598,7 @@ export default function ExerciseFocus({
           })}
           <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-              SATZ {viewIndex + 1}/{rows.length}
+              SATZ {viewIndex + 1}/{rows.length}{sideSuffix(viewRow.set_number).toUpperCase()}
             </span>
             <button type="button" onClick={onAddExtraSet} style={{ ...linkStyle, fontSize: 10 }}>+ Satz</button>
           </div>
@@ -595,7 +617,7 @@ export default function ExerciseFocus({
           <RestPanel
             timerState={restTimerState}
             seconds={restSeconds}
-            nextLabel={allLogged ? 'Übung erledigt' : `Danach: Satz ${nextRow.set_number} · ${nextSetPreview}`}
+            nextLabel={allLogged ? 'Übung erledigt' : `Danach: Satz ${nextRow.set_number}${sideSuffix(nextRow.set_number)} · ${nextSetPreview}`}
             onChange={onRestChange}
             onSkip={onRestSkip}
           />
@@ -616,7 +638,7 @@ export default function ExerciseFocus({
               cursor: 'pointer',
             }}
           >
-            {allLogged ? 'Alle Sätze erledigt · Fertig ›' : `Weiter mit Satz ${activeIndex + 1} ›`}
+            {allLogged ? 'Alle Sätze erledigt · Fertig ›' : `Weiter mit Satz ${activeIndex + 1}${sideSuffix(rows[activeIndex].set_number)} ›`}
           </button>
         ) : (
           <button

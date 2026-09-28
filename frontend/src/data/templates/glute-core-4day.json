@@ -75,6 +75,7 @@
         },
         {
           "id": "a-db-row",
+          "unilateral": true,
           "name": "Einarmiges Rudern (Kurzhantel, Bank)",
           "muscle": "Rücken",
           "type": "wt",
@@ -252,6 +253,7 @@
         },
         {
           "id": "b-side-plank",
+          "unilateral": true,
           "name": "Seitstütz",
           "muscle": "Core",
           "type": "time",
@@ -364,6 +366,7 @@
         },
         {
           "id": "c-single-leg-glute-bridge",
+          "unilateral": true,
           "name": "Einbeinige Hüftbrücke",
           "muscle": "Po",
           "type": "bw",

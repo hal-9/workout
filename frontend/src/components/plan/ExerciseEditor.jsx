@@ -100,6 +100,23 @@ export default function ExerciseEditor({ exercise, onChange }) {
         Cooldown / Dehnung (zählt nicht in Fortschritt und Progression)
       </label>
 
+      <label
+        style={{
+          ...labelStyle,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          cursor: 'pointer',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={Boolean(exercise.unilateral)}
+          onChange={(e) => onChange({ ...exercise, unilateral: e.target.checked })}
+        />
+        Pro Seite (jeder Satz einmal links, einmal rechts)
+      </label>
+
       <label style={labelStyle}>Sätze</label>
       <input
         type="number"

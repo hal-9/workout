@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyBigNumber, withCoachHint } from './setRows.js';
+import { applyBigNumber, plannedSetCount, sideLabel, withCoachHint } from './setRows.js';
 
 const row = (reps, logged = false) => ({ reps, weight_kg: '', duration: '', logged });
 
@@ -54,5 +54,15 @@ describe('withCoachHint', () => {
   it('lässt geloggte Sätze und Sätze ohne Tipp unangetastet', () => {
     expect(withCoachHint({ ...row, logged: true }, { weight_kg: 42.5 })).toEqual({ ...row, logged: true });
     expect(withCoachHint(row, null)).toBe(row);
+  });
+});
+
+describe('unilateral', () => {
+  it('verdoppelt die Satzzahl und wechselt links/rechts', () => {
+    const ex = { sets: 3, unilateral: true };
+    expect(plannedSetCount(ex)).toBe(6);
+    expect([1, 2, 3].map((n) => sideLabel(ex, n))).toEqual(['links', 'rechts', 'links']);
+    expect(plannedSetCount({ sets: 3 })).toBe(3);
+    expect(sideLabel({ sets: 3 }, 1)).toBeNull();
   });
 });

@@ -108,6 +108,7 @@
         {
           "id": "b-row",
           "name": "Einarmiges Kurzhantel-Rudern",
+          "unilateral": true,
           "muscle": "Rücken",
           "type": "wt",
           "sets": 3,

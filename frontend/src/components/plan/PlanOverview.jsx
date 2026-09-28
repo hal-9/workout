@@ -42,7 +42,7 @@ export default function PlanOverview({ plan, onEdit, onNewPlan }) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
+          gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
           gap: 6,
           marginBottom: 16,
         }}
@@ -51,6 +51,7 @@ export default function PlanOverview({ plan, onEdit, onNewPlan }) {
           <div
             key={weekday}
             style={{
+              minWidth: 0,
               textAlign: 'center',
               padding: '8px 4px',
               borderRadius: 10,

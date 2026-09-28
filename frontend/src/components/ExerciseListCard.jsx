@@ -100,7 +100,7 @@ export default function ExerciseListCard({ exercise, rows, subline, onOpen }) {
 }
 
 export function buildCardSubline(exercise, rows, compare) {
-  const parts = [`${exercise.sets} Sätze`];
+  const parts = [`${exercise.sets} Sätze${exercise.unilateral ? ' pro Seite' : ''}`];
 
   if (exercise.type === 'bw') {
     if (exercise.target_reps) parts.push(`${exercise.target_reps} Wdh`);

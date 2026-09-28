@@ -1,3 +1,4 @@
+import { sideLabel } from '../lib/setRows.js';
 import { SET_TYPE_LABELS } from 'shared/setTypes';
 import { DEFAULT_BAND_KG, isBandAssisted } from 'shared/bandAssist';
 import { durationUnitLabel, fromInputValue, toInputValue } from 'shared/duration';
@@ -29,6 +30,7 @@ export default function SetRow({
   setRef,
 }) {
   const setType = row.set_type ?? 'working';
+  const side = sideLabel(exercise, row.set_number);
 
   return (
     <div
@@ -40,7 +42,7 @@ export default function SetRow({
         onClick={() => onToggle(index)}
         disabled={disabled}
         aria-pressed={row.logged}
-        aria-label={`Satz ${row.set_number}${row.logged ? ' abgehakt' : ''}`}
+        aria-label={`Satz ${row.set_number}${side ? ` ${side}` : ''}${row.logged ? ' abgehakt' : ''}`}
         style={{
           width: 44,
           height: 44,
@@ -53,7 +55,7 @@ export default function SetRow({
           cursor: disabled ? 'not-allowed' : 'pointer',
         }}
       >
-        {row.logged ? '✓' : row.set_number}
+        {row.logged ? '✓' : side ? `${row.set_number}${side === 'links' ? 'L' : 'R'}` : row.set_number}
       </button>
 
       {exercise.type === 'wt' && (

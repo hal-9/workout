@@ -26,3 +26,14 @@ export function withCoachHint(row, hint) {
   if (hint.duration_s != null) next.duration = String(hint.duration_s);
   return next;
 }
+
+// Einseitige Übung: aus jedem Plan-Satz werden zwei Sätze (links, rechts),
+// damit beide Seiten getrennt geloggt werden. Ungerade Satznummer = links.
+export function plannedSetCount(exercise) {
+  return (Number(exercise.sets) || 0) * (exercise.unilateral ? 2 : 1);
+}
+
+export function sideLabel(exercise, setNumber) {
+  if (!exercise.unilateral) return null;
+  return setNumber % 2 ? 'links' : 'rechts';
+}

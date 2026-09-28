@@ -1,3 +1,4 @@
+import { plannedSetCount } from './setRows.js';
 import { formatDuration, fromInputValue } from 'shared/duration';
 import { isBandAssisted } from 'shared/bandAssist';
 
@@ -62,7 +63,7 @@ function exerciseVolume(exercise, sets) {
 }
 
 function plannedSetsComplete(exercise, currentRows) {
-  const planned = exercise.sets ?? 0;
+  const planned = plannedSetCount(exercise);
   const logged = currentRows.filter((r) => r.logged);
   return logged.length >= planned && planned > 0;
 }
@@ -77,7 +78,7 @@ export function compareExercise(exercise, currentRows, prefillSets) {
 
   const currentLogged = currentRows
     .filter((r) => r.logged)
-    .slice(0, exercise.sets)
+    .slice(0, plannedSetCount(exercise))
     .map((r) => ({
       reps: r.reps !== '' ? Number(r.reps) : null,
       weight_kg: r.weight_kg !== '' ? Number(r.weight_kg) : null,

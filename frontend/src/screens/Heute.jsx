@@ -14,8 +14,8 @@ import ExerciseDetailSheet from '../components/ExerciseDetailSheet.jsx';
 import MuscleModal from '../components/MuscleModal.jsx';
 import { formatDuration, toInputValue } from 'shared/duration';
 import { WEEKDAYS, WEEKDAY_LABELS, projectWeek, weekProgress, todayWeekday } from '../lib/schedule.js';
-import { getAllOverrides, getOverride, setOverride } from '../lib/weightOverrides.js';
-import { applyBigNumber, withCoachHint } from '../lib/setRows.js';
+import { getOverride, setOverride } from '../lib/weightOverrides.js';
+import { applyBigNumber, plannedSetCount, withCoachHint } from '../lib/setRows.js';
 import { describeHint } from '../lib/coachSummary.js';
 import { estimateWorkoutSeconds, formatEstimate } from '../lib/workoutEstimate.js';
 import { cacheGet, cacheSet, isOfflineError } from '../lib/offlineCache.js';
@@ -55,7 +55,9 @@ function buildInitialSets(exercise, prefillSets, resumedSets, light = false, hin
   const baseWeight = getOverride(exercise.id) ?? exercise.default_weight_kg ?? '';
   const defaultWeight =
     applyLight && exercise.type === 'wt' && baseWeight !== '' ? lightWeight(baseWeight) : baseWeight;
-  const plannedSets = applyLight ? Math.max(1, (exercise.sets ?? 1) - 1) : exercise.sets;
+  const plannedSets = plannedSetCount(
+    applyLight ? { ...exercise, sets: Math.max(1, (exercise.sets ?? 1) - 1) } : exercise
+  );
   const rows = [];
   const count = Math.max(plannedSets, (applyLight ? resumedSets?.length : source?.length) || 0);
   for (let i = 1; i <= count; i++) {
@@ -857,14 +859,13 @@ export default function Heute() {
   const day = planDay && lightMode ? { ...planDay, exercises: planDay.exercises.map(lightenExercise) } : planDay;
   const dayDoneAt = dayKey ? doneThisWeek.get(dayKey) : null;
   const showRestartGate = Boolean(dayDoneAt) && !sessionId;
-  const weightOverrides = getAllOverrides();
 
   const { main: mainExercises, cooldown: cooldownExercises } = splitPhases(day?.exercises ?? []);
   const bests = bestsByExerciseId(stats?.records);
   const deloadHint = deloadMessage(progression?.deload);
   const proposalCount = Math.min(progression?.proposals?.length ?? 0, 2);
 
-  const totalPlannedSets = mainExercises.reduce((sum, ex) => sum + (ex.sets ?? 0), 0);
+  const totalPlannedSets = mainExercises.reduce((sum, ex) => sum + plannedSetCount(ex), 0);
   const loggedSetCount = mainExercises.reduce(
     (sum, ex) => sum + (setsByExercise[ex.id]?.filter((r) => r.logged).length ?? 0),
     0
@@ -873,8 +874,6 @@ export default function Heute() {
   const cooldownDone = cooldownExercises.filter(
     (ex) => setsByExercise[ex.id]?.some((r) => r.logged)
   ).length;
-  const activeOverrides =
-    day?.exercises.filter((ex) => weightOverrides[ex.id] != null && ex.type === 'wt') ?? [];
 
   const focusDisabled = showRestartGate || (!isOnline && !sessionId);
   const focusExercise = focusExerciseId ? mainExercises.find((ex) => ex.id === focusExerciseId) ?? null : null;
@@ -1332,26 +1331,6 @@ export default function Heute() {
 
       {day && (
         <>
-          {activeOverrides.length > 0 && (
-            <div
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--line)',
-                borderRadius: 12,
-                padding: '10px 12px',
-                marginBottom: 12,
-                fontSize: 12,
-                color: 'var(--muted)',
-              }}
-            >
-              {activeOverrides.map((ex) => (
-                <div key={ex.id}>
-                  {ex.name}: {weightOverrides[ex.id]} kg <span style={{ color: 'var(--primary)' }}>(angepasst)</span>
-                </div>
-              ))}
-            </div>
-          )}
-
           {deloadHint && (
             <div
               style={{

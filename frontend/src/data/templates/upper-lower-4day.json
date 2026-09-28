@@ -322,6 +322,7 @@
         },
         {
           "id": "one-arm-db-row",
+          "unilateral": true,
           "name": "Einarmiges Kurzhantel-Rudern",
           "muscle": "Rücken",
           "type": "wt",
@@ -361,6 +362,7 @@
         },
         {
           "id": "side-plank",
+          "unilateral": true,
           "name": "Seitstütz",
           "muscle": "Core",
           "type": "time",

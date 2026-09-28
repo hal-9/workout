@@ -35,6 +35,9 @@ const exerciseSchema = z.object({
   // Bewegungsmuster — Grundlage für Übungs-Alternativen (Tausch im Workout).
   pattern: z.enum(PATTERN_KEYS).optional(),
   progression: progressionSchema.nullable().optional(),
+  // Einseitig (Seitstütz, einarmiges Rudern): jeder Satz wird links und rechts
+  // einzeln ausgeführt und getrackt.
+  unilateral: z.boolean().optional(),
 }).strip();
 
 export { exerciseSchema };
