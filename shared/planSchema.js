@@ -38,6 +38,9 @@ const exerciseSchema = z.object({
   // Einseitig (Seitstütz, einarmiges Rudern): jeder Satz wird links und rechts
   // einzeln ausgeführt und getrackt.
   unilateral: z.boolean().optional(),
+  // Band als Hilfe (Klimmzug, Dead Hang, Scapular Pull-up): Bänder pro Satz
+  // tracken. Fehlt das Feld, wird aus dem Namen geraten (isBandAssisted).
+  band_assisted: z.boolean().optional(),
 }).strip();
 
 export { exerciseSchema };

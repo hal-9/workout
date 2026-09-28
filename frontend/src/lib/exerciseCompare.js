@@ -27,6 +27,11 @@ export function formatTargetLabel(exercise) {
   return `${parsed.min}–${parsed.max} Wdh.`;
 }
 
+function bandLabel(count) {
+  const bands = Number(count) || 0;
+  return bands === 0 ? 'ohne Band' : bands === 1 ? '1 Band' : `${bands} Bänder`;
+}
+
 export function formatLastSummary(exercise, prefillSets) {
   if (!prefillSets?.length) return null;
 
@@ -34,7 +39,8 @@ export function formatLastSummary(exercise, prefillSets) {
     const durations = prefillSets.map((s) => s.duration_s).filter((v) => v != null);
     if (!durations.length) return null;
     const avg = Math.round(durations.reduce((a, b) => a + b, 0) / durations.length);
-    return `${prefillSets.length}× ${formatDuration(avg)}`;
+    const base = `${prefillSets.length}× ${formatDuration(avg)}`;
+    return isBandAssisted(exercise) ? `${base} · ${bandLabel(prefillSets[0]?.band_count)}` : base;
   }
 
   const reps = prefillSets.map((s) => s.reps).filter((v) => v != null);
@@ -47,8 +53,7 @@ export function formatLastSummary(exercise, prefillSets) {
     return `${base} @ ${weight} kg`;
   }
   if (isBandAssisted(exercise)) {
-    const bands = Number(prefillSets[0]?.band_count) || 0;
-    return `${base} · ${bands === 0 ? 'ohne Band' : bands === 1 ? '1 Band' : `${bands} Bänder`}`;
+    return `${base} · ${bandLabel(prefillSets[0]?.band_count)}`;
   }
   return base;
 }

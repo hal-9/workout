@@ -1,8 +1,16 @@
-// Band-unterstützte Körpergewichtsübungen (Klimmzug, Dips, Nordic Curl mit
-// Band). Erkennung über Id/Name — "Band Pull-Apart" u. ä. nutzen das Band als
-// Widerstand, nicht als Hilfe, und fallen deshalb absichtlich nicht darunter.
+// Band-unterstützte Körpergewichtsübungen (Klimmzug, Dips, Dead Hang). Explizit
+// per Plan-Flag `band_assisted`, sonst Erkennung über Id/Name — "Band
+// Pull-Apart" u. ä. nutzen das Band als Widerstand, nicht als Hilfe, und
+// fallen deshalb absichtlich nicht darunter. Nur Körpergewicht/Halten.
 export function isBandAssisted(exercise) {
-  return exercise?.type === 'bw' && /assist|unterstütz/i.test(`${exercise.id} ${exercise.name}`);
+  if (exercise?.type !== 'bw' && exercise?.type !== 'time') return false;
+  if (exercise.band_assisted != null) return Boolean(exercise.band_assisted);
+  return /assist|unterstütz/i.test(`${exercise.id} ${exercise.name}`);
+}
+
+// „% KG" braucht Wiederholungen (Epley) — beim Halten bleibt es bei Sekunden.
+export function usesBandMetric(exercise, bodyweightKg) {
+  return exercise?.type === 'bw' && isBandAssisted(exercise) && Boolean(bodyweightKg);
 }
 
 // Gängiges schweres Band; Vorbelegung, solange kein eigener Wert geloggt ist.

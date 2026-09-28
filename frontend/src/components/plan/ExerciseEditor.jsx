@@ -1,3 +1,4 @@
+import { isBandAssisted } from 'shared/bandAssist';
 import { durationUnitLabel, fromInputValue, toInputValue } from 'shared/duration';
 import {
   effectiveProgression,
@@ -116,6 +117,25 @@ export default function ExerciseEditor({ exercise, onChange }) {
         />
         Pro Seite (jeder Satz einmal links, einmal rechts)
       </label>
+
+      {(exercise.type === 'bw' || exercise.type === 'time') && (
+        <label
+          style={{
+            ...labelStyle,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            cursor: 'pointer',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={isBandAssisted(exercise)}
+            onChange={(e) => onChange({ ...exercise, band_assisted: e.target.checked })}
+          />
+          Band-unterstützt (Bänder pro Satz tracken)
+        </label>
+      )}
 
       <label style={labelStyle}>Sätze</label>
       <input

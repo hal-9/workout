@@ -283,6 +283,7 @@
       "exercises": [
         {
           "id": "dead-hang",
+          "band_assisted": true,
           "name": "Dead Hang",
           "muscle": "Rücken",
           "type": "time",
@@ -296,6 +297,7 @@
         },
         {
           "id": "scapular-pullup",
+          "band_assisted": true,
           "name": "Scapular Pull-up",
           "muscle": "Rücken",
           "type": "bw",

@@ -1,4 +1,4 @@
-import { bodyweightShare, isBandAssisted } from './bandAssist.js';
+import { bodyweightShare, usesBandMetric } from './bandAssist.js';
 
 // Pläne aus der Zeit vor der Cooldown-Phase haben kein phase-Feld.
 export function exercisePhase(exercise) {
@@ -44,7 +44,7 @@ export function parseExerciseTarget(exercise) {
 export const BAND_METRIC_LABEL = '% KG';
 
 export function metricLabelForExercise(exercise, bodyweightKg) {
-  if (isBandAssisted(exercise) && bodyweightKg) return BAND_METRIC_LABEL;
+  if (usesBandMetric(exercise, bodyweightKg)) return BAND_METRIC_LABEL;
   return metricLabelForType(exercise.type);
 }
 
@@ -60,7 +60,7 @@ export function metricLabelForType(type) {
 export function sessionMetric(exercise, sets, bodyweightKg = null) {
   if (!sets?.length) return null;
 
-  if (isBandAssisted(exercise) && bodyweightKg) {
+  if (usesBandMetric(exercise, bodyweightKg)) {
     const shares = sets
       .map((s) => bodyweightShare(bodyweightKg, Number(s.reps), s.band_count ?? 0, s.band_kg))
       .filter((v) => v != null);

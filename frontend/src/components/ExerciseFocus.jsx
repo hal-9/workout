@@ -265,7 +265,7 @@ export default function ExerciseFocus({
   const bandCount = Number(viewRow.band_count) || 0;
   const bandKg = Number(viewRow.band_kg) || DEFAULT_BAND_KG;
   const effectiveKg = isBanded ? effectiveLoadKg(bodyweightKg, bandCount, bandKg) : null;
-  const bwShare = isBanded ? bodyweightShare(bodyweightKg, Number(bigValue), bandCount, bandKg) : null;
+  const bwShare = isBanded && !isDurationType ? bodyweightShare(bodyweightKg, Number(bigValue), bandCount, bandKg) : null;
   const bandLabel = (n) => (n === 1 ? 'BAND' : 'BÄNDER');
   const viewSide = sideLabel(exercise, viewRow.set_number);
   const unitLabel = isDurationType ? durationUnitLabel(exercise.type) : 'Wdh.';
@@ -546,7 +546,7 @@ export default function ExerciseFocus({
             {bodyweightKg ? (
               bandCount === 0
                 ? `Ohne Band · volles Körpergewicht (${bodyweightKg} kg)`
-                : `≈ ${effectiveKg} kg Eigenlast · ${bwShare ?? '–'} % KG`
+                : `≈ ${effectiveKg} kg Eigenlast${bwShare != null ? ` · ${bwShare} % KG` : ''}`
             ) : (
               <BodyweightPrompt onSave={onSaveBodyweight} />
             )}
