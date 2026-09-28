@@ -19,7 +19,7 @@ function getActivePlan(db, userId) {
 function setLogsForSession(db, sessionId) {
   return db
     .prepare(
-      'SELECT exercise_id, set_number, reps, weight_kg, duration_s, set_type, superset_group FROM set_logs WHERE session_id = ? ORDER BY set_number'
+      'SELECT exercise_id, set_number, reps, weight_kg, duration_s, set_type, superset_group, band_count, band_kg FROM set_logs WHERE session_id = ? ORDER BY set_number'
     )
     .all(sessionId);
 }
@@ -127,6 +127,9 @@ const setSchema = setKeySchema
     duration_s: z.number().int().nullable(),
     set_type: z.enum(['warmup', 'working', 'drop', 'failure']).optional().default('working'),
     superset_group: z.number().int().nullable().optional(),
+    // Band-Unterstützung (Klimmzug mit Band): Anzahl Bänder + Nennwert je Band.
+    band_count: z.number().int().min(0).nullable().optional(),
+    band_kg: z.number().positive().nullable().optional(),
   })
   .refine((data) => (data.reps !== null) !== (data.duration_s !== null), {
     message: 'exactly one of reps/duration_s must be set',
@@ -361,16 +364,17 @@ export function sessionsRouter(db) {
     if (!result.success) {
       return res.status(422).json({ error: 'validation failed', details: result.error.issues });
     }
-    const { exercise_id, set_number, reps, weight_kg, duration_s, set_type, superset_group } = result.data;
+    const { exercise_id, set_number, reps, weight_kg, duration_s, set_type, superset_group, band_count, band_kg } = result.data;
 
     db.prepare(
-      `INSERT INTO set_logs (session_id, exercise_id, set_number, reps, weight_kg, duration_s, set_type, superset_group)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO set_logs (session_id, exercise_id, set_number, reps, weight_kg, duration_s, set_type, superset_group, band_count, band_kg)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (session_id, exercise_id, set_number)
        DO UPDATE SET reps = excluded.reps, weight_kg = excluded.weight_kg,
          duration_s = excluded.duration_s, set_type = excluded.set_type,
-         superset_group = excluded.superset_group, updated_at = datetime('now')`
-    ).run(session.id, exercise_id, set_number, reps, weight_kg, duration_s, set_type ?? 'working', superset_group ?? null);
+         superset_group = excluded.superset_group, band_count = excluded.band_count,
+         band_kg = excluded.band_kg, updated_at = datetime('now')`
+    ).run(session.id, exercise_id, set_number, reps, weight_kg, duration_s, set_type ?? 'working', superset_group ?? null, band_count ?? null, band_kg ?? null);
 
     res.json({ ok: true });
   });

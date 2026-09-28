@@ -10,6 +10,7 @@ import {
   startRestTimer,
 } from '../lib/restTimer.js';
 import { equipmentLabel, stepForExercise } from '../lib/equipment.js';
+import { DEFAULT_BAND_KG, bodyweightShare, effectiveLoadKg, isBandAssisted } from 'shared/bandAssist';
 import { playRestEnd, playTick, unlockAudio } from '../lib/workoutSounds.js';
 import { useScrollLock } from '../lib/scrollLock.js';
 
@@ -61,6 +62,11 @@ export default function ExerciseFocus({
   onAdjustWeight,
   onSetBigNumber,
   onSetWeight,
+  onAdjustBand,
+  onSetBand,
+  onSetBandKg,
+  bodyweightKg,
+  onSaveBodyweight,
   onAddExtraSet,
   onStartRestTimer,
   onOpenMuscle,
@@ -71,7 +77,7 @@ export default function ExerciseFocus({
 }) {
   const [phase, setPhase] = useState('entering');
   useScrollLock();
-  const [editing, setEditing] = useState(null); // null | 'big' | 'kg'
+  const [editing, setEditing] = useState(null); // null | 'big' | 'kg' | 'band' | 'bandkg'
   // Nachträglich einen erledigten Satz ansehen/ändern: null = aktueller offener Satz.
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [justLogged, setJustLogged] = useState(false);
@@ -205,6 +211,7 @@ export default function ExerciseFocus({
 
   const isDurationType = exercise.type === 'time' || exercise.type === 'cardio';
   const isWeighted = exercise.type === 'wt';
+  const isBanded = isBandAssisted(exercise);
 
   const firstOpenIndex = rows.findIndex((r) => !r.logged);
   const activeIndex = firstOpenIndex === -1 ? rows.length - 1 : firstOpenIndex;
@@ -254,6 +261,11 @@ export default function ExerciseFocus({
   }
 
   const bigValue = bigValueFor(viewRow);
+  const bandCount = Number(viewRow.band_count) || 0;
+  const bandKg = Number(viewRow.band_kg) || DEFAULT_BAND_KG;
+  const effectiveKg = isBanded ? effectiveLoadKg(bodyweightKg, bandCount, bandKg) : null;
+  const bwShare = isBanded ? bodyweightShare(bodyweightKg, Number(bigValue), bandCount, bandKg) : null;
+  const bandLabel = (n) => (n === 1 ? 'BAND' : 'BÄNDER');
   const unitLabel = isDurationType ? durationUnitLabel(exercise.type) : 'Wdh.';
   const bigUnit = unitLabel.replace('.', '').toUpperCase();
   const kgValue = kgValueFor(viewRow);
@@ -275,7 +287,11 @@ export default function ExerciseFocus({
   const dotWidth = rows.length > 7 ? 26 : 32;
   const nextRow = rows[activeIndex];
   const nextSetPreview = nextRow
-    ? [`${bigValueFor(nextRow)} ${unitLabel}`, isWeighted && kgValueFor(nextRow) !== '' ? `${kgValueFor(nextRow)} kg` : null]
+    ? [
+        `${bigValueFor(nextRow)} ${unitLabel}`,
+        isWeighted && kgValueFor(nextRow) !== '' ? `${kgValueFor(nextRow)} kg` : null,
+        isBanded ? `${Number(nextRow.band_count) || 0} ${Number(nextRow.band_count) === 1 ? 'Band' : 'Bänder'}` : null,
+      ]
         .filter(Boolean)
         .join(' × ')
     : '';
@@ -453,7 +469,67 @@ export default function ExerciseFocus({
               </div>
             </>
           )}
+
+          {isBanded && (
+            <>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 24, color: 'var(--line)' }}>×</div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                {editing === 'band' ? (
+                  <NumberEditor
+                    value={bandCount}
+                    fontSize={44}
+                    minWidth={64}
+                    step={1}
+                    ariaLabel="Anzahl Bänder"
+                    onStep={(delta) => onAdjustBand(delta, viewIndex)}
+                    onCommit={(next) => onSetBand(next, viewIndex)}
+                    onDone={() => setEditing(null)}
+                  />
+                ) : editing === 'bandkg' ? (
+                  <NumberEditor
+                    value={bandKg}
+                    fontSize={44}
+                    minWidth={64}
+                    step={1}
+                    ariaLabel="Nennwert pro Band in Kilogramm"
+                    onStep={(delta) => onSetBandKg(bandKg + delta, viewIndex)}
+                    onCommit={(next) => onSetBandKg(next, viewIndex)}
+                    onDone={() => setEditing(null)}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setEditing('band')}
+                    style={{ background: 'none', border: 'none', padding: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 44, lineHeight: 1, color: 'var(--text)', cursor: 'pointer' }}
+                  >
+                    {bandCount}
+                  </button>
+                )}
+                {/* Der Nennwert ist selten zu ändern — deshalb nur als Untertitel antippbar. */}
+                <button
+                  type="button"
+                  onClick={() => setEditing(editing === 'bandkg' ? null : 'bandkg')}
+                  aria-label="Nennwert pro Band ändern"
+                  style={{ ...linkStyle, marginTop: 4, fontSize: 10, fontWeight: 500, color: 'var(--muted)' }}
+                >
+                  {editing === 'bandkg' ? 'KG PRO BAND' : `${bandLabel(bandCount)} · ${bandKg} KG`}
+                </button>
+              </div>
+            </>
+          )}
         </div>
+
+        {isBanded && (
+          <div style={{ marginTop: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', minHeight: 18 }}>
+            {bodyweightKg ? (
+              bandCount === 0
+                ? `Ohne Band · volles Körpergewicht (${bodyweightKg} kg)`
+                : `≈ ${effectiveKg} kg Eigenlast · ${bwShare ?? '–'} % KG`
+            ) : (
+              <BodyweightPrompt onSave={onSaveBodyweight} />
+            )}
+          </div>
+        )}
 
         <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 2, alignItems: 'center' }}>
           {rows.map((row, i) => {
@@ -602,6 +678,43 @@ export default function ExerciseFocus({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Ohne Körpergewicht lässt sich die effektive Last nicht rechnen — einmalig
+// hier abfragen statt auf den Fortschritt-Tab zu verweisen.
+function BodyweightPrompt({ onSave }) {
+  const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
+  const kg = Number(String(draft).replace(',', '.'));
+
+  async function save() {
+    if (!Number.isFinite(kg) || kg <= 0 || saving) return;
+    setSaving(true);
+    try {
+      await onSave(kg);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
+      <span>Körpergewicht?</span>
+      <input
+        type="text"
+        inputMode="decimal"
+        aria-label="Körpergewicht in Kilogramm"
+        placeholder="kg"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && save()}
+        style={{ width: 56, padding: '6px 8px', borderRadius: 9, border: '1px solid var(--line)', background: 'var(--surface2)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 14, textAlign: 'center' }}
+      />
+      <button type="button" onClick={save} disabled={!(kg > 0) || saving} style={{ ...linkStyle, fontSize: 12, fontWeight: 600 }}>
+        Speichern
+      </button>
     </div>
   );
 }

@@ -34,7 +34,7 @@ export function exportRouter(db) {
     const setLogs = db
       .prepare(
         `SELECT sl.session_id, sl.exercise_id, sl.set_number, sl.reps, sl.weight_kg,
-                sl.duration_s, sl.set_type, sl.superset_group
+                sl.duration_s, sl.set_type, sl.superset_group, sl.band_count, sl.band_kg
          FROM set_logs sl
          JOIN sessions s ON s.id = sl.session_id
          WHERE s.user_id = ? AND s.status = 'finished'`
@@ -69,7 +69,7 @@ export function exportRouter(db) {
     const rows = db
       .prepare(
         `SELECT s.finished_at, s.day_key, sl.exercise_id, sl.set_number,
-                sl.reps, sl.weight_kg, sl.duration_s, sl.set_type
+                sl.reps, sl.weight_kg, sl.duration_s, sl.set_type, sl.band_count, sl.band_kg
          FROM set_logs sl
          JOIN sessions s ON s.id = sl.session_id
          WHERE s.user_id = ? AND s.status = 'finished'
@@ -77,9 +77,9 @@ export function exportRouter(db) {
       )
       .all(userId);
 
-    const header = 'finished_at,day_key,exercise_id,set_number,reps,weight_kg,duration_s,set_type';
+    const header = 'finished_at,day_key,exercise_id,set_number,reps,weight_kg,duration_s,set_type,band_count,band_kg';
     const lines = rows.map((r) =>
-      [r.finished_at, r.day_key, r.exercise_id, r.set_number, r.reps ?? '', r.weight_kg ?? '', r.duration_s ?? '', r.set_type ?? 'working'].join(',')
+      [r.finished_at, r.day_key, r.exercise_id, r.set_number, r.reps ?? '', r.weight_kg ?? '', r.duration_s ?? '', r.set_type ?? 'working', r.band_count ?? '', r.band_kg ?? ''].join(',')
     );
     const csv = [header, ...lines].join('\n');
 

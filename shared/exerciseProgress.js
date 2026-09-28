@@ -1,3 +1,5 @@
+import { bodyweightShare, isBandAssisted } from './bandAssist.js';
+
 // Pläne aus der Zeit vor der Cooldown-Phase haben kein phase-Feld.
 export function exercisePhase(exercise) {
   return exercise?.phase === 'cooldown' ? 'cooldown' : 'main';
@@ -39,6 +41,13 @@ export function parseExerciseTarget(exercise) {
   return { min: parsed.min, max: parsed.max };
 }
 
+export const BAND_METRIC_LABEL = '% KG';
+
+export function metricLabelForExercise(exercise, bodyweightKg) {
+  if (isBandAssisted(exercise) && bodyweightKg) return BAND_METRIC_LABEL;
+  return metricLabelForType(exercise.type);
+}
+
 export function metricLabelForType(type) {
   if (type === 'wt') return 'kg';
   if (type === 'cardio') return 'Min.';
@@ -46,8 +55,17 @@ export function metricLabelForType(type) {
   return 'Wdh.';
 }
 
-export function sessionMetric(exercise, sets) {
+// Band-Übung mit bekanntem Körpergewicht: Anteil des Körpergewichts (siehe
+// bandAssist.js). Ohne Körpergewicht bleibt es bei Wiederholungen.
+export function sessionMetric(exercise, sets, bodyweightKg = null) {
   if (!sets?.length) return null;
+
+  if (isBandAssisted(exercise) && bodyweightKg) {
+    const shares = sets
+      .map((s) => bodyweightShare(bodyweightKg, Number(s.reps), s.band_count ?? 0, s.band_kg))
+      .filter((v) => v != null);
+    return shares.length ? Math.max(...shares) : null;
+  }
 
   if (exercise.type === 'time' || exercise.type === 'cardio') {
     const durations = sets.map((s) => Number(s.duration_s)).filter((v) => !Number.isNaN(v) && v > 0);
@@ -107,13 +125,15 @@ export function groupLogsBySession(rows) {
       reps: row.reps,
       weight_kg: row.weight_kg,
       duration_s: row.duration_s,
+      band_count: row.band_count ?? null,
+      band_kg: row.band_kg ?? null,
     });
   }
 
   return [...sessions.values()].sort((a, b) => a.finished_at.localeCompare(b.finished_at));
 }
 
-export function buildExerciseProgressList(plan, sessionLogs) {
+export function buildExerciseProgressList(plan, sessionLogs, { bodyweightFor = () => null } = {}) {
   const exerciseById = new Map();
   for (const day of plan.days ?? []) {
     for (const ex of day.exercises ?? []) {
@@ -124,12 +144,15 @@ export function buildExerciseProgressList(plan, sessionLogs) {
   }
 
   const pointsByExercise = new Map();
+  let latestBodyweight = null;
   for (const session of sessionLogs) {
     const date = session.finished_at.slice(0, 10);
+    const bodyweightKg = bodyweightFor(session);
+    if (bodyweightKg) latestBodyweight = bodyweightKg;
     for (const [exerciseId, sets] of session.setsByExercise) {
       const exercise = exerciseById.get(exerciseId);
       if (!exercise) continue;
-      const value = sessionMetric(exercise, sets);
+      const value = sessionMetric(exercise, sets, bodyweightKg);
       if (value === null) continue;
       if (!pointsByExercise.has(exerciseId)) pointsByExercise.set(exerciseId, []);
       pointsByExercise.get(exerciseId).push({
@@ -151,7 +174,7 @@ export function buildExerciseProgressList(plan, sessionLogs) {
       name: exercise.name,
       muscle: exercise.muscle,
       type: exercise.type,
-      metric_label: metricLabelForType(exercise.type),
+      metric_label: metricLabelForExercise(exercise, latestBodyweight),
       target: parseExerciseTarget(exercise),
       points,
       first_value,

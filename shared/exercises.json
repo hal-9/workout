@@ -3243,7 +3243,7 @@
   },
   {
     "id": "band-assisted-pullup",
-    "name": "Klimmzug mit Band (20 kg)",
+    "name": "Klimmzug mit Band",
     "muscle": "Latissimus · Bizeps",
     "type": "bw",
     "sets": 3,

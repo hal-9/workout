@@ -23,6 +23,7 @@ import { clearResumeState, loadResumeState, saveResumeState } from '../lib/worko
 import { applyWeekOrder, clearWeekOrder, hasWeekOrder, swapWorkout } from '../lib/weekOrder.js';
 import { lightenExercise, lightWeight } from '../lib/lightMode.js';
 import { buildSetPayload } from '../components/SetRow.jsx';
+import { DEFAULT_BAND_KG, bodyweightAt, isBandAssisted } from 'shared/bandAssist';
 import ExerciseListCard, { buildCardSubline } from '../components/ExerciseListCard.jsx';
 import ExerciseFocus from '../components/ExerciseFocus.jsx';
 import ExerciseSwapSheet from '../components/ExerciseSwapSheet.jsx';
@@ -77,6 +78,9 @@ function buildInitialSets(exercise, prefillSets, resumedSets, light = false, hin
           ),
           set_type: fromSource?.set_type ?? 'working',
           superset_group: fromSource?.superset_group ?? null,
+          // Bänder: letzter Stand aus der Historie, sonst 0 — das Ziel ist ohne.
+          band_count: fromSource?.band_count ?? '',
+          band_kg: fromSource?.band_kg ?? '',
           logged: Boolean(isResumed),
         },
         hint
@@ -114,6 +118,14 @@ export default function Heute() {
   const refetchPlan = planQuery.refetch;
   // Bestwerte vor dieser Session — für die Rekord-Vorschau in der Übungskarte.
   const { data: stats } = useQuery({ queryKey: ['stats'], queryFn: () => api.get('/stats'), retry: false });
+  // Körpergewicht für die effektive Last bei Band-Übungen (Fokus-Ansicht).
+  const { data: maxTests } = useQuery({ queryKey: ['max-tests'], queryFn: () => api.get('/max-tests'), retry: false });
+  const bodyweightKg = bodyweightAt((maxTests ?? []).filter((t) => t.kind === 'bodyweight'), new Date().toISOString());
+  async function saveBodyweight(kg) {
+    await api.post('/max-tests', { kind: 'bodyweight', value: kg });
+    queryClient.invalidateQueries({ queryKey: ['max-tests'] });
+    queryClient.invalidateQueries({ queryKey: ['progress'] });
+  }
   const { data: progression } = useQuery({
     queryKey: ['progression-proposals'],
     queryFn: () => api.get('/progression/proposals'),
@@ -526,6 +538,15 @@ export default function Heute() {
     if (setsByExercise[exercise.id]?.[index]?.logged) schedulePersist(exercise, index);
   }
 
+  // Bänder wie die große Zahl: Änderung gilt auch für folgende offene Sätze.
+  function updateBand(exercise, index, field, resolve) {
+    setSetsByExercise((prev) => ({
+      ...prev,
+      [exercise.id]: applyBigNumber(prev[exercise.id], index, field, resolve, field === 'band_kg' ? DEFAULT_BAND_KG : 0),
+    }));
+    if (setsByExercise[exercise.id]?.[index]?.logged) schedulePersist(exercise, index);
+  }
+
   function writeBigNumber(exercise, index, value) {
     updateBigNumber(exercise, index, () => Number(value) || 0);
   }
@@ -726,6 +747,8 @@ export default function Heute() {
             weight_kg: exercise.default_weight_kg ?? '',
             duration: '',
             set_type: 'working',
+            band_count: rows[rows.length - 1]?.band_count ?? '',
+            band_kg: rows[rows.length - 1]?.band_kg ?? '',
             logged: false,
           },
         ],
@@ -1636,6 +1659,11 @@ export default function Heute() {
           onAdjustWeight={(delta, i) => adjustWeight(focusExercise, i ?? currentSetIndexFor(focusExercise.id), delta)}
           onSetBigNumber={(value, i) => writeBigNumber(focusExercise, i ?? currentSetIndexFor(focusExercise.id), value)}
           onSetWeight={(value, i) => writeWeight(focusExercise, i ?? currentSetIndexFor(focusExercise.id), value)}
+          onAdjustBand={(delta, i) => updateBand(focusExercise, i ?? currentSetIndexFor(focusExercise.id), 'band_count', (c) => c + delta)}
+          onSetBand={(value, i) => updateBand(focusExercise, i ?? currentSetIndexFor(focusExercise.id), 'band_count', () => Number(value) || 0)}
+          onSetBandKg={(value, i) => updateBand(focusExercise, i ?? currentSetIndexFor(focusExercise.id), 'band_kg', () => Number(value) || DEFAULT_BAND_KG)}
+          bodyweightKg={isBandAssisted(focusExercise) ? bodyweightKg : null}
+          onSaveBodyweight={saveBodyweight}
           onAddExtraSet={() => addExtraSet(focusExercise)}
           onSwap={focusDisabled ? null : () => setSwapTarget(focusExercise)}
           onStartRestTimer={() => {

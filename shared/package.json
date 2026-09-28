@@ -15,6 +15,7 @@
     "./plateCalc": "./plateCalc.js",
     "./warmupCalc": "./warmupCalc.js",
     "./library": "./library.js",
+    "./bandAssist": "./bandAssist.js",
     "./exercises.json": "./exercises.json"
   },
   "dependencies": {

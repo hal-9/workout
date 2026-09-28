@@ -300,6 +300,7 @@ export default function Kalender() {
                     Satz {s.set_number}
                     {s.reps != null && ` · ${s.reps} Wdh.`}
                     {s.weight_kg != null && ` · ${s.weight_kg} kg`}
+                    {s.band_count != null && ` · ${s.band_count}× Band${s.band_kg ? ` ${s.band_kg} kg` : ''}`}
                     {s.duration_s != null && ` · ${formatDuration(s.duration_s)}`}
                   </div>
                 ))}

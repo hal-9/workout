@@ -1,4 +1,5 @@
 import { SET_TYPE_LABELS } from 'shared/setTypes';
+import { DEFAULT_BAND_KG, isBandAssisted } from 'shared/bandAssist';
 import { durationUnitLabel, fromInputValue, toInputValue } from 'shared/duration';
 
 const inputStyle = {
@@ -164,5 +165,9 @@ export function buildSetPayload(exercise, row) {
         : null,
     set_type: row.set_type ?? 'working',
     superset_group: row.superset_group ?? null,
+    ...(isBandAssisted(exercise) && {
+      band_count: Number(row.band_count) || 0,
+      band_kg: Number(row.band_kg) || DEFAULT_BAND_KG,
+    }),
   };
 }

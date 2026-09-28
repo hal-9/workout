@@ -24,6 +24,9 @@ Die Vergleiche sind bereits berechnet — rechne nicht selbst nach, nutze diese 
 - session_number_for_day: die wievielte Session dieses Trainingstags; sessions_last_7_days/28_days: Rhythmus
 - light_version: Nutzer hat bewusst die leichte Variante trainiert (−1 Satz, −10 % Gewicht)
 Dauern haben duration_display (z.B. "25 Min") — nutze diese Schreibweise, nie Sekunden.
+band_count/band_kg = Hilfsbänder bei Körpergewichtsübungen (z.B. Klimmzug). Weniger Bänder bei gleichen Wiederholungen
+  ist Fortschritt, auch wenn die Wiederholungen sinken; mehr Bänder ist ein Rückschritt. Ein Band hilft im Mittel etwa mit
+  der Hälfte seines Nennwerts, nie mit dem vollen. Ziel ist der Klimmzug ohne Band.
 
 Antworte ausschließlich als JSON nach dem Schema, auf Deutsch, per Du. Kurze Sätze, Zahlen statt Adjektive, keine Floskeln.
 
@@ -165,7 +168,7 @@ export function normalizeSummary(raw, exerciseMeta) {
 function setsForSession(db, sessionId) {
   const logs = db
     .prepare(
-      `SELECT exercise_id, set_number, reps, weight_kg, duration_s FROM set_logs
+      `SELECT exercise_id, set_number, reps, weight_kg, duration_s, band_count, band_kg FROM set_logs
        WHERE session_id = ? ORDER BY exercise_id, set_number`
     )
     .all(sessionId);
@@ -190,6 +193,10 @@ function promptSet(log) {
   const set = { set: log.set_number };
   if (log.reps !== null) set.reps = log.reps;
   if (log.weight_kg !== null) set.weight_kg = log.weight_kg;
+  if (log.band_count != null) {
+    set.band_count = log.band_count;
+    if (log.band_kg != null) set.band_kg = log.band_kg;
+  }
   if (log.duration_s !== null) {
     set.duration_s = log.duration_s;
     // Menschenlesbar, damit das Modell nicht "1500 Sekunden" schreibt.

@@ -1,3 +1,5 @@
+import { isBandAssisted } from 'shared/bandAssist';
+
 export default function ExerciseListCard({ exercise, rows, subline, onOpen }) {
   const total = rows.length;
   const loggedCount = rows.filter((r) => r.logged).length;
@@ -102,7 +104,10 @@ export function buildCardSubline(exercise, rows, compare) {
 
   if (exercise.type === 'bw') {
     if (exercise.target_reps) parts.push(`${exercise.target_reps} Wdh`);
-    parts.push('Körpergewicht');
+    if (isBandAssisted(exercise)) {
+      const bands = Number(rows[0]?.band_count) || 0;
+      parts.push(bands === 0 ? 'ohne Band' : `${bands}× Band`);
+    } else parts.push('Körpergewicht');
     return parts.join(' · ');
   }
 

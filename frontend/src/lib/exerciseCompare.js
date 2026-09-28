@@ -1,4 +1,5 @@
 import { formatDuration, fromInputValue } from 'shared/duration';
+import { isBandAssisted } from 'shared/bandAssist';
 
 export function parseTargetReps(targetReps) {
   if (!targetReps) return null;
@@ -43,6 +44,10 @@ export function formatLastSummary(exercise, prefillSets) {
   const base = `${prefillSets.length}×${repLabel}`;
   if (exercise.type === 'wt' && weight != null) {
     return `${base} @ ${weight} kg`;
+  }
+  if (isBandAssisted(exercise)) {
+    const bands = Number(prefillSets[0]?.band_count) || 0;
+    return `${base} · ${bands === 0 ? 'ohne Band' : bands === 1 ? '1 Band' : `${bands} Bänder`}`;
   }
   return base;
 }

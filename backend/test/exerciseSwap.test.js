@@ -160,7 +160,7 @@ describe('Übungs-Tausch via adaptations.replaced', () => {
       .get('/api/history?day_key=push&exercise_ids=a-pushup,unknown')
       .set('Cookie', cookie);
     expect(withExtra.body.prefill['a-pushup']).toEqual([
-      { set_number: 1, reps: 12, weight_kg: null, duration_s: null },
+      { set_number: 1, reps: 12, weight_kg: null, duration_s: null, band_count: null, band_kg: null },
     ]);
     expect(withExtra.body.prefill.unknown).toBeUndefined();
   });

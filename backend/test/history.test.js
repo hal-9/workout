@@ -101,7 +101,7 @@ describe('history', () => {
     const res = await request(app).get('/api/history?day_key=pushday').set('Cookie', cookie);
     expect(res.status).toBe(200);
     expect(res.body.prefill.pu).toEqual([
-      { set_number: 1, reps: 10, weight_kg: null, duration_s: null },
+      { set_number: 1, reps: 10, weight_kg: null, duration_s: null, band_count: null, band_kg: null },
     ]);
     expect(res.body.prefill.noHistory).toBeUndefined();
   });
@@ -131,7 +131,7 @@ describe('history', () => {
     const res = await request(app).get('/api/history?day_key=push').set('Cookie', cookie);
     expect(res.body.recent_sessions).toHaveLength(1);
     expect(res.body.recent_sessions[0].sets).toEqual([
-      { exercise_id: 'pu', set_number: 1, reps: 10, weight_kg: null, duration_s: null },
+      { exercise_id: 'pu', set_number: 1, reps: 10, weight_kg: null, duration_s: null, band_count: null, band_kg: null },
     ]);
   });
 });

@@ -49,7 +49,7 @@ export function historyRouter(db) {
       if (lastSession) {
         prefill[ex.id] = db
           .prepare(
-            `SELECT set_number, reps, weight_kg, duration_s FROM set_logs
+            `SELECT set_number, reps, weight_kg, duration_s, band_count, band_kg FROM set_logs
              WHERE session_id = ? AND exercise_id = ? ORDER BY set_number`
           )
           .all(lastSession.id, ex.id);
@@ -70,7 +70,7 @@ export function historyRouter(db) {
       day_key,
       sets: db
         .prepare(
-          `SELECT exercise_id, set_number, reps, weight_kg, duration_s FROM set_logs
+          `SELECT exercise_id, set_number, reps, weight_kg, duration_s, band_count, band_kg FROM set_logs
            WHERE session_id = ? ORDER BY exercise_id, set_number`
         )
         .all(s.id),
