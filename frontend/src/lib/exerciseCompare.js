@@ -32,23 +32,31 @@ function bandLabel(count) {
   return bands === 0 ? 'ohne Band' : bands === 1 ? '1 Band' : `${bands} Bänder`;
 }
 
-export function formatLastSummary(exercise, prefillSets) {
+// Letzte Leistung als Zielwert: die Vorbelegung kommt aus der Historie, die
+// Zielzeile zeigte aber den Plan („3 × 5-8" neben einer 10) — eine Quelle für beide.
+export function lastPerformed(exercise, prefillSets) {
   if (!prefillSets?.length) return null;
-
   if (exercise.type === 'time' || exercise.type === 'cardio') {
     const durations = prefillSets.map((s) => s.duration_s).filter((v) => v != null);
     if (!durations.length) return null;
-    const avg = Math.round(durations.reduce((a, b) => a + b, 0) / durations.length);
-    const base = `${prefillSets.length}× ${formatDuration(avg)}`;
+    return { seconds: Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) };
+  }
+  const reps = prefillSets.map((s) => s.reps).filter((v) => v != null);
+  if (!reps.length) return null;
+  return { reps: reps.every((r) => r === reps[0]) ? String(reps[0]) : reps.join('/') };
+}
+
+export function formatLastSummary(exercise, prefillSets) {
+  const last = lastPerformed(exercise, prefillSets);
+  if (!last) return null;
+
+  if (exercise.type === 'time' || exercise.type === 'cardio') {
+    const base = `${prefillSets.length}× ${formatDuration(last.seconds)}`;
     return isBandAssisted(exercise) ? `${base} · ${bandLabel(prefillSets[0]?.band_count)}` : base;
   }
 
-  const reps = prefillSets.map((s) => s.reps).filter((v) => v != null);
-  if (!reps.length) return null;
-
   const weight = prefillSets.find((s) => s.weight_kg != null)?.weight_kg;
-  const repLabel = reps.every((r) => r === reps[0]) ? String(reps[0]) : reps.join('/');
-  const base = `${prefillSets.length}×${repLabel}`;
+  const base = `${prefillSets.length}×${last.reps}`;
   if (exercise.type === 'wt' && weight != null) {
     return `${base} @ ${weight} kg`;
   }
@@ -76,9 +84,10 @@ function plannedSetsComplete(exercise, currentRows) {
 export function compareExercise(exercise, currentRows, prefillSets) {
   const lastSummary = formatLastSummary(exercise, prefillSets);
   const targetLabel = formatTargetLabel(exercise);
+  const last = lastPerformed(exercise, prefillSets);
 
   if (!plannedSetsComplete(exercise, currentRows) || !prefillSets?.length) {
-    return { lastSummary, targetLabel, trend: null };
+    return { lastSummary, targetLabel, last, trend: null };
   }
 
   const currentLogged = currentRows
@@ -97,5 +106,5 @@ export function compareExercise(exercise, currentRows, prefillSets) {
   if (currentVol > lastVol) trend = 'up';
   else if (currentVol < lastVol) trend = 'down';
 
-  return { lastSummary, targetLabel, trend };
+  return { lastSummary, targetLabel, last, trend };
 }

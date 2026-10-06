@@ -187,6 +187,14 @@ export default function ExerciseFocus({
     doLog();
   }
 
+  // Lange Timer (20 min Laufband): fertig melden, ohne den Ablauf abzuwarten —
+  // geloggt wird die eingestellte Dauer.
+  function handleFinishHold() {
+    if (disabled || holdPhase !== 'hold') return;
+    stopHold();
+    doLog();
+  }
+
   function requestClose() {
     stopHold();
     setPhase('closing');
@@ -276,12 +284,15 @@ export default function ExerciseFocus({
   const weightStep = stepForExercise(exercise);
   // Lange Namen drückten bisher alles nach unten — kleinere Stufe statt Umbruch auf drei Zeilen.
   const nameFontSize = exercise.name.length > 34 ? 24 : exercise.name.length > 22 ? 28 : 32;
+  // Zielzeile folgt der letzten Leistung (wie die Vorbelegung), sonst dem Plan.
+  const targetSeconds = compare.last?.seconds ?? exercise.target_seconds;
+  const targetReps = compare.last?.reps ?? exercise.target_reps;
   const targetLabel = isDurationType
-    ? exercise.target_seconds
-      ? `${exercise.sets} × ${toInputValue(exercise.target_seconds, exercise.type)} ${unitLabel}`
+    ? targetSeconds
+      ? `${exercise.sets} × ${toInputValue(targetSeconds, exercise.type)} ${unitLabel}`
       : null
-    : exercise.target_reps
-      ? `${exercise.sets} × ${exercise.target_reps}`
+    : targetReps
+      ? `${exercise.sets} × ${targetReps}`
       : null;
   const sideSuffix = (setNumber) => (exercise.unilateral ? ` · ${sideLabel(exercise, setNumber)}` : '');
   const perSide = exercise.unilateral && targetLabel && !/seite/i.test(targetLabel) ? `${targetLabel} pro Seite` : targetLabel;
@@ -299,7 +310,7 @@ export default function ExerciseFocus({
         .filter(Boolean)
         .join(' × ')
     : '';
-  const ctaMuted = restTimerActive || holdPhase;
+  const ctaMuted = restTimerActive || holdPhase === 'prep';
 
   function selectDot(i) {
     if (rows[i].logged) {
@@ -643,8 +654,8 @@ export default function ExerciseFocus({
         ) : (
           <button
             type="button"
-            onClick={canHoldTimer && !holdPhase ? () => handleStartHold(holdSeconds) : handleLogSet}
-            disabled={disabled || restTimerActive || !!holdPhase}
+            onClick={holdPhase ? handleFinishHold : canHoldTimer ? () => handleStartHold(holdSeconds) : handleLogSet}
+            disabled={disabled || restTimerActive || holdPhase === 'prep'}
             className={justLogged ? 'set-logged-pulse' : undefined}
             style={{
               height: 58,
@@ -667,7 +678,7 @@ export default function ExerciseFocus({
           >
             {justLogged
               ? 'Satz geschafft ✓'
-              : holdPhase
+              : holdPhase === 'prep'
                 ? '⏱ Timer läuft …'
                 : restTimerActive
                   ? '⏱ Pause läuft …'

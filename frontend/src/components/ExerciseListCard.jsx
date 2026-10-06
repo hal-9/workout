@@ -103,7 +103,8 @@ export function buildCardSubline(exercise, rows, compare) {
   const parts = [`${exercise.sets} Sätze${exercise.unilateral ? ' pro Seite' : ''}`];
 
   if (exercise.type === 'bw') {
-    if (exercise.target_reps) parts.push(`${exercise.target_reps} Wdh`);
+    const reps = compare.last?.reps ?? exercise.target_reps;
+    if (reps) parts.push(`${reps} Wdh`);
     if (isBandAssisted(exercise)) {
       const bands = Number(rows[0]?.band_count) || 0;
       parts.push(bands === 0 ? 'ohne Band' : `${bands}× Band`);
