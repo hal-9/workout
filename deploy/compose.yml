@@ -10,6 +10,7 @@ services:
       - ./frontend-dist:/srv/frontend
       - /opt/dienstplan/deploy/frontend-dist:/srv/dienstplan
       - /opt/einkauf/deploy/frontend-dist:/srv/einkauf
+      - /opt/kino/deploy/frontend-dist:/srv/kino
       - caddy_data:/data
       - caddy_config:/config
 
