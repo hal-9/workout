@@ -78,41 +78,29 @@ export default function BottomNav() {
             to={tab.to}
             aria-current={undefined}
             style={({ isActive }) => ({
+              // Aktiver Tab ist als Ganzes eingelassen — Icon und Label in einer Mulde.
+              margin: '0 6px',
               background: 'none',
               border: 'none',
+              borderRadius: 18,
+              boxShadow: isActive ? 'var(--shadow-inset-sm)' : 'none',
+              transition: 'box-shadow 200ms var(--ease)',
               color: isActive ? 'var(--primary)' : 'var(--muted)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 4,
-              padding: '6px 6px 4px',
-              minHeight: 44,
+              gap: 3,
+              padding: '7px 4px 6px',
+              minHeight: 52,
               fontSize: 12,
               fontWeight: isActive ? 600 : 500,
               textDecoration: 'none',
               fontFamily: 'var(--font-display)',
             })}
           >
-            {({ isActive }) => (
-              <>
-                {/* Aktiver Tab ist eingelassen — wie ein gedrückter Knopf. */}
-                <span
-                  style={{
-                    display: 'grid',
-                    placeItems: 'center',
-                    width: 52,
-                    height: 30,
-                    borderRadius: 15,
-                    boxShadow: isActive ? 'var(--shadow-inset-sm)' : 'none',
-                    transition: 'box-shadow 200ms var(--ease)',
-                  }}
-                >
-                  <TabIcon type={tab.icon} />
-                </span>
-                <span>{tab.label}</span>
-              </>
-            )}
+            <TabIcon type={tab.icon} />
+            <span>{tab.label}</span>
           </NavLink>
         ))}
       </div>
