@@ -75,7 +75,9 @@ export default function MuscleModal({ exercise, onClose }) {
         height: '100dvh',
         zIndex: 90,
         display: 'flex',
-        alignItems: 'flex-end',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 'calc(env(safe-area-inset-top) + 16px) 12px calc(env(safe-area-inset-bottom) + 16px)',
       }}
     >
       <div
@@ -85,21 +87,22 @@ export default function MuscleModal({ exercise, onClose }) {
         aria-modal="true"
         aria-label={`Muskelgruppen für ${exercise.name}`}
         style={{
+          // Feste Höhe statt Sheet: das Modell bekommt den freien Platz, nichts ragt
+          // unten raus, und die Seite muss nie über dem Canvas gescrollt werden.
           width: '100%',
           maxWidth: 560,
-          margin: '0 auto',
-          maxHeight: '92dvh',
-          overflowY: 'auto',
-          overscrollBehavior: 'contain',
+          height: 'min(760px, 100%)',
+          display: 'flex',
+          flexDirection: 'column',
           background: 'var(--bg)',
           boxShadow: 'var(--shadow-card)',
-          borderRadius: '28px 28px 0 0',
-          padding: '20px 20px calc(20px + env(safe-area-inset-bottom))',
+          borderRadius: 28,
+          padding: 20,
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <div style={{ minWidth: 0, paddingTop: 4 }}>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' }}>{exercise.name}</h2>
+            <h2 style={{ margin: 0, fontSize: 19, fontWeight: 700, letterSpacing: '-0.01em' }}>{exercise.name}</h2>
             {exercise.muscle && (
               <div style={{ fontSize: 14, color: 'var(--muted)', marginTop: 2 }}>{exercise.muscle}</div>
             )}
@@ -128,9 +131,11 @@ export default function MuscleModal({ exercise, onClose }) {
           </button>
         </div>
 
-        {/* Modell in einer Mulde (Rolle: Wert) */}
+        {/* Modell in einer Mulde (Rolle: Wert) — nimmt die ganze Resthöhe */}
         <div
           style={{
+            flex: '1 1 auto',
+            minHeight: 240,
             borderRadius: 24,
             overflow: 'hidden',
             background: 'var(--bg)',
@@ -139,12 +144,12 @@ export default function MuscleModal({ exercise, onClose }) {
         >
           <Suspense
             fallback={
-              <div style={{ height: 340, display: 'grid', placeItems: 'center', color: 'var(--muted)', fontSize: 14 }}>
+              <div style={{ height: '100%', display: 'grid', placeItems: 'center', color: 'var(--muted)', fontSize: 14 }}>
                 Modell wird geladen…
               </div>
             }
           >
-            <MuscleBody3D primary={zones.primary} secondary={zones.secondary} view={view} height={340} />
+            <MuscleBody3D primary={zones.primary} secondary={zones.secondary} view={view} height="100%" />
           </Suspense>
         </div>
 
@@ -152,8 +157,9 @@ export default function MuscleModal({ exercise, onClose }) {
           Wischen zum Drehen · zwei Finger zum Zoomen
         </p>
 
-        {/* Farben spiegeln die Materialien in MuscleBody3D (dort als Hex). */}
-        <div>
+        {/* Farben spiegeln die Materialien in MuscleBody3D (dort als Hex).
+            Nur dieser Teil scrollt — Wischen auf dem Modell dreht es. */}
+        <div style={{ flex: '0 1 auto', maxHeight: '32%', overflowY: 'auto', overscrollBehavior: 'contain' }}>
           <Legend label="Primär" color="#f4506a" zones={zones.primary} />
           <Legend label="Sekundär" color="#f0955f" zones={zones.secondary} />
           {!zones.primary.length && !zones.secondary.length && (

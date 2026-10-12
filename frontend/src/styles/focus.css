@@ -257,3 +257,36 @@
     transition: none;
   }
 }
+
+/* Wertemulde: ein Hauch vom Hauptbutton-Mesh, ruhend, mit Korn —
+   hebt die Zahlen ab, ohne mit dem Button darunter zu konkurrieren. */
+.neu-inset.fx-well {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(70% 90% at 12% 10%, color-mix(in srgb, var(--m2) 13%, transparent), transparent 70%),
+    radial-gradient(60% 80% at 92% 95%, color-mix(in srgb, var(--m3) 11%, transparent), transparent 70%),
+    radial-gradient(40% 60% at 95% 5%, color-mix(in srgb, var(--m4) 9%, transparent), transparent 70%),
+    var(--bg);
+}
+
+.fx-well::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--noise);
+  background-size: 140px 140px;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+[data-theme='dark'] .neu-inset.fx-well {
+  background:
+    radial-gradient(70% 90% at 12% 10%, color-mix(in srgb, var(--m2) 22%, transparent), transparent 70%),
+    radial-gradient(60% 80% at 92% 95%, color-mix(in srgb, var(--m3) 18%, transparent), transparent 70%),
+    radial-gradient(40% 60% at 95% 5%, color-mix(in srgb, var(--m4) 12%, transparent), transparent 70%),
+    var(--bg);
+}

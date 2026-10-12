@@ -404,11 +404,15 @@ export default function ExerciseFocus({
     return String(row.reps);
   }
   const viewLast = lastValueFor(viewIndex);
+  // Mulde zeigt nur die Zahlen — Ziel und Verlauf stehen darunter.
   const caption = reviewing
     ? `Satz ${viewIndex + 1} von ${rows.length}${sideSuffix(viewRow.set_number)} · erledigt`
-    : `Satz ${viewIndex + 1} von ${rows.length}${sideSuffix(viewRow.set_number)}${
-        viewLast ? ` · letztes Mal ${viewLast}${isDurationType ? '' : ' Wdh.'}` : ''
-      }`;
+    : [`Satz ${viewIndex + 1} von ${rows.length}${sideSuffix(viewRow.set_number)}`, targetHint].filter(Boolean).join(' · ');
+  const history = reviewing
+    ? null
+    : [viewLast ? `letztes Mal ${viewLast}${isDurationType ? '' : ' Wdh.'}` : null, isWeighted ? weightHint : null]
+        .filter(Boolean)
+        .join(' · ') || null;
 
   const nextRow = rows[activeIndex];
   const nextSetPreview = nextRow
@@ -463,7 +467,6 @@ export default function ExerciseFocus({
           ) : null
         }
       />
-      <span style={hintStyle}>{targetHint}</span>
     </div>
   );
 
@@ -490,7 +493,6 @@ export default function ExerciseFocus({
           ) : null
         }
       />
-      <span style={hintStyle}>{weightHint}</span>
     </div>
   ) : isBanded ? (
     <div>
@@ -684,13 +686,13 @@ export default function ExerciseFocus({
 
         <div
           ref={editAreaRef}
-          className="neu-inset"
+          className="neu-inset fx-well"
           style={{
             display: 'grid',
             gridTemplateColumns: sideCell ? '1fr 1fr' : '1fr',
             marginTop: 16,
             borderRadius: 26,
-            padding: '18px 0 16px',
+            padding: '18px 0',
             textAlign: 'center',
           }}
         >
@@ -701,6 +703,12 @@ export default function ExerciseFocus({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
           <p aria-live="polite" style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--muted)', textAlign: 'center' }}>
             {caption}
+            {history && (
+              <>
+                <br />
+                <span style={{ opacity: 0.8 }}>{history}</span>
+              </>
+            )}
           </p>
           <button
             type="button"
@@ -948,6 +956,11 @@ function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onCh
   const pendingRef = useRef(null);
   const rafRef = useRef(0);
   const suppressClickUntil = useRef(0);
+  // Wert, den die DOM-Zahlen gerade zeigen, vs. den wir schon gemeldet haben.
+  // Beim Ziehen kommt das Re-Render einen Frame zu spät — ohne Ausgleich sprang
+  // die alte Zahl kurz an die neue Stelle (Zahl „zuckt" hin und her).
+  const shownRef = useRef(value);
+  const sentRef = useRef(value);
 
   useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
 
@@ -957,10 +970,11 @@ function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onCh
   // Position, Größe und Deckkraft jeder Zahl aus ihrem Abstand zur Mitte.
   function setOffset(px) {
     offsetRef.current = px;
+    const lag = ((sentRef.current - shownRef.current) / step) * DRUM_STEP_PX;
     DRUM_SLOTS.forEach((k, i) => {
       const el = itemRefs.current[i];
       if (!el) return;
-      const y = k * DRUM_STEP_PX + px;
+      const y = k * DRUM_STEP_PX + px - lag;
       const d = Math.abs(y) / DRUM_STEP_PX;
       const scale = 1 - 0.58 * Math.min(d, 1);
       const opacity = d < 1 ? 1 - 0.8 * d : Math.max(0, 0.2 * (1.6 - d) / 0.6);
@@ -973,6 +987,8 @@ function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onCh
 
   // Nach jedem Render neu anlegen; nach Tippen/Taste vom alten Platz aus einrollen.
   useLayoutEffect(() => {
+    shownRef.current = value;
+    sentRef.current = value;
     if (pendingRef.current != null) {
       const from = pendingRef.current;
       pendingRef.current = null;
@@ -1011,6 +1027,7 @@ function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onCh
     if (next === value) return;
     cancelAnimationFrame(rafRef.current);
     pendingRef.current = offsetRef.current + ((next - value) / step) * DRUM_STEP_PX;
+    sentRef.current = next;
     onChange(next - value);
   }
 
@@ -1019,6 +1036,7 @@ function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onCh
     const diff = steps - d.applied;
     if (!diff) return;
     d.applied = steps;
+    sentRef.current += diff * step;
     onChange(diff * step);
     stepFeedback();
   }
