@@ -634,3 +634,92 @@ main {
     from { opacity: 0; }
   }
 }
+
+/* Login/Registrierung auf der Bühne: dieselben Komponenten, hell umgefärbt. */
+.auth-stage {
+  z-index: 1;
+  --text: var(--m-ink);
+  --muted: color-mix(in srgb, var(--m-ink) 82%, transparent);
+  --primary: var(--m-ink);
+  --danger: var(--m-ink);
+  --grad-from: var(--m-ink);
+  --grad-to: var(--m-ink);
+}
+
+.auth-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: safe center;
+}
+
+.auth-stage .ui-input {
+  min-height: 58px;
+  padding: 14px 20px;
+  border-radius: 18px;
+  font-size: 18px;
+  color: var(--m-ink);
+  background: color-mix(in srgb, var(--m-ink) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--m-ink) 30%, transparent);
+  text-shadow: none;
+  transition: background 160ms ease-out, box-shadow 160ms ease-out;
+}
+
+.auth-stage .ui-input::placeholder {
+  color: var(--m-ink);
+  opacity: 0.72;
+}
+
+.auth-stage .ui-input:focus {
+  outline: none;
+  background: color-mix(in srgb, var(--m-ink) 24%, transparent);
+  box-shadow: inset 0 0 0 2px var(--m-ink);
+}
+
+/* iOS-Autofill färbt sonst hellgelb/blau mit dunkler Schrift. */
+.auth-stage .ui-input:-webkit-autofill {
+  -webkit-text-fill-color: var(--m-ink);
+  -webkit-box-shadow: inset 0 0 0 100px color-mix(in srgb, var(--m2) 70%, var(--m0));
+  caret-color: var(--m-ink);
+}
+
+/* Mesh-Button wäre auf dem Mesh unsichtbar → weiße Pille. */
+.auth-stage .btn-primary {
+  background: var(--m-ink) !important;
+  color: var(--m0) !important;
+  text-shadow: none;
+  min-height: 58px !important;
+  font-size: 18px !important;
+  box-shadow: 0 10px 28px rgba(30, 6, 40, 0.32);
+}
+
+.auth-stage .btn-primary .mesh {
+  display: none;
+}
+
+.auth-stage a {
+  font-size: 17px !important;
+  margin-top: 22px !important;
+}
+
+.auth-stage a strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-stage [role='alert'] {
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(30, 6, 40, 0.35);
+  font-size: 15px !important;
+  text-shadow: none;
+}
+
+.auth-stage form p:not([role]) {
+  font-size: 15px !important;
+  line-height: 1.4;
+}

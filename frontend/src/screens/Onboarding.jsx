@@ -65,10 +65,19 @@ export default function Onboarding() {
   }
 
   return (
+    <div className="stage auth-stage">
+      <span className="mesh mesh-stage" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+      </span>
+      <div className="auth-scroll">
     <div
       className="wrap"
       style={{
-        minHeight: '100svh',
+        width: '100%',
+        flex: '1 0 auto',
         display: 'flex',
         flexDirection: 'column',
         paddingTop: 'calc(48px + env(safe-area-inset-top))',
@@ -78,30 +87,39 @@ export default function Onboarding() {
       onTouchEnd={handleTouchEnd}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-        <Logo size={44} />
-        <span className="wordmark" style={{ fontSize: 40, fontWeight: 800, letterSpacing: '-0.035em', lineHeight: 1.05 }}>
+        <Logo size={48} />
+        <span className="stage-title" style={{ fontSize: 44 }}>
           LiLief
         </span>
       </div>
 
       {/* Fixe Mindesthoehe, damit Punkte und Button beim Blaettern nicht springen. */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-        <div aria-live="polite" style={{ width: '100%', minHeight: 300, padding: '24px 4px' }}>
+        {/* key = index: jede Folie kommt neu aus der Unschärfe. */}
+        <div key={index} aria-live="polite" className="stage-rise" style={{ width: '100%', minHeight: 320, padding: '24px 4px', '--delay': '0ms' }}>
           {slide.icon && (
             <div
-              className="neu-inset"
               aria-hidden="true"
-              style={{ width: 72, height: 72, borderRadius: '50%', display: 'grid', placeItems: 'center', marginBottom: 20, color: 'var(--primary)' }}
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                marginBottom: 24,
+                background: 'color-mix(in srgb, var(--m-ink) 16%, transparent)',
+                boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--m-ink) 30%, transparent)',
+              }}
             >
-              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d={slide.icon} />
               </svg>
             </div>
           )}
-          <h1 style={{ margin: '0 0 10px', fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          <h1 style={{ margin: '0 0 14px', fontSize: 36, fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
             {slide.title}
           </h1>
-          <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: 'var(--muted)' }}>{slide.body}</p>
+          <p style={{ margin: 0, fontSize: 19, lineHeight: 1.5, color: 'var(--muted)' }}>{slide.body}</p>
         </div>
       </div>
 
@@ -130,8 +148,7 @@ export default function Onboarding() {
                 width: i === index ? 22 : 10,
                 height: 10,
                 borderRadius: 999,
-                background: i === index ? 'var(--primary)' : 'var(--bg)',
-                boxShadow: i === index ? 'none' : 'var(--shadow-inset-sm)',
+                background: i === index ? 'var(--m-ink)' : 'color-mix(in srgb, var(--m-ink) 35%, transparent)',
                 transition: 'width 160ms var(--ease)',
               }}
             />
@@ -139,15 +156,17 @@ export default function Onboarding() {
         ))}
       </div>
 
-      <Button fullWidth disabled={busy} onClick={() => (isLast ? finish() : go(1))} style={{ minHeight: 52, fontSize: 16 }}>
+      <Button fullWidth disabled={busy} onClick={() => (isLast ? finish() : go(1))} style={{ minHeight: 58, fontSize: 18 }}>
         {isLast ? 'Plan anlegen' : 'Weiter'}
       </Button>
 
       {!isLast && (
-        <Button variant="ghost" fullWidth onClick={finish} style={{ marginTop: 8, color: 'var(--muted)', fontWeight: 500 }}>
+        <Button variant="ghost" fullWidth onClick={finish} style={{ marginTop: 8, color: 'var(--muted)', fontWeight: 500, fontSize: 17 }}>
           Überspringen
         </Button>
       )}
+    </div>
+      </div>
     </div>
   );
 }
