@@ -10,7 +10,7 @@ const TABS = [
 function TabIcon({ type }) {
   if (type === 'calendar') {
     return (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
         <rect x="3" y="4" width="18" height="18" rx="2" />
         <line x1="16" y1="2" x2="16" y2="6" />
         <line x1="8" y1="2" x2="8" y2="6" />
@@ -20,7 +20,7 @@ function TabIcon({ type }) {
   }
   if (type === 'grid') {
     return (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
         <rect x="3" y="3" width="7" height="7" />
         <rect x="14" y="3" width="7" height="7" />
         <rect x="3" y="14" width="7" height="7" />
@@ -30,7 +30,7 @@ function TabIcon({ type }) {
   }
   if (type === 'list') {
     return (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
         <line x1="8" y1="6" x2="21" y2="6" />
         <line x1="8" y1="12" x2="21" y2="12" />
         <line x1="8" y1="18" x2="21" y2="18" />
@@ -41,7 +41,7 @@ function TabIcon({ type }) {
     );
   }
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
       <line x1="18" y1="20" x2="18" y2="10" />
       <line x1="12" y1="20" x2="12" y2="4" />
       <line x1="6" y1="20" x2="6" y2="14" />
@@ -52,7 +52,6 @@ function TabIcon({ type }) {
 export default function BottomNav() {
   return (
     <nav
-      className="glass"
       aria-label="Hauptnavigation"
       style={{
         position: 'fixed',
@@ -60,9 +59,8 @@ export default function BottomNav() {
         left: 0,
         right: 0,
         zIndex: 40,
-        borderLeft: 'none',
-        borderRight: 'none',
-        borderBottom: 'none',
+        background: 'var(--bg)',
+        boxShadow: '0 -8px 16px -14px var(--neu-lo)',
         padding: '8px 0 calc(8px + env(safe-area-inset-bottom))',
       }}
     >
@@ -87,16 +85,34 @@ export default function BottomNav() {
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 3,
-              padding: '10px 6px',
+              gap: 4,
+              padding: '6px 6px 4px',
               minHeight: 44,
-              fontSize: 11,
+              fontSize: 12,
+              fontWeight: isActive ? 600 : 500,
               textDecoration: 'none',
               fontFamily: 'var(--font-display)',
             })}
           >
-            <TabIcon type={tab.icon} />
-            <span>{tab.label}</span>
+            {({ isActive }) => (
+              <>
+                {/* Aktiver Tab ist eingelassen — wie ein gedrückter Knopf. */}
+                <span
+                  style={{
+                    display: 'grid',
+                    placeItems: 'center',
+                    width: 52,
+                    height: 30,
+                    borderRadius: 15,
+                    boxShadow: isActive ? 'var(--shadow-inset-sm)' : 'none',
+                    transition: 'box-shadow 200ms var(--ease)',
+                  }}
+                >
+                  <TabIcon type={tab.icon} />
+                </span>
+                <span>{tab.label}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </div>

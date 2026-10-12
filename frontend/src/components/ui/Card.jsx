@@ -1,13 +1,11 @@
 export default function Card({ children, style, className = '' }) {
   return (
     <div
-      className={className}
+      className={`neu-raised ${className}`.trim()}
       style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--line)',
-        borderRadius: 16,
+        borderRadius: 20,
         padding: 16,
-        marginBottom: 12,
+        marginBottom: 16,
         ...style,
       }}
     >

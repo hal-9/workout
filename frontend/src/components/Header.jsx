@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { THEME_PALETTES } from 'shared/themes';
 import { api } from '../api.js';
 import { cacheClear } from '../lib/offlineCache.js';
 import Logo from './Logo.jsx';
@@ -102,8 +101,8 @@ function Switch({ on }) {
         padding: 3,
         display: 'flex',
         justifyContent: on ? 'flex-end' : 'flex-start',
-        background: on ? 'var(--primary-grad)' : 'var(--line)',
-        boxShadow: on ? 'none' : 'inset 0 0 0 1px rgba(0, 0, 0, 0.06)',
+        background: on ? 'var(--primary)' : 'var(--bg)',
+        boxShadow: on ? 'none' : 'var(--shadow-inset-sm)',
         transition: 'background 160ms ease',
       }}
     >
@@ -196,23 +195,21 @@ export default function Header() {
   return (
     <>
       <header
-        className="glass"
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           zIndex: 40,
-          borderTop: 'none',
-          borderLeft: 'none',
-          borderRight: 'none',
+          background: 'var(--bg)',
+          boxShadow: '0 8px 16px -14px var(--neu-lo)',
           paddingTop: 'env(safe-area-inset-top)',
         }}
       >
         <div
           className="wrap"
           style={{
-            height: 52,
+            height: 'var(--header-h)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -221,18 +218,12 @@ export default function Header() {
           <Link
             to="/heute"
             aria-label="Zu Heute"
-            style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
           >
-            <Logo size={26} />
+            <Logo size={30} />
             <strong
-              style={{
-                fontSize: 17,
-                fontWeight: 700,
-                background: 'var(--primary-grad)',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                color: 'transparent',
-              }}
+              className="wordmark"
+              style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.035em', lineHeight: 1.1 }}
             >
               LiLief
             </strong>
@@ -245,7 +236,8 @@ export default function Header() {
             aria-label="Menü"
             aria-expanded={menuOpen}
             aria-haspopup="menu"
-            style={{ ...ICON_BUTTON, marginRight: -14 }}
+            className="btn btn-secondary"
+            style={{ ...ICON_BUTTON, borderRadius: '50%', background: 'var(--bg)', color: 'var(--text)' }}
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <line x1="4" y1="7" x2="20" y2="7" />
@@ -289,9 +281,8 @@ export default function Header() {
                 pointerEvents: 'auto',
                 width: 244,
                 padding: 8,
-                borderRadius: 16,
-                background: 'var(--surface2)',
-                border: '1px solid var(--line)',
+                borderRadius: 20,
+                background: 'var(--bg)',
                 boxShadow: 'var(--shadow-card)',
               }}
             >
@@ -328,18 +319,7 @@ export default function Header() {
               <div style={{ height: 1, background: 'var(--line)', margin: '6px 10px' }} />
 
               <div style={{ padding: '4px 12px 10px' }}>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 10.5,
-                    letterSpacing: 0.5,
-                    color: 'var(--muted)',
-                    textTransform: 'uppercase',
-                    marginBottom: 8,
-                  }}
-                >
-                  Design
-                </div>
+                <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>Darstellung</div>
 
                 <div
                   role="group"
@@ -348,15 +328,15 @@ export default function Header() {
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
                     gap: 4,
-                    padding: 3,
-                    background: 'var(--surface2)',
-                    border: '1px solid var(--line)',
-                    borderRadius: 12,
+                    padding: 4,
+                    background: 'var(--bg)',
+                    boxShadow: 'var(--shadow-inset-sm)',
+                    borderRadius: 14,
                   }}
                 >
                   {[
-                    { id: 'light', label: 'Hell', glyph: '☀' },
-                    { id: 'dark', label: 'Dunkel', glyph: '☾' },
+                    { id: 'light', label: 'Hell' },
+                    { id: 'dark', label: 'Dunkel' },
                   ].map((option) => {
                     const active = theme.mode === option.id;
                     return (
@@ -372,60 +352,22 @@ export default function Header() {
                           gap: 6,
                           minHeight: 36,
                           padding: '6px 8px',
-                          borderRadius: 9,
+                          borderRadius: 10,
                           border: 'none',
                           cursor: 'pointer',
                           fontSize: 13,
                           fontWeight: 600,
-                          background: active ? 'var(--primary-grad)' : 'transparent',
-                          color: active ? 'var(--on-primary)' : 'var(--muted)',
+                          background: active ? 'var(--bg)' : 'transparent',
+                          boxShadow: active ? 'var(--shadow-raised-sm)' : 'none',
+                          color: active ? 'var(--text)' : 'var(--muted)',
                         }}
                       >
-                        <span aria-hidden="true">{option.glyph}</span>
                         {option.label}
                       </button>
                     );
                   })}
                 </div>
 
-                <div
-                  role="group"
-                  aria-label="Farbthema"
-                  style={{ display: 'flex', gap: 8, marginTop: 10 }}
-                >
-                  {THEME_PALETTES.map((palette) => {
-                    const active = theme.palette === palette.id;
-                    return (
-                      <button
-                        key={palette.id}
-                        type="button"
-                        aria-label={palette.label}
-                        aria-pressed={active}
-                        title={palette.label}
-                        onClick={() => applyTheme({ ...theme, palette: palette.id })}
-                        style={{
-                          width: 40,
-                          height: 40,
-                          padding: 3,
-                          borderRadius: '50%',
-                          cursor: 'pointer',
-                          background: 'none',
-                          border: `2px solid ${active ? 'var(--primary)' : 'var(--line)'}`,
-                        }}
-                      >
-                        <span
-                          style={{
-                            display: 'block',
-                            width: '100%',
-                            height: '100%',
-                            borderRadius: '50%',
-                            background: `linear-gradient(135deg, ${palette.swatch[0]} 0%, ${palette.swatch[1]} 100%)`,
-                          }}
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
 
               <div style={{ height: 1, background: 'var(--line)', margin: '2px 10px 6px' }} />

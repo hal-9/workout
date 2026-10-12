@@ -85,9 +85,11 @@ export function compareExercise(exercise, currentRows, prefillSets) {
   const lastSummary = formatLastSummary(exercise, prefillSets);
   const targetLabel = formatTargetLabel(exercise);
   const last = lastPerformed(exercise, prefillSets);
+  // Rohe Sätze vom letzten Mal — der Fokus zeigt sie pro Satz (Kiesel, „zuletzt").
+  const lastSets = prefillSets ?? [];
 
   if (!plannedSetsComplete(exercise, currentRows) || !prefillSets?.length) {
-    return { lastSummary, targetLabel, last, trend: null };
+    return { lastSummary, targetLabel, last, lastSets, trend: null };
   }
 
   const currentLogged = currentRows
@@ -106,5 +108,5 @@ export function compareExercise(exercise, currentRows, prefillSets) {
   if (currentVol > lastVol) trend = 'up';
   else if (currentVol < lastVol) trend = 'down';
 
-  return { lastSummary, targetLabel, last, trend };
+  return { lastSummary, targetLabel, last, lastSets, trend };
 }

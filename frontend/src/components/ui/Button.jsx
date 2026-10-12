@@ -1,13 +1,13 @@
 const VARIANTS = {
   primary: {
-    background: 'var(--primary-grad)',
-    color: 'var(--on-primary)',
+    background: 'var(--m0)',
+    color: 'var(--m-ink)',
     border: 'none',
   },
   secondary: {
-    background: 'var(--surface2)',
+    background: 'var(--bg)',
     color: 'var(--text)',
-    border: '1px solid var(--line)',
+    border: 'none',
   },
   ghost: {
     background: 'none',
@@ -19,6 +19,11 @@ const VARIANTS = {
     color: 'var(--on-primary)',
     border: 'none',
   },
+};
+
+const CLASS = {
+  primary: 'btn btn-primary',
+  secondary: 'btn btn-secondary',
 };
 
 export default function Button({
@@ -41,14 +46,15 @@ export default function Button({
       disabled={disabled}
       aria-label={ariaLabel}
       aria-pressed={ariaPressed}
-      className="btn"
+      className={CLASS[variant] ?? 'btn'}
       style={{
         ...v,
         width: fullWidth ? '100%' : undefined,
-        borderRadius: 13,
-        padding: '12px 18px',
+        borderRadius: 999,
+        padding: '12px 20px',
         fontWeight: 600,
         fontSize: 15,
+        letterSpacing: '-0.01em',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.55 : 1,
         minHeight: 44,
@@ -56,6 +62,14 @@ export default function Button({
       }}
       {...rest}
     >
+      {variant === 'primary' && (
+        <span className="mesh" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+          <i />
+        </span>
+      )}
       {children}
     </button>
   );

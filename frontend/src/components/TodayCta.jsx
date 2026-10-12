@@ -5,7 +5,7 @@ import Button from './ui/Button.jsx';
 export default function TodayCta({ label, sublabel, variant = 'primary', disabled = false, onClick }) {
   return (
     <div style={{ marginTop: 18 }}>
-      <Button onClick={onClick} disabled={disabled} variant={variant} fullWidth style={{ fontSize: 16, minHeight: 52 }}>
+      <Button onClick={onClick} disabled={disabled} variant={variant} fullWidth style={{ fontSize: 17, minHeight: 56 }}>
         {/* Lange Übungsnamen sollen den Button nicht auf drei Zeilen sprengen. */}
         <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {label}
@@ -14,10 +14,9 @@ export default function TodayCta({ label, sublabel, variant = 'primary', disable
       {sublabel && (
         <div
           style={{
-            marginTop: 8,
+            marginTop: 10,
             textAlign: 'center',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
+            fontSize: 13,
             color: 'var(--muted)',
           }}
         >

@@ -3,7 +3,7 @@ import { DEFAULT_THEME, isThemeMode, isThemePalette } from 'shared/themes';
 const MODE_KEY = 'lilief-theme';
 const PALETTE_KEY = 'lilief-palette';
 // Nur fuer den Fall, dass die Variablen beim ersten Lauf noch nicht berechenbar sind.
-const FALLBACK_BG = { light: '#f6f2fb', dark: '#1a1525' };
+const FALLBACK_BG = { light: '#e5dde6', dark: '#241b27' };
 
 export function getMode() {
   const value = localStorage.getItem(MODE_KEY);

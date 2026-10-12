@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_WEIGHT_STEP, equipmentLabel, stepForExercise } from './equipment.js';
+import { DEFAULT_WEIGHT_STEP, equipmentLabel, splitExerciseName, stepForExercise } from './equipment.js';
 
 describe('stepForExercise', () => {
   it('uses 1 kg for dumbbells', () => {
@@ -36,5 +36,12 @@ describe('equipmentLabel', () => {
   it('returns null when equipment is unknown', () => {
     expect(equipmentLabel({ equipment: 'sandsack' })).toBeNull();
     expect(equipmentLabel(null)).toBeNull();
+  });
+});
+
+describe('splitExerciseName', () => {
+  it('trennt die Variante in Klammern ab', () => {
+    expect(splitExerciseName('Goblet Squat (Kettlebell)')).toEqual({ base: 'Goblet Squat', variant: 'Kettlebell' });
+    expect(splitExerciseName('Dead Bug')).toEqual({ base: 'Dead Bug', variant: null });
   });
 });

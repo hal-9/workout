@@ -33,3 +33,10 @@ export function equipmentLabel(exercise) {
   const equipment = exercise?.equipment ?? findLibraryEntry(exercise)?.equipment;
   return LABEL_BY_EQUIPMENT[equipment] ?? null;
 }
+
+// „Goblet Squat (Kettlebell)" → Titel + Variante. Viele Planübungen tragen das
+// Gerät schon im Namen; ohne Split stünde es doppelt da.
+export function splitExerciseName(name) {
+  const match = /^(.*\S)\s*\(([^()]+)\)\s*$/.exec(name ?? '');
+  return match ? { base: match[1], variant: match[2] } : { base: name ?? '', variant: null };
+}

@@ -9,6 +9,10 @@ import App from './App.jsx'
 
 initTheme()
 
+// iOS Safari zeigt :active erst mit einem touchstart-Listener — ohne ihn kommt
+// das Drück-Feedback der Buttons zu spät oder gar nicht.
+document.addEventListener('touchstart', () => {}, { passive: true })
+
 const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')).render(

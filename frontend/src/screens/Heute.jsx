@@ -37,6 +37,9 @@ import PageHeader from '../components/ui/PageHeader.jsx';
 import TodayCta from '../components/TodayCta.jsx';
 import Dialog from '../components/ui/Dialog.jsx';
 import Button from '../components/ui/Button.jsx';
+import Card from '../components/ui/Card.jsx';
+import Icon from '../components/ui/Icon.jsx';
+import '../styles/heute.css';
 import LoadingScreen from '../components/ui/LoadingScreen.jsx';
 import {
   startRestTimer,
@@ -93,6 +96,37 @@ function buildInitialSets(exercise, prefillSets, resumedSets, light = false, hin
 }
 
 const RPE_VALUES = [6, 7, 8, 9, 10];
+
+// Therme-Bausteine: leicht unregelmäßige Kiesel, erhabene Rundknöpfe.
+const PEBBLE_RADII = ['52% 48% 50% 50% / 58% 55% 45% 42%', '48% 52% 46% 54% / 52% 58% 42% 48%'];
+const PEBBLE_INSET = 'inset 1px 1px 2px var(--neu-lo), inset -1px -1px 2px var(--neu-hi)';
+const RAISED_SM = 'var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim)';
+const ROUND_ICON_BTN = {
+  flexShrink: 0,
+  width: 44,
+  height: 44,
+  borderRadius: '50%',
+  border: 'none',
+  background: 'var(--bg)',
+  color: 'var(--muted)',
+  display: 'grid',
+  placeItems: 'center',
+  cursor: 'pointer',
+};
+
+const WEEKDAY_NAMES = {
+  mon: 'Montag',
+  tue: 'Dienstag',
+  wed: 'Mittwoch',
+  thu: 'Donnerstag',
+  fri: 'Freitag',
+  sat: 'Samstag',
+  sun: 'Sonntag',
+};
+
+function weekdayName(key) {
+  return WEEKDAY_NAMES[key] ?? WEEKDAY_LABELS[key];
+}
 
 export default function Heute() {
   const navigate = useNavigate();
@@ -825,22 +859,29 @@ export default function Heute() {
   if (!plan) {
     return (
       <div className="wrap">
-        <h2>Heute</h2>
+        <PageHeader title="Heute" />
         <p style={{ color: 'var(--muted)' }}>Kein aktiver Plan. Bitte zuerst einen Plan einrichten.</p>
         <Link
           to="/plan"
-          className="btn primary"
+          className="btn btn-primary"
           style={{
-            display: 'inline-block',
+            display: 'inline-flex',
+            alignItems: 'center',
+            minHeight: 44,
             marginTop: 12,
-            padding: '12px 18px',
-            borderRadius: 13,
+            padding: '12px 20px',
+            borderRadius: 999,
             textDecoration: 'none',
-            background: 'var(--primary-grad)',
-            color: 'var(--on-primary)',
+            background: 'var(--m0)',
             fontWeight: 600,
           }}
         >
+          <span className="mesh" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
           Plan einrichten
         </Link>
       </div>
@@ -966,6 +1007,8 @@ export default function Heute() {
     setFocusExerciseId(nextOpenExercise.id);
   }
 
+  const canSwitch = orderedPlan.days.length > 1;
+
   return (
     <div className="wrap">
       <PageHeader
@@ -973,20 +1016,20 @@ export default function Heute() {
         action={
           progress.total > 0 ? (
             <div
+              role="img"
               aria-label={`${progress.done} von ${progress.total} Workouts diese Woche erledigt`}
               title="Workouts diese Woche"
+              className="neu-inset"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                background: 'var(--surface)',
-                border: `1px solid ${progress.done === progress.total ? 'var(--success)' : 'var(--line)'}`,
                 borderRadius: 999,
-                padding: '7px 12px',
+                padding: '8px 12px',
                 whiteSpace: 'nowrap',
               }}
             >
-              <span style={{ display: 'flex', gap: 4 }} aria-hidden="true">
+              <span style={{ display: 'flex', gap: 5 }} aria-hidden="true">
                 {orderedPlan.days.map((d, i) => {
                   // Zähler, keine Position: Reihenfolge der erledigten Workouts ist egal.
                   const filled = i < progress.done;
@@ -994,24 +1037,17 @@ export default function Heute() {
                     <span
                       key={d.key}
                       style={{
-                        width: 8,
+                        width: 9,
                         height: 8,
-                        borderRadius: '50%',
-                        background: filled ? 'var(--success)' : 'var(--surface2)',
-                        border: `1px solid ${filled ? 'var(--success)' : 'var(--line)'}`,
+                        borderRadius: PEBBLE_RADII[i % 2],
+                        background: filled ? 'var(--primary)' : 'var(--bg)',
+                        boxShadow: filled ? 'none' : PEBBLE_INSET,
                       }}
                     />
                   );
                 })}
               </span>
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: progress.done === progress.total ? 'var(--success)' : 'var(--text)',
-                }}
-              >
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
                 {progress.done}/{progress.total}
               </span>
             </div>
@@ -1020,119 +1056,107 @@ export default function Heute() {
       />
 
       {isRestToday && !sessionId && (
-        <div
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--line)',
-            borderRadius: 16,
-            padding: 16,
-            marginBottom: 12,
-          }}
-        >
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: 1, color: 'var(--muted)' }}>
-            HEUTE · PAUSE
+        <Card style={{ marginBottom: 12 }}>
+          <div style={{ fontWeight: 700, fontSize: 22, lineHeight: 1.15, letterSpacing: '-0.02em' }}>Ruhetag</div>
+          <div style={{ marginTop: 6, fontSize: 14, color: 'var(--muted)' }}>
+            Als Nächstes: {nextOpenEntry.name} am {weekdayName(WEEKDAYS[nextOpenEntry.projectedIdx])}.
           </div>
-          <div style={{ marginTop: 6, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1.15 }}>
-            Ruhetag
-          </div>
-          <div style={{ marginTop: 6, fontSize: 13, color: 'var(--muted)' }}>
-            Als Nächstes: {nextOpenEntry.name} am {WEEKDAY_LABELS[WEEKDAYS[nextOpenEntry.projectedIdx]]}.
-          </div>
-        </div>
+        </Card>
       )}
 
       {day && (
         <>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, margin: '18px 0 8px' }}>
-            <div
+          {/* Titel → Fokus → Tag: Hierarchie über Größe, nicht über Kicker-Labels. */}
+          <h2 style={{ margin: '22px 0 0' }}>
+            <button
+              type="button"
+              onClick={canSwitch ? () => setSwitcherOpen(true) : undefined}
+              aria-label={canSwitch ? `${day.name}, Workout wechseln` : undefined}
               style={{
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 500,
-                fontSize: 11,
-                color: 'var(--muted)',
-                letterSpacing: 1,
-                textTransform: 'uppercase',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                minHeight: 44,
+                background: 'none',
+                border: 'none',
+                borderRadius: 12,
+                padding: 0,
+                textAlign: 'left',
+                color: 'var(--text)',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: 34,
+                lineHeight: 1.1,
+                letterSpacing: '-0.02em',
+                cursor: canSwitch ? 'pointer' : 'default',
               }}
             >
-              {day.focus}
-            </div>
+              <span>{day.name}</span>
+              {canSwitch && <Icon name="chevronDown" size={22} style={{ color: 'var(--muted)' }} />}
+            </button>
+          </h2>
+          {day.focus && <p style={{ margin: '6px 0 0', fontSize: 15, lineHeight: 1.45 }}>{day.focus}</p>}
+          <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <span style={{ fontSize: 14, color: 'var(--muted)' }}>
+              {isRestToday && !sessionId
+                ? `Geplant: ${weekdayName(WEEKDAYS[nextOpenEntry.projectedIdx])}`
+                : `Heute, ${weekdayName(todayWeekday())}`}
+            </span>
             {plan.music_url && (
               <a
                 href={plan.music_url}
                 target="_blank"
                 rel="noopener noreferrer"
+                className="btn btn-secondary"
                 style={{
                   flexShrink: 0,
-                  background: 'var(--surface2)',
-                  border: '1px solid var(--line)',
+                  background: 'var(--bg)',
                   color: 'var(--text)',
                   borderRadius: 999,
-                  padding: '7px 13px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 12,
-                  textDecoration: 'none',
-                  minHeight: 36,
+                  padding: '0 14px',
+                  minHeight: 44,
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  textDecoration: 'none',
                 }}
               >
-                ♪ Musik
+                <Icon name="note" size={16} />
+                Musik
               </a>
             )}
           </div>
-          <button
-            type="button"
-            onClick={orderedPlan.days.length > 1 ? () => setSwitcherOpen(true) : undefined}
-            aria-label="Workout wechseln"
-            style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              gap: 10,
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              textAlign: 'left',
-              color: 'var(--text)',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-              fontSize: 34,
-              lineHeight: 1.05,
-              letterSpacing: -0.5,
-              cursor: orderedPlan.days.length > 1 ? 'pointer' : 'default',
-            }}
-          >
-            <span>{day.name}</span>
-            {orderedPlan.days.length > 1 && (
-              <span style={{ fontSize: 16, color: 'var(--primary)', flexShrink: 0 }} aria-hidden="true">
-                ▾
-              </span>
-            )}
-          </button>
-          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 11, color: 'var(--muted)' }}>
-              {isRestToday && !sessionId
-                ? `GEPLANT · ${WEEKDAY_LABELS[WEEKDAYS[nextOpenEntry.projectedIdx]].toUpperCase()}`
-                : `HEUTE · ${WEEKDAY_LABELS[todayWeekday()].toUpperCase()}`}
-            </span>
-          </div>
-          <div style={{ marginTop: 18, display: 'flex', gap: 10, alignItems: 'center' }}>
-            <div style={{ flex: 1, height: 5, borderRadius: 999, background: 'var(--surface2)', overflow: 'hidden' }}>
+          {(doneExerciseCount > 0 || sessionId) && (
+            <div style={{ marginTop: 18, display: 'flex', gap: 12, alignItems: 'center' }}>
               <div
+                aria-hidden="true"
                 style={{
-                  width: `${mainExercises.length ? (doneExerciseCount / mainExercises.length) * 100 : 0}%`,
-                  height: '100%',
+                  flex: 1,
+                  height: 6,
                   borderRadius: 999,
-                  background: 'var(--primary-grad)',
+                  background: 'var(--bg)',
+                  boxShadow: 'var(--shadow-inset-sm)',
+                  overflow: 'hidden',
                 }}
-              />
+              >
+                <div
+                  style={{
+                    width: `${mainExercises.length ? (doneExerciseCount / mainExercises.length) * 100 : 0}%`,
+                    height: '100%',
+                    borderRadius: 999,
+                    background: 'var(--primary)',
+                  }}
+                />
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+                {doneExerciseCount} von {mainExercises.length} Übungen
+              </div>
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-              {doneExerciseCount}/{mainExercises.length} ÜBUNGEN
-            </div>
-          </div>
+          )}
           {sessionId && !anyExerciseLogged && (
-            <div style={{ marginTop: 12, fontFamily: 'var(--font-display)', fontSize: 11, color: 'var(--muted)' }}>
+            <div style={{ marginTop: 12, fontSize: 13, color: 'var(--muted)' }}>
               Übung antippen, um Sätze zu loggen
             </div>
           )}
@@ -1148,42 +1172,27 @@ export default function Heute() {
 
       {/* Woche durch: ohne offenen Tag gibt es sonst nur eine leere Seite. */}
       {!day && !isRestToday && progress.total > 0 && (
-        <div
-          style={{
-            background: 'var(--success-dim)',
-            border: '1px solid var(--success)',
-            borderRadius: 16,
-            padding: 16,
-            marginBottom: 12,
-          }}
-        >
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1.15, color: 'var(--success)' }}>
-            Woche geschafft
-          </div>
-          <div style={{ marginTop: 6, fontSize: 13, color: 'var(--muted)' }}>
+        <Card style={{ marginTop: 8, marginBottom: 12 }}>
+          <div style={{ fontWeight: 700, fontSize: 22, lineHeight: 1.15, letterSpacing: '-0.02em' }}>Woche geschafft</div>
+          <div style={{ marginTop: 6, fontSize: 14, color: 'var(--muted)' }}>
             Alle {progress.total} Workouts erledigt. Nächste Woche geht es von vorn los.
           </div>
-          <Button
-            variant="secondary"
-            onClick={() => setSwitcherOpen(true)}
-            style={{ marginTop: 12, fontSize: 13, minHeight: 40 }}
-          >
+          <Button variant="secondary" onClick={() => setSwitcherOpen(true)} style={{ marginTop: 14, fontSize: 14 }}>
             Workout wählen
           </Button>
-        </div>
+        </Card>
       )}
 
       {sessionId && (
         <div
           style={{
             display: 'flex',
-            alignItems: 'baseline',
+            alignItems: 'center',
             justifyContent: 'space-between',
             gap: 12,
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
+            fontSize: 13,
             color: 'var(--muted)',
-            marginBottom: 10,
+            margin: '8px 0 4px',
           }}
         >
           {/* Satzzahl steht im CTA-Sublabel — hier bleibt die Laufzeit. */}
@@ -1196,11 +1205,11 @@ export default function Heute() {
               flex: '0 0 auto',
               background: 'none',
               border: 'none',
-              padding: 0,
-              fontFamily: 'inherit',
-              fontSize: 12,
+              padding: '0 4px',
+              minHeight: 44,
+              fontSize: 13,
+              fontWeight: 500,
               color: discardConfirm ? 'var(--danger)' : 'var(--muted)',
-              textDecoration: 'underline',
               cursor: isOnline ? 'pointer' : 'not-allowed',
             }}
           >
@@ -1215,28 +1224,33 @@ export default function Heute() {
             type="button"
             onClick={() => setProposalsOpen((o) => !o)}
             aria-expanded={proposalsOpen}
+            className="hx-row"
             style={{
               width: '100%',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8,
-              background: 'var(--surface)',
-              border: '1px solid var(--line)',
+              gap: 10,
+              background: 'none',
+              border: 'none',
               borderRadius: 12,
-              padding: '10px 12px',
-              minHeight: 44,
+              padding: '0 4px',
+              minHeight: 48,
               color: 'var(--text)',
-              fontSize: 13,
+              fontSize: 15,
+              fontWeight: 500,
+              textAlign: 'left',
               cursor: 'pointer',
             }}
           >
-            <span>
+            <Icon name="trend" size={18} style={{ color: 'var(--muted)' }} />
+            <span style={{ flex: 1 }}>
               {proposalCount === 1 ? '1 Vorschlag' : `${proposalCount} Vorschläge`} zum Steigern
             </span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--primary)' }}>
-              {proposalsOpen ? 'Zuklappen ▴' : 'Ansehen ▾'}
-            </span>
+            <Icon
+              name="chevronDown"
+              size={18}
+              style={{ color: 'var(--muted)', transform: proposalsOpen ? 'rotate(180deg)' : undefined }}
+            />
           </button>
           {proposalsOpen && (
             <div style={{ marginTop: 10 }}>
@@ -1247,73 +1261,65 @@ export default function Heute() {
       )}
 
       {sessionId && !readinessHints && (
-      <Button variant="secondary" onClick={() => setReadinessOpen(true)} style={{ marginBottom: 12, fontSize: 13, minHeight: 40 }}>
+      <Button variant="secondary" onClick={() => setReadinessOpen(true)} style={{ marginBottom: 12, fontSize: 14 }}>
         Tagesform checken
       </Button>
       )}
 
       {readinessHints && (
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: 12, marginBottom: 12, fontSize: 13 }}>
-        <strong>Hinweise:</strong> {readinessHints.join(' · ')}
-      </div>
+      <p style={{ margin: '0 0 12px', fontSize: 14, lineHeight: 1.45, color: 'var(--muted)' }}>
+        <span style={{ fontWeight: 600, color: 'var(--text)' }}>Hinweise:</span> {readinessHints.join(' · ')}
+      </p>
       )}
 
       {lightOffer && !lightMode && (
-      <div
-        style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--primary)',
-          borderRadius: 14,
-          padding: 14,
-          marginBottom: 12,
-          fontSize: 13,
-        }}
-      >
-        <div style={{ marginBottom: 10 }}>
+      <Card style={{ marginBottom: 12, fontSize: 14 }}>
+        <div style={{ marginBottom: 12, lineHeight: 1.45 }}>
           <strong>Wenig Energie?</strong> Leichte Version: −10 % Gewicht, −1 Satz pro Übung — zählt ganz
           normal.
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button onClick={() => applyLightMode(true)} style={{ fontSize: 13, minHeight: 40 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <Button variant="secondary" onClick={() => applyLightMode(true)} style={{ fontSize: 14 }}>
             Leicht trainieren
           </Button>
-          <Button variant="secondary" onClick={() => setLightOffer(false)} style={{ fontSize: 13, minHeight: 40 }}>
+          <Button variant="ghost" onClick={() => setLightOffer(false)} style={{ fontSize: 14, color: 'var(--muted)' }}>
             Nein, normal
           </Button>
         </div>
-      </div>
+      </Card>
       )}
 
       {lightMode && (
       <div
+        className="neu-inset"
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 8,
-          background: 'var(--primary-dim)',
-          border: '1px solid var(--primary)',
-          color: 'var(--primary)',
-          borderRadius: 12,
-          padding: '8px 12px',
+          borderRadius: 16,
+          padding: '2px 4px 2px 14px',
           marginBottom: 12,
-          fontSize: 13,
+          fontSize: 14,
         }}
       >
         <span>
-          <strong>Leichte Version aktiv</strong> · −10 % Gewicht, −1 Satz
+          <span style={{ fontWeight: 600, color: 'var(--primary)' }}>Leichte Version aktiv</span>
+          <span style={{ color: 'var(--muted)' }}> · −10 % Gewicht, −1 Satz</span>
         </span>
         <button
           onClick={() => applyLightMode(false)}
           style={{
+            flexShrink: 0,
             background: 'none',
             border: 'none',
-            color: 'inherit',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
+            color: 'var(--text)',
+            fontSize: 13,
+            fontWeight: 500,
             textDecoration: 'underline',
             cursor: 'pointer',
-            padding: 0,
+            padding: '0 10px',
+            minHeight: 44,
           }}
         >
           Zurücksetzen
@@ -1323,8 +1329,13 @@ export default function Heute() {
 
       {sessionId && undoStack.length > 0 && (
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        <Button variant="secondary" onClick={undoLastSet} style={{ fontSize: 12, minHeight: 36, padding: '8px 12px' }}>
-          ↶ Rückgängig
+        <Button
+          variant="secondary"
+          onClick={undoLastSet}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, padding: '0 16px' }}
+        >
+          <Icon name="undo" size={16} />
+          Rückgängig
         </Button>
       </div>
       )}
@@ -1332,52 +1343,39 @@ export default function Heute() {
       {day && (
         <>
           {deloadHint && (
-            <div
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--accent)',
-                borderRadius: 14,
-                padding: '11px 13px',
-                marginBottom: 12,
-                fontSize: 12,
-                color: 'var(--text)',
-              }}
-            >
-              <strong style={{ color: 'var(--accent)' }}>Deload</strong> · {deloadHint}
-            </div>
+            <p style={{ margin: '0 0 12px', fontSize: 14, lineHeight: 1.45, color: 'var(--muted)' }}>
+              <span style={{ fontWeight: 600, color: 'var(--text)' }}>Deload</span> · {deloadHint}
+            </p>
           )}
 
-          <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {mainExercises.map((ex) => {
+          {/* Eine flache Mulde für die ganze Liste statt einzelner Karten. */}
+          <ol className="hx-tray" aria-label="Übungen">
+            {mainExercises.map((ex, i) => {
               const rows = setsByExercise[ex.id] || [];
               const allLogged = rows.length > 0 && rows.every((r) => r.logged);
               const prefillSets = historyRes?.prefill?.[ex.id];
               const compare = compareExercise(ex, rows, prefillSets);
               const fromName = replacedNames.get(ex.id);
               const coachHint = allLogged ? null : describeHint(historyRes?.hints?.[ex.id]);
-              const baseSubline = fromName ? `⇄ statt ${fromName} · ${buildCardSubline(ex, rows, compare)}` : buildCardSubline(ex, rows, compare);
-              const subline = coachHint ? `★ ${coachHint} · ${baseSubline}` : baseSubline;
+              const subline = [coachHint, fromName && `statt ${fromName}`, buildCardSubline(ex, rows, compare)]
+                .filter(Boolean)
+                .join(' · ');
               return (
-                <div key={ex.id}>
+                <li key={ex.id}>
                   <ExerciseListCard
                     exercise={ex}
+                    index={i + 1}
                     rows={rows}
                     subline={subline}
                     onOpen={() => setFocusExerciseId(ex.id)}
                   />
                   {allLogged && (
-                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: 10,
-                          textTransform: 'uppercase',
-                          color: 'var(--muted)',
-                          marginRight: 2,
-                        }}
-                      >
-                        Anstrengung
-                      </span>
+                    <div
+                      role="group"
+                      aria-label={`Anstrengung für ${ex.name}`}
+                      style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '0 8px 14px 36px' }}
+                    >
+                      <span style={{ fontSize: 13, color: 'var(--muted)', marginRight: 4 }}>Anstrengung</span>
                       {RPE_VALUES.map((value) => {
                         const active = rpeByExercise[ex.id] === value;
                         return (
@@ -1387,15 +1385,17 @@ export default function Heute() {
                             disabled={!isOnline && !sessionId}
                             aria-pressed={active}
                             aria-label={`Anstrengung ${value} von 10`}
+                            className="btn"
                             style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: 999,
-                              border: `1px solid ${active ? 'var(--primary)' : 'var(--line)'}`,
-                              background: active ? 'var(--primary-dim)' : 'var(--surface2)',
-                              color: active ? 'var(--primary)' : 'var(--muted)',
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: 13,
+                              width: 44,
+                              height: 44,
+                              borderRadius: '50%',
+                              border: 'none',
+                              background: active ? 'var(--primary)' : 'var(--bg)',
+                              boxShadow: active ? 'var(--shadow-inset-sm)' : RAISED_SM,
+                              color: active ? 'var(--on-primary)' : 'var(--text)',
+                              fontSize: 14,
+                              fontWeight: 600,
                               cursor: 'pointer',
                             }}
                           >
@@ -1405,103 +1405,93 @@ export default function Heute() {
                       })}
                     </div>
                   )}
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ol>
 
           {cooldownExercises.length > 0 && (
-            <div
+            <section
+              aria-label="Cooldown"
               style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--line)',
-                borderRadius: 16,
-                padding: 14,
+                marginTop: 28,
                 marginBottom: 12,
                 opacity: mainDone ? 1 : 0.55,
                 transition: 'opacity 240ms ease',
               }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  justifyContent: 'space-between',
-                  gap: 8,
-                  marginBottom: 2,
-                }}
-              >
-                <h3 style={{ margin: 0, fontSize: 16 }}>Cooldown</h3>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-                  {cooldownDone}/{cooldownExercises.length}
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, padding: '0 8px' }}>
+                <h3 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Cooldown</h3>
+                <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+                  {cooldownDone} von {cooldownExercises.length}
                 </span>
               </div>
-              <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--muted)' }}>
+              <p style={{ margin: '2px 0 0', padding: '0 8px', fontSize: 13, color: 'var(--muted)' }}>
                 {mainDone ? 'Ein Tap pro Dehnung.' : 'Nach dem Hauptteil dran.'}
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {/* Name bekommt die volle Breite; Dauer und Hinweis darunter, Steuerung kompakt rechts. */}
+              <ul className="hx-tray" style={{ marginTop: 12 }}>
                 {cooldownExercises.map((ex) => {
                   const rows = setsByExercise[ex.id] || [];
                   const done = rows.some((r) => r.logged);
+                  const meta = [formatDuration(ex.target_seconds), ex.cue].filter(Boolean).join(' · ');
                   return (
-                    <div key={ex.id} style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
+                    <li key={ex.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <button
                         onClick={() => toggleSet(ex, 0)}
                         disabled={showRestartGate || (!isOnline && !sessionId) || !rows.length}
+                        aria-pressed={done}
+                        className="hx-row"
                         style={{
                           flex: 1,
+                          minWidth: 0,
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: 10,
                           textAlign: 'left',
-                          background: done ? 'var(--success-dim)' : 'var(--surface2)',
-                          border: `1px solid ${done ? 'var(--success)' : 'var(--line)'}`,
-                          borderRadius: 11,
-                          padding: '10px 12px',
+                          background: 'none',
+                          border: 'none',
+                          borderRadius: 16,
+                          padding: '12px 4px 12px 8px',
                           minHeight: 44,
                           cursor: 'pointer',
                           color: 'var(--text)',
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span
-                            style={{
-                              fontFamily: 'var(--font-mono)',
-                              color: done ? 'var(--success)' : 'var(--muted)',
-                            }}
-                          >
-                            {done ? '✓' : '○'}
-                          </span>
-                          <span style={{ fontSize: 14, fontWeight: 500 }}>{ex.name}</span>
-                          <span
-                            style={{
-                              marginLeft: 'auto',
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: 12,
-                              color: 'var(--muted)',
-                            }}
-                          >
-                            {formatDuration(ex.target_seconds)}
-                          </span>
-                        </div>
-                        {ex.cue && (
-                          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{ex.cue}</div>
-                        )}
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            width: 22,
+                            height: 20,
+                            marginTop: 1,
+                            borderRadius: PEBBLE_RADII[0],
+                            display: 'grid',
+                            placeItems: 'center',
+                            flexShrink: 0,
+                            background: done ? 'var(--primary)' : 'var(--bg)',
+                            boxShadow: done ? 'none' : 'var(--shadow-inset-sm)',
+                            color: 'var(--on-primary)',
+                          }}
+                        >
+                          {done && <Icon name="check" size={13} style={{ strokeWidth: 2.6 }} />}
+                        </span>
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ display: 'block', fontSize: 15, fontWeight: 500, lineHeight: 1.35 }}>{ex.name}</span>
+                          {meta && (
+                            <span style={{ display: 'block', marginTop: 2, fontSize: 13, lineHeight: 1.4, color: 'var(--muted)' }}>
+                              {meta}
+                            </span>
+                          )}
+                        </span>
                       </button>
                       <button
                         onClick={() => setDetailExercise(ex)}
                         aria-label={`Details zu ${ex.name}`}
-                        style={{
-                          flexShrink: 0,
-                          width: 36,
-                          background: 'var(--surface2)',
-                          border: '1px solid var(--line)',
-                          borderRadius: 11,
-                          color: 'var(--muted)',
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: 12,
-                          cursor: 'pointer',
-                        }}
+                        className="btn btn-secondary"
+                        style={ROUND_ICON_BTN}
                       >
-                        i
+                        <Icon name="info" size={18} />
                       </button>
                       <button
                         onClick={() => {
@@ -1509,24 +1499,16 @@ export default function Heute() {
                           setRestTimerState(startRestTimer(ex.target_seconds ?? 30));
                         }}
                         aria-label={`Halte-Timer für ${ex.name}`}
-                        style={{
-                          flexShrink: 0,
-                          width: 44,
-                          background: 'var(--surface2)',
-                          border: '1px solid var(--line)',
-                          borderRadius: 11,
-                          color: 'var(--muted)',
-                          fontSize: 15,
-                          cursor: 'pointer',
-                        }}
+                        className="btn btn-secondary"
+                        style={ROUND_ICON_BTN}
                       >
-                        ⏱
+                        <Icon name="timer" size={18} />
                       </button>
-                    </div>
+                    </li>
                   );
                 })}
-              </div>
-            </div>
+              </ul>
+            </section>
           )}
 
           {noteOpen ? (
@@ -1536,52 +1518,59 @@ export default function Heute() {
               rows={2}
               maxLength={1000}
               placeholder="Notiz zur Session (optional) — z. B. Schlaf, Schmerzen, Tagesform"
+              className="neu-inset"
               style={{
+                display: 'block',
                 width: '100%',
-                background: 'var(--surface)',
-                border: '1px solid var(--line)',
+                border: 'none',
                 color: 'var(--text)',
-                borderRadius: 12,
-                padding: '10px 12px',
-                fontSize: 14,
+                borderRadius: 16,
+                padding: '12px 14px',
+                fontSize: 15,
                 resize: 'vertical',
                 marginTop: 20,
-                marginBottom: 10,
+                marginBottom: 12,
               }}
             />
           ) : (
             <button
               onClick={() => setNoteOpen(true)}
+              className="hx-row"
               style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
                 width: '100%',
-                background: 'var(--surface2)',
-                border: '1px solid var(--line)',
+                background: 'none',
+                border: 'none',
                 color: 'var(--muted)',
                 borderRadius: 12,
-                padding: '10px 12px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 12,
+                padding: '0 8px',
+                minHeight: 44,
+                fontSize: 14,
+                fontWeight: 500,
                 cursor: 'pointer',
-                marginTop: 20,
-                marginBottom: 10,
+                marginTop: 16,
+                marginBottom: 8,
               }}
             >
-              + Notiz zur Session
+              <Icon name="plus" size={16} />
+              Notiz zur Session
             </button>
           )}
 
           {sessionId && (
-            <Button onClick={finishWorkout} disabled={finishPending} fullWidth style={{ margin: '6px 0 4px' }}>
+            <Button variant="secondary" onClick={finishWorkout} disabled={finishPending} fullWidth style={{ margin: '6px 0 8px' }}>
               {finishPending ? 'Wird abgeschlossen…' : 'Workout abschließen'}
             </Button>
           )}
           {finishError && (
-            <p style={{ textAlign: 'center', color: 'var(--danger)', fontSize: 12, margin: '0 0 8px' }}>
+            <p style={{ textAlign: 'center', color: 'var(--danger)', fontSize: 13, margin: '0 0 8px' }}>
               {finishError}
             </p>
           )}
           {!isOnline && !finishError && (
-            <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 12, margin: '0 0 20px' }}>
+            <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 13, margin: '0 0 20px' }}>
               Offline — Sätze werden lokal gespeichert.
             </p>
           )}
@@ -1589,30 +1578,30 @@ export default function Heute() {
       )}
 
       {wrappedLatest?.available && !wrappedLatest.seen && !wrappedOpen && (
-        <button
-          type="button"
-          onClick={() => setWrappedOpen(true)}
-          style={{
-            width: '100%',
-            background: 'var(--primary-grad)',
-            border: 'none',
-            borderRadius: 14,
-            padding: '13px 16px',
-            marginBottom: 12,
-            color: 'var(--on-primary)',
-            fontWeight: 600,
-            fontSize: 14,
-            textAlign: 'left',
-            cursor: 'pointer',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <span>🎁 Dein Rückblick für {monthLabel(wrappedLatest.month)} ist da</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, opacity: 0.9 }}>Ansehen →</span>
-        </button>
+        <Card style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
+          <span
+            aria-hidden="true"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              display: 'grid',
+              placeItems: 'center',
+              flexShrink: 0,
+              background: 'var(--bg)',
+              boxShadow: 'var(--shadow-inset-sm)',
+              color: 'var(--primary)',
+            }}
+          >
+            <Icon name="gift" size={20} />
+          </span>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.35 }}>
+            Dein Rückblick für {monthLabel(wrappedLatest.month)} ist da
+          </span>
+          <Button variant="secondary" onClick={() => setWrappedOpen(true)} style={{ flexShrink: 0, fontSize: 14, padding: '0 16px' }}>
+            Ansehen
+          </Button>
+        </Card>
       )}
 
       {focusExercise && focusCompare && (
@@ -1672,10 +1661,10 @@ export default function Heute() {
       )}
 
       <Dialog open={switcherOpen} onClose={() => setSwitcherOpen(false)} title="Workout wechseln">
-        <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--muted)' }}>
+        <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--muted)' }}>
           Ein anderes Workout vorziehen? Die Wochenplanung und der Kalender passen sich an.
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {orderedPlan.days.map((d) => {
             const doneAt = doneThisWeek.get(d.key);
             const entry = projectionByKey.get(d.key);
@@ -1686,31 +1675,34 @@ export default function Heute() {
                 key={d.key}
                 onClick={() => selectWorkout(d)}
                 disabled={!isOnline && !selected}
+                aria-current={selected ? 'true' : undefined}
+                className="btn"
                 style={{
                   textAlign: 'left',
-                  background: selected ? 'var(--primary-dim)' : 'var(--surface)',
-                  border: `1px solid ${selected ? 'var(--primary)' : doneAt ? 'var(--success)' : 'var(--line)'}`,
-                  borderRadius: 13,
-                  padding: '11px 13px',
+                  background: 'var(--bg)',
+                  border: 'none',
+                  // Gewählt = eingedrückt, alle anderen erhaben (drückbar).
+                  boxShadow: selected ? 'var(--shadow-inset-sm)' : RAISED_SM,
+                  borderRadius: 16,
+                  padding: '12px 14px',
+                  minHeight: 44,
                   cursor: !isOnline && !selected ? 'not-allowed' : 'pointer',
                   opacity: !isOnline && !selected ? 0.5 : 1,
                   color: 'var(--text)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontWeight: 600, fontSize: 14 }}>
-                    {doneAt ? '✓ ' : ''}
+                  {doneAt && <Icon name="check" size={16} style={{ color: 'var(--primary)', strokeWidth: 2.4 }} />}
+                  <span style={{ fontWeight: 600, fontSize: 15, color: selected ? 'var(--primary)' : 'var(--text)' }}>
                     {d.name}
                   </span>
                   {isNext && (
                     <span
                       style={{
-                        padding: '2px 6px',
-                        borderRadius: 999,
-                        fontSize: 10,
-                        textTransform: 'uppercase',
-                        background: 'var(--primary-dim)',
-                        color: 'var(--primary)',
+                        marginLeft: 'auto',
+                        fontSize: 12,
+                        fontWeight: 500,
+                        color: 'var(--muted)',
                         whiteSpace: 'nowrap',
                       }}
                     >
@@ -1718,7 +1710,7 @@ export default function Heute() {
                     </span>
                   )}
                 </div>
-                <div style={{ marginTop: 4, fontFamily: 'var(--font-mono)', fontSize: 11, color: doneAt ? 'var(--success)' : 'var(--muted)' }}>
+                <div style={{ marginTop: 4, fontSize: 13, color: 'var(--muted)' }}>
                   {doneAt
                     ? `Erledigt (${doneAt.toLocaleDateString('de-DE', { weekday: 'short' })})`
                     : entry?.projectedIdx != null
@@ -1741,8 +1733,8 @@ export default function Heute() {
               background: 'none',
               border: 'none',
               padding: 0,
-              fontFamily: 'var(--font-mono)',
-              fontSize: 12,
+              minHeight: 44,
+              fontSize: 13,
               color: 'var(--muted)',
               textDecoration: 'underline',
               cursor: 'pointer',

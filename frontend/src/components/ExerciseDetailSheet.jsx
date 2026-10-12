@@ -1,7 +1,10 @@
 import { formatTargetLabel } from '../lib/exerciseCompare.js';
 import { demoSearchUrl } from '../lib/exerciseLibrary.js';
 import { formatRecordValue, primaryBest } from '../lib/records.js';
+import { useState } from 'react';
 import { useScrollLock } from '../lib/scrollLock.js';
+import Button from './ui/Button.jsx';
+import MuscleModal from './MuscleModal.jsx';
 
 const rowStyle = {
   display: 'flex',
@@ -17,6 +20,8 @@ const valueStyle = { fontFamily: 'var(--font-mono)', fontSize: 12, textAlign: 'r
 
 export default function ExerciseDetailSheet({ exercise, best, onClose }) {
   useScrollLock();
+  // Muskelansicht direkt aus den Details — der Fokus hat dafür keinen eigenen Link mehr.
+  const [showMuscles, setShowMuscles] = useState(false);
   if (!exercise) return null;
 
   const target = formatTargetLabel(exercise);
@@ -68,19 +73,25 @@ export default function ExerciseDetailSheet({ exercise, best, onClose }) {
           <button
             type="button"
             onClick={onClose}
+            className="btn btn-secondary"
             style={{
-              background: 'var(--surface2)',
-              border: '1px solid var(--line)',
-              borderRadius: 999,
-              width: 32,
-              height: 32,
-              color: 'var(--muted)',
+              background: 'var(--bg)',
+              border: 'none',
+              borderRadius: '50%',
+              width: 44,
+              height: 44,
+              padding: 0,
+              display: 'grid',
+              placeItems: 'center',
+              color: 'var(--text)',
               cursor: 'pointer',
               flexShrink: 0,
             }}
             aria-label="Schließen"
           >
-            ✕
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
+              <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />
+            </svg>
           </button>
         </div>
 
@@ -126,6 +137,10 @@ export default function ExerciseDetailSheet({ exercise, best, onClose }) {
           )}
         </div>
 
+        <Button variant="secondary" fullWidth onClick={() => setShowMuscles(true)} style={{ marginTop: 16 }}>
+          Muskeln ansehen
+        </Button>
+
         <a
           href={demoSearchUrl(exercise)}
           target="_blank"
@@ -145,6 +160,17 @@ export default function ExerciseDetailSheet({ exercise, best, onClose }) {
         >
           Video-Demo suchen
         </a>
+        {showMuscles && (
+          // Tasten nicht bis zum Sheet durchreichen — Enter/Escape würden sonst die Details mitschließen.
+          <div
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === 'Escape') setShowMuscles(false);
+            }}
+          >
+            <MuscleModal exercise={exercise} onClose={() => setShowMuscles(false)} />
+          </div>
+        )}
       </div>
     </div>
   );

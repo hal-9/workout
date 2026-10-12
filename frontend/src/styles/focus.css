@@ -1,0 +1,253 @@
+/* ---- Fokus: Sätze als Kiesel, Werte als Trommel, Pause als Becken ---- */
+
+.fx-ic {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.fx-title:active .fx-info {
+  color: var(--primary);
+}
+
+/* Kiesel: erhaben (::before) = offen, eingelassen + gefüllt (::after) = erledigt */
+.fx-peb {
+  position: relative;
+  isolation: isolate;
+  height: 52px;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  border-radius: 52% 48% 50% 50% / 58% 55% 45% 42%;
+  font: 600 15px/1 var(--font-display);
+  color: var(--muted);
+  white-space: nowrap;
+  cursor: default;
+  touch-action: manipulation;
+}
+
+.fx-peb:nth-child(2n) {
+  border-radius: 48% 52% 46% 54% / 52% 58% 42% 48%;
+}
+
+.fx-peb::before,
+.fx-peb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity 280ms var(--ease);
+}
+
+.fx-peb::before {
+  box-shadow: var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim);
+}
+
+.fx-peb::after {
+  background: var(--primary);
+  box-shadow: inset 3px 3px 6px rgba(20, 6, 20, 0.35), inset -2px -2px 5px rgba(255, 255, 255, 0.18);
+  opacity: 0;
+}
+
+.fx-peb.is-ghost {
+  font-weight: 500;
+  opacity: 0.62;
+}
+
+.fx-peb.is-cur {
+  color: var(--text);
+  font-weight: 600;
+  opacity: 1;
+  cursor: pointer;
+}
+
+.fx-peb.is-cur::before {
+  box-shadow: var(--shadow-card), inset 0 0 0 1.75px var(--primary);
+}
+
+.fx-peb.is-done {
+  color: var(--on-primary);
+  cursor: pointer;
+}
+
+.fx-peb.is-done::before {
+  opacity: 0;
+}
+
+.fx-peb.is-done::after {
+  opacity: 1;
+}
+
+/* Angesehener erledigter Satz: Ring um den Kiesel */
+.fx-peb.is-viewed {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+/* ---- Trommel ---- */
+
+.fx-drum {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  outline: none;
+  border-radius: 18px;
+  cursor: ns-resize;
+}
+
+.fx-drum:focus-visible {
+  outline: 2.5px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.fx-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  will-change: transform;
+}
+
+.fx-nb {
+  height: 30px;
+  min-width: 64px;
+  display: grid;
+  place-items: center;
+  font: 500 22px/1 var(--font-display);
+  color: var(--muted);
+  opacity: 0.45;
+  cursor: pointer;
+}
+
+.fx-num {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  min-height: 63px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  white-space: nowrap;
+  cursor: text;
+}
+
+.fx-unit {
+  margin-left: 4px;
+  font: 500 17px/1 var(--font-display);
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+.fx-drum.is-nudge .fx-strip {
+  animation: fx-nudge 700ms var(--ease);
+}
+
+@keyframes fx-nudge {
+  0% { transform: translateY(0); }
+  30% { transform: translateY(-6px); }
+  65% { transform: translateY(1.5px); }
+  100% { transform: translateY(0); }
+}
+
+/* Rollende Ziffern: alte Ziffer gleitet raus, neue rein — Richtung nach +/− */
+.fx-cell {
+  display: inline-block;
+  position: relative;
+  clip-path: inset(-0.06em -0.04em);
+}
+
+.fx-old {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  text-align: center;
+}
+
+.fx-cell.is-up .fx-new { animation: fx-in-up 220ms var(--ease); }
+.fx-cell.is-up .fx-old { animation: fx-out-up 220ms var(--ease) forwards; }
+.fx-cell.is-dn .fx-new { animation: fx-in-dn 220ms var(--ease); }
+.fx-cell.is-dn .fx-old { animation: fx-out-dn 220ms var(--ease) forwards; }
+
+.fx-new { display: inline-block; }
+
+@keyframes fx-in-up { from { transform: translateY(110%); } }
+@keyframes fx-out-up { to { transform: translateY(-110%); } }
+@keyframes fx-in-dn { from { transform: translateY(-110%); } }
+@keyframes fx-out-dn { to { transform: translateY(110%); } }
+@keyframes fx-fadeonly { from { opacity: 0; } }
+@keyframes fx-fadeout { to { opacity: 0; } }
+
+/* ---- Pause: Becken mit ablaufendem Ring ---- */
+
+@property --p {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+.fx-basin {
+  position: relative;
+  width: 124px;
+  height: 124px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  background: var(--bg);
+  box-shadow: var(--shadow-inset);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.fx-ring {
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  background: conic-gradient(var(--primary) calc(var(--p, 1) * 360deg), var(--line) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
+  transition: --p 500ms linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-peb::before,
+  .fx-peb::after {
+    transition: none;
+  }
+
+  .fx-drum.is-nudge .fx-strip {
+    animation: none;
+  }
+
+  .fx-cell.is-up .fx-new,
+  .fx-cell.is-dn .fx-new {
+    animation: fx-fadeonly 160ms ease-out;
+  }
+
+  .fx-cell.is-up .fx-old,
+  .fx-cell.is-dn .fx-old {
+    animation: fx-fadeout 160ms ease-out forwards;
+  }
+
+  .fx-ring {
+    transition: none;
+  }
+}

@@ -11,6 +11,7 @@ import {
 } from '../lib/progressionView.js';
 import Card from './ui/Card.jsx';
 import Button from './ui/Button.jsx';
+import Icon from './ui/Icon.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 
 export default function ProgressionProposals({ proposals = [], deload }) {
@@ -79,15 +80,21 @@ export default function ProgressionProposals({ proposals = [], deload }) {
                   onClick={() => setOpenWhy(whyOpen ? null : p.exercise_id)}
                   aria-expanded={whyOpen}
                   style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
                     background: 'none',
                     border: 'none',
-                    color: 'var(--primary)',
-                    fontSize: 12,
+                    color: 'var(--muted)',
+                    fontSize: 13,
+                    fontWeight: 500,
                     padding: '8px 0',
+                    minHeight: 44,
                     cursor: 'pointer',
                   }}
                 >
-                  {whyOpen ? 'Belege ausblenden ▴' : 'Belege anzeigen ▾'}
+                  {whyOpen ? 'Belege ausblenden' : 'Belege anzeigen'}
+                  <Icon name="chevronDown" size={16} style={{ transform: whyOpen ? 'rotate(180deg)' : undefined }} />
                 </button>
                 {whyOpen && (
                   <div style={{ marginBottom: 4 }}>

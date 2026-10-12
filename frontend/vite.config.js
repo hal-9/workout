@@ -22,8 +22,8 @@ export default defineConfig({
         short_name: 'LiLief',
         description: 'Selbst-gehostete Workout-PWA',
         display: 'standalone',
-        background_color: '#f6f2fb',
-        theme_color: '#f6f2fb',
+        background_color: '#241b27',
+        theme_color: '#e5dde6',
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
