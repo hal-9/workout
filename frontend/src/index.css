@@ -395,11 +395,28 @@ main {
 .btn-primary {
   color: var(--m-ink) !important;
   text-shadow: 0 1px 10px rgba(30, 6, 40, 0.38);
-  box-shadow: var(--shadow-raised-sm);
+  box-shadow: var(--shadow-card);
+}
+
+/* Lichtkante und Drück-Mulde liegen auf einer eigenen Ebene ÜBER dem Mesh —
+   ein inset-Schatten auf dem Button selbst verschwindet unter dem Verlauf. */
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.3), inset -1px -1px 0 rgba(20, 6, 40, 0.25);
+  transition: box-shadow 200ms var(--ease);
 }
 
 .btn-primary:active:not(:disabled) {
-  box-shadow: inset 3px 3px 7px rgba(20, 6, 40, 0.45), inset -2px -2px 6px rgba(255, 255, 255, 0.18);
+  box-shadow: var(--shadow-raised-sm);
+}
+
+.btn-primary:active:not(:disabled)::after {
+  box-shadow: inset 4px 4px 9px rgba(20, 6, 40, 0.55), inset -3px -3px 7px rgba(255, 255, 255, 0.2);
+  transition-duration: 90ms;
 }
 
 .mesh {
