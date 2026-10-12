@@ -7,6 +7,7 @@ import BottomNav from './components/BottomNav.jsx';
 import Header from './components/Header.jsx';
 import OfflineIndicator from './components/OfflineIndicator.jsx';
 import LoadingScreen from './components/ui/LoadingScreen.jsx';
+import { hideSplash } from './lib/splash.js';
 import Login from './screens/Login.jsx';
 import Register from './screens/Register.jsx';
 import Onboarding from './screens/Onboarding.jsx';
@@ -80,6 +81,12 @@ function OnboardingRoute() {
 }
 
 export default function App() {
+  // Splash bleibt, bis klar ist, ob jemand angemeldet ist — kein Flackern dazwischen.
+  const { isLoading } = useMe();
+  useEffect(() => {
+    if (!isLoading) hideSplash();
+  }, [isLoading]);
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />

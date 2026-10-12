@@ -5,10 +5,11 @@ import { formatRecordValue } from '../lib/records.js';
 import { playWorkoutComplete } from '../lib/workoutSounds.js';
 import { shareCard, shareCardColors } from '../lib/shareCard.js';
 import Button from './ui/Button.jsx';
-import '../styles/kal.css';
 
 const PARTICLES = particleLayout(14);
 const COUNT_UP_MS = 700;
+// Erst wenn die Pille zum Screen aufgegangen ist, startet der Rest.
+const STAGE_DELAY = 560;
 
 const RING_RADIUS = 34;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
@@ -33,9 +34,9 @@ function useCountUp(target, animate) {
       setValue(target);
       return undefined;
     }
-    const start = performance.now();
+    const start = performance.now() + STAGE_DELAY + 160;
     const tick = (now) => {
-      const progress = (now - start) / COUNT_UP_MS;
+      const progress = Math.max(0, (now - start) / COUNT_UP_MS);
       if (progress >= 1) {
         setValue(target);
         return;
@@ -53,11 +54,11 @@ function useCountUp(target, animate) {
 function Stat({ label, value, unit }) {
   return (
     <div style={{ textAlign: 'center', minWidth: 62 }}>
-      <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)' }}>
+      <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
         {value}
-        {unit && <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted)' }}> {unit}</span>}
+        {unit && <span style={{ fontSize: 14, fontWeight: 600, opacity: 0.8 }}> {unit}</span>}
       </div>
-      <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 13, opacity: 0.8, marginTop: 2 }}>{label}</div>
     </div>
   );
 }
@@ -113,35 +114,32 @@ export default function WorkoutCompleteOverlay({ stats, records = [], dayName, o
         if (e.key === 'Enter' || e.key === ' ') onDone();
       }}
       aria-label="Weiter zur Auswertung"
-      className="wc-backdrop"
+      className="stage stage-open"
       style={{
-        position: 'fixed',
-        inset: 0,
         zIndex: 90,
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 24,
-        background: 'var(--bg)',
+        padding: 'calc(env(safe-area-inset-top) + 24px) 24px calc(env(safe-area-inset-bottom) + 24px)',
         cursor: 'pointer',
       }}
     >
-      <div
-        className="wc-card neu-raised"
-        style={{
-          borderRadius: 24,
-          padding: '28px 20px 20px',
-          width: '100%',
-          maxWidth: 340,
-          textAlign: 'center',
-        }}
-      >
+      {/* Der Hauptbutton wird zum Screen: dasselbe Mesh, nur groß. */}
+      <span className="mesh mesh-stage" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+      </span>
+
+      <div style={{ width: '100%', maxWidth: 340, textAlign: 'center' }}>
         <div
           style={{
             position: 'relative',
-            width: 96,
-            height: 96,
-            margin: '0 auto 18px',
+            width: 112,
+            height: 112,
+            margin: '0 auto 22px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -153,8 +151,9 @@ export default function WorkoutCompleteOverlay({ stats, records = [], dayName, o
               position: 'absolute',
               inset: 0,
               borderRadius: '50%',
-              background: 'var(--primary-dim)',
+              background: 'color-mix(in srgb, var(--m-ink) 35%, transparent)',
               pointerEvents: 'none',
+              animationDelay: `${STAGE_DELAY + 220}ms`,
             }}
           />
 
@@ -167,77 +166,75 @@ export default function WorkoutCompleteOverlay({ stats, records = [], dayName, o
                 width: particle.size,
                 height: particle.size,
                 borderRadius: '50%',
-                background: particle.accent ? 'var(--accent)' : 'var(--primary)',
+                background: particle.accent ? 'var(--m-ink)' : 'var(--m4)',
                 opacity: 0,
                 pointerEvents: 'none',
-                '--dx': `${particle.dx}px`,
-                '--dy': `${particle.dy}px`,
-                animationDelay: `${particle.delay}ms`,
+                '--dx': `${particle.dx * 1.4}px`,
+                '--dy': `${particle.dy * 1.4}px`,
+                animationDelay: `${STAGE_DELAY + particle.delay}ms`,
               }}
             />
           ))}
 
-          {/* Ring zeichnet sich in einer eingelassenen Mulde: „erledigt" = eingelassen. */}
-          <div
-            className="neu-inset"
-            style={{
-              position: 'relative',
-              width: 96,
-              height: 96,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <svg width="80" height="80" viewBox="0 0 80 80" aria-hidden="true">
-              <circle
-                className="wc-ring"
-                cx="40"
-                cy="40"
-                r={RING_RADIUS}
-                fill="none"
-                stroke="var(--primary)"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeDasharray={RING_LENGTH}
-                strokeDashoffset={RING_LENGTH}
-                transform="rotate(-90 40 40)"
-              />
-              <path
-                className="wc-check"
-                d={CHECK_PATH}
-                fill="none"
-                stroke="var(--primary)"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray={CHECK_LENGTH}
-                strokeDashoffset={CHECK_LENGTH}
-              />
-            </svg>
-          </div>
+          <svg width="112" height="112" viewBox="0 0 80 80" aria-hidden="true" style={{ position: 'relative' }}>
+            <circle cx="40" cy="40" r={RING_RADIUS} fill="none" stroke="var(--m-ink)" strokeOpacity="0.22" strokeWidth="2.5" />
+            <circle
+              className="wc-ring"
+              cx="40"
+              cy="40"
+              r={RING_RADIUS}
+              fill="none"
+              stroke="var(--m-ink)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeDasharray={RING_LENGTH}
+              strokeDashoffset={RING_LENGTH}
+              transform="rotate(-90 40 40)"
+              style={{ animationDelay: `${STAGE_DELAY}ms` }}
+            />
+            <path
+              className="wc-check"
+              d={CHECK_PATH}
+              fill="none"
+              stroke="var(--m-ink)"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray={CHECK_LENGTH}
+              strokeDashoffset={CHECK_LENGTH}
+              style={{ animationDelay: `${STAGE_DELAY + 260}ms` }}
+            />
+          </svg>
         </div>
 
-        <h2 style={{ margin: '0 0 4px', fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em' }}>
+        <h2 className="stage-title stage-rise" style={{ fontSize: 34, marginBottom: 6, '--delay': '520ms' }}>
           {completionHeadline(records)}
         </h2>
-        <p style={{ margin: '0 0 20px', fontSize: 14, color: 'var(--muted)' }}>
+        <p className="stage-rise" style={{ margin: '0 0 28px', fontSize: 15, color: 'color-mix(in srgb, var(--m-ink) 85%, transparent)', '--delay': '600ms' }}>
           {stats?.exercises
             ? `${stats.exercises} Übung${stats.exercises === 1 ? '' : 'en'} abgeschlossen`
             : 'Session gespeichert'}
           {stats?.cooldown_sets ? ' · Cooldown erledigt' : ''}
         </p>
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: records.length ? 18 : 4 }}>
+        <div className="stage-rise" style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: records.length ? 22 : 8, '--delay': '680ms' }}>
           <Stat label="Sätze" value={sets} />
           {(stats?.tonnage_kg ?? 0) > 0 && <Stat label="Tonnage" value={tonnage} unit="kg" />}
           {(stats?.duration_min ?? 0) > 0 && <Stat label="Dauer" value={minutes} unit="min" />}
         </div>
 
         {records.length > 0 && (
-          <>
-            <ul className="kal-tray" style={{ padding: '2px 12px', borderRadius: 20, textAlign: 'left' }}>
+          <div className="stage-rise" style={{ '--delay': '760ms' }}>
+            <ul
+              style={{
+                listStyle: 'none',
+                margin: 0,
+                padding: '2px 14px',
+                borderRadius: 20,
+                textAlign: 'left',
+                background: 'color-mix(in srgb, var(--m-ink) 14%, transparent)',
+              }}
+            >
               {records.slice(0, 3).map((record) => (
                 <li
                   key={record.exercise_id}
@@ -250,36 +247,43 @@ export default function WorkoutCompleteOverlay({ stats, records = [], dayName, o
                   }}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, fontSize: 14 }}>
-                    <span style={{ color: 'var(--primary)', display: 'flex' }}>
-                      <StarIcon />
-                    </span>
+                    <StarIcon />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{record.name}</span>
                   </span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--primary)', flexShrink: 0 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
                     {formatRecordValue(record.kind, record.value)}
                   </span>
                 </li>
               ))}
             </ul>
             {records.length > 3 && (
-              <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 8 }}>+{records.length - 3} weitere</div>
+              <div style={{ fontSize: 13, opacity: 0.8, marginTop: 8 }}>+{records.length - 3} weitere</div>
             )}
-          </>
+          </div>
         )}
 
-        <Button
-          variant="secondary"
-          fullWidth
-          onClick={handleShare}
-          disabled={sharing}
-          style={{ marginTop: 20, fontSize: 15 }}
-        >
-          {sharing ? 'Bild wird erstellt…' : 'Als Bild teilen'}
-        </Button>
+        <div className="stage-rise" style={{ '--delay': '860ms' }}>
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={handleShare}
+            disabled={sharing}
+            className="btn btn-veil"
+            style={{ marginTop: 26, fontSize: 15 }}
+          >
+            {sharing ? 'Bild wird erstellt…' : 'Als Bild teilen'}
+          </Button>
 
-        <Button fullWidth onClick={(e) => { e.stopPropagation(); onDone(); }} style={{ marginTop: 12, minHeight: 52 }}>
-          Zur Auswertung
-        </Button>
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={(e) => { e.stopPropagation(); onDone(); }}
+            className="btn btn-ink"
+            style={{ marginTop: 12, minHeight: 52 }}
+          >
+            Zur Auswertung
+          </Button>
+        </div>
       </div>
     </div>
   );

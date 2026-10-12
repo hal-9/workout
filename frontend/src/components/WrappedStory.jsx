@@ -52,7 +52,7 @@ function Slide({ kicker, children }) {
   );
 }
 
-// Fullscreen-Story im Stil der aktiven Palette: Tap rechts = weiter, links = zurück.
+// Fullscreen-Story auf der Mesh-Bühne: Tap rechts = weiter, links = zurück.
 // Markiert den Monat beim Öffnen als gesehen (Banner verschwindet auch bei Abbruch).
 export default function WrappedStory({ month, onClose }) {
   const queryClient = useQueryClient();
@@ -166,10 +166,8 @@ export default function WrappedStory({ month, onClose }) {
   return (
     <div
       onClick={advance}
-      className="kal-story"
+      className="stage stage-open"
       style={{
-        position: 'fixed',
-        inset: 0,
         zIndex: 100,
         display: 'flex',
         flexDirection: 'column',
@@ -179,7 +177,7 @@ export default function WrappedStory({ month, onClose }) {
       }}
     >
       {/* Der eine festliche Ort: das Mesh als ganze Bühne. */}
-      <span className="mesh" aria-hidden="true">
+      <span className="mesh mesh-stage" aria-hidden="true">
         <i />
         <i />
         <i />
@@ -226,7 +224,10 @@ export default function WrappedStory({ month, onClose }) {
         </button>
       </div>
 
-      {slides.length ? slides[Math.min(index, slides.length - 1)] : <Slide>Lade…</Slide>}
+      {/* key = index: jede Folie kommt neu aus der Unschärfe; die erste erst, wenn die Pille offen ist. */}
+      <div key={index} className="stage-rise" style={{ flex: 1, display: 'flex', '--delay': index === 0 ? '420ms' : '0ms' }}>
+        {slides.length ? slides[Math.min(index, slides.length - 1)] : <Slide>Lade…</Slide>}
+      </div>
 
       <div style={{ textAlign: 'center', padding: '0 0 22px', fontSize: 13, opacity: 0.8 }}>
         {last ? 'Tippen zum Schließen' : 'Tippen für mehr'}

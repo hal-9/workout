@@ -1,19 +1,64 @@
 import { formatRecordValue } from './records.js';
 
 // Share-Card im Story-Format: zeichnet die Session-Kennzahlen auf ein Canvas
-// im Look der aktiven Palette und teilt das PNG über navigator.share
+// auf dem Mesh der Hauptbuttons und teilt das PNG über navigator.share
 // (Fallback: Download). Reine Canvas-2D-API, keine Dependencies.
 export const SHARE_WIDTH = 1080;
 export const SHARE_HEIGHT = 1920;
 
 const FONT = "-apple-system, 'Segoe UI', 'Helvetica Neue', sans-serif";
 
+// Dieselben Mesh-Farben wie Hauptbutton und Bühne (in beiden Modi gleich).
+const MESH_FALLBACK = { m0: '#4a2fa0', m1: '#2e2380', m2: '#7b3fc0', m3: '#b0306e', m4: '#e07a5f', ink: '#fff7fb' };
+
 export function shareCardColors() {
   const cs = getComputedStyle(document.documentElement);
+  const read = (name, key) => cs.getPropertyValue(name).trim() || MESH_FALLBACK[key];
   return {
-    gradFrom: cs.getPropertyValue('--grad-from').trim() || '#8b5cf6',
-    gradTo: cs.getPropertyValue('--grad-to').trim() || '#ec4899',
+    m0: read('--m0', 'm0'),
+    m1: read('--m1', 'm1'),
+    m2: read('--m2', 'm2'),
+    m3: read('--m3', 'm3'),
+    m4: read('--m4', 'm4'),
+    ink: read('--m-ink', 'ink'),
   };
+}
+
+// Weiche Farbflecken statt CSS-blur (ctx.filter fehlt in älterem Safari) + Korn.
+function drawMesh(ctx, W, H, c) {
+  ctx.fillStyle = c.m0;
+  ctx.fillRect(0, 0, W, H);
+  const blobs = [
+    [c.m1, 0.1, 0.1, 0.62],
+    [c.m2, 0.3, 0.52, 0.55],
+    [c.m3, 0.82, 0.86, 0.6],
+    [c.m4, 0.95, 0.12, 0.42],
+  ];
+  for (const [color, x, y, r] of blobs) {
+    const g = ctx.createRadialGradient(W * x, H * y, 0, W * x, H * y, H * r);
+    g.addColorStop(0, color);
+    g.addColorStop(0.45, `${color}b0`);
+    g.addColorStop(1, `${color}00`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  const grain = document.createElement('canvas');
+  grain.width = grain.height = 160;
+  const gctx = grain.getContext('2d');
+  const img = gctx.createImageData(160, 160);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = Math.random() * 255;
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+    img.data[i + 3] = 255;
+  }
+  gctx.putImageData(img, 0, 0);
+  ctx.save();
+  ctx.globalCompositeOperation = 'overlay';
+  ctx.globalAlpha = 0.28;
+  ctx.fillStyle = ctx.createPattern(grain, 'repeat');
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
 }
 
 function roundedRect(ctx, x, y, w, h, r) {
@@ -45,33 +90,22 @@ export function drawShareCard(canvas, { colors, dayName, dateLabel, stats, recor
   const H = SHARE_HEIGHT;
   const cx = W / 2;
 
-  // Hintergrund: Paletten-Gradient + zwei weiche Lichtkreise für Tiefe
-  const grad = ctx.createLinearGradient(0, 0, W, H);
-  grad.addColorStop(0, colors.gradFrom);
-  grad.addColorStop(1, colors.gradTo);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-  ctx.beginPath();
-  ctx.arc(W * 0.85, H * 0.16, 340, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(W * 0.08, H * 0.82, 420, 0, Math.PI * 2);
-  ctx.fill();
+  drawMesh(ctx, W, H, colors);
+  ctx.shadowColor = 'rgba(30, 6, 40, 0.35)';
+  ctx.shadowBlur = 28;
 
   ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-  ctx.font = `700 44px ${FONT}`;
-  const brand = 'L I L I E F';
-  ctx.fillText(brand, cx, 170);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.fillStyle = colors.ink;
+  ctx.font = `800 88px ${FONT}`;
+  ctx.fillText('LiLief', cx, 200);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.78)';
   ctx.font = `500 36px ${FONT}`;
-  ctx.fillText(dateLabel, cx, 232);
+  ctx.fillText(dateLabel, cx, 262);
 
   // Haken im Ring
   const ringY = 470;
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
-  ctx.lineWidth = 10;
+  ctx.lineWidth = 8;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.beginPath();
@@ -117,9 +151,12 @@ export function drawShareCard(canvas, { colors, dayName, dateLabel, stats, recor
   for (const record of shown) {
     const boxX = 90;
     const boxW = W - 180;
+    ctx.save();
+    ctx.shadowColor = 'transparent';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
     roundedRect(ctx, boxX, y, boxW, 110, 26);
     ctx.fill();
+    ctx.restore();
 
     ctx.textAlign = 'right';
     ctx.fillStyle = '#ffffff';

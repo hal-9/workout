@@ -66,15 +66,6 @@
   font-weight: 650;
 }
 
-/* Rückblick: Mesh als große Bühne, Schrift wie auf dem Hauptbutton. */
-.kal-story {
-  isolation: isolate;
-  overflow: hidden;
-  background: var(--m0);
-  color: var(--m-ink);
-  text-shadow: 0 1px 14px rgba(30, 6, 40, 0.35);
-}
-
 .kal-story-close {
   background: color-mix(in srgb, var(--m-ink) 18%, transparent);
 }

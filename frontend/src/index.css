@@ -142,16 +142,6 @@ button {
 
 /* ---- Workout-Abschluss ---- */
 
-@keyframes wc-backdrop {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-@keyframes wc-card {
-  from { opacity: 0; transform: scale(0.94) translateY(8px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
 @keyframes wc-draw {
   to { stroke-dashoffset: 0; }
 }
@@ -166,14 +156,6 @@ button {
   0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
   22%  { opacity: 1; transform: translate(calc(var(--dx) * 0.55), calc(var(--dy) * 0.55)) scale(1); }
   100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 34px)) scale(0.7); }
-}
-
-.wc-backdrop {
-  animation: wc-backdrop 200ms ease-out both;
-}
-
-.wc-card {
-  animation: wc-card 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .wc-ring,
@@ -196,12 +178,6 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wc-card,
-  .wc-backdrop {
-    animation-duration: 150ms;
-    animation-timing-function: ease-out;
-  }
-
   .wc-ring,
   .wc-check {
     animation: none;
@@ -515,4 +491,146 @@ main {
 ::selection {
   background: var(--primary-dim);
   color: var(--text);
+}
+
+/* ---- Bühne: das Mesh vom Hauptbutton auf ganzer Bildschirmgröße ----
+   Boot, Workout-Abschluss und Rückblick. Der Auftritt ist immer derselbe:
+   eine Hauptbutton-Pille in der Mitte, kurz gedrückt, dann wird sie zum Screen. */
+
+.mesh-stage i {
+  filter: blur(56px);
+}
+
+.mesh-stage i:nth-child(1) { width: 95vmax; height: 95vmax; left: -45vmax; top: -30vmax; animation: stage-d1 9s ease-in-out infinite alternate; }
+.mesh-stage i:nth-child(2) { width: 80vmax; height: 80vmax; left: -5vw; top: 25vh; animation: stage-d2 11s ease-in-out infinite alternate; }
+.mesh-stage i:nth-child(3) { width: 75vmax; height: 75vmax; left: 35vw; top: 50vh; animation: stage-d3 10s ease-in-out infinite alternate; }
+.mesh-stage i:nth-child(4) { width: 55vmax; height: 55vmax; left: 50vw; top: -18vh; animation: stage-d4 8s ease-in-out infinite alternate; }
+
+@keyframes stage-d1 { to { transform: translate(22%, 14%) scale(1.15); } }
+@keyframes stage-d2 { to { transform: translate(18%, -16%) scale(0.88); } }
+@keyframes stage-d3 { to { transform: translate(-20%, -12%) scale(1.12); } }
+@keyframes stage-d4 { to { transform: translate(-24%, 20%) scale(1.2); } }
+
+.stage {
+  position: fixed;
+  inset: 0;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--m0);
+  color: var(--m-ink);
+  text-shadow: 0 1px 14px rgba(30, 6, 40, 0.35);
+}
+
+/* Pille erscheint → wird gedrückt → wächst zum Screen. */
+.stage-open {
+  animation: stage-open 1050ms both;
+}
+
+@keyframes stage-open {
+  0% {
+    clip-path: inset(calc(50% - 28px) 22% round 28px);
+    transform: scale(0.9);
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.1, 1);
+  }
+  16% {
+    clip-path: inset(calc(50% - 28px) 22% round 28px);
+    transform: scale(1);
+    opacity: 1;
+    animation-timing-function: ease-in-out;
+  }
+  30% {
+    clip-path: inset(calc(50% - 28px) 22% round 28px);
+    transform: scale(0.95);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  100% {
+    clip-path: inset(0 round 0);
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Inhalt der Bühne kommt aus der Unschärfe, wenn die Pille aufgeht. */
+.stage-rise {
+  animation: stage-rise 700ms cubic-bezier(0.2, 0.9, 0.1, 1) both;
+  animation-delay: var(--delay, 420ms);
+}
+
+@keyframes stage-rise {
+  from { opacity: 0; filter: blur(10px); transform: translateY(12px); }
+  to { opacity: 1; filter: blur(0); transform: none; }
+}
+
+.stage-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(52px, 17vw, 84px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.stage-title.stage-rise {
+  animation-name: stage-title;
+  animation-duration: 900ms;
+}
+
+@keyframes stage-title {
+  from { opacity: 0; filter: blur(12px); letter-spacing: 0.12em; transform: scale(0.96); }
+  to { opacity: 1; filter: blur(0); letter-spacing: -0.035em; transform: none; }
+}
+
+/* Weißer Pillen-Button auf der Bühne — ein Mesh-Button wäre auf dem Mesh unsichtbar. */
+.btn-ink {
+  background: var(--m-ink) !important;
+  color: var(--m0) !important;
+  text-shadow: none;
+  box-shadow: 0 8px 24px rgba(30, 6, 40, 0.3);
+}
+
+.btn-veil {
+  background: color-mix(in srgb, var(--m-ink) 18%, transparent) !important;
+  color: var(--m-ink) !important;
+}
+
+/* Boot-Splash (index.html): liegt über der App, bis /me beantwortet ist. */
+#splash {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--bg);
+  transition: opacity 420ms ease-out;
+}
+
+#splash .stage {
+  display: grid;
+  place-items: center;
+}
+
+#splash.splash-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#splash.splash-out .stage-title {
+  transform: scale(1.06);
+  transition: transform 420ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mesh-stage i,
+  .stage-open {
+    animation: none;
+  }
+
+  .stage-rise,
+  .stage-title.stage-rise {
+    animation: stage-fade 200ms ease-out both;
+  }
+
+  @keyframes stage-fade {
+    from { opacity: 0; }
+  }
 }

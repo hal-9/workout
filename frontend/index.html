@@ -10,8 +10,18 @@
     <meta name="apple-mobile-web-app-title" content="LiLief" />
     <meta name="theme-color" content="#e5dde6" />
     <title>LiLief-Workout</title>
+    <script>
+      // Dunkelmodus schon vor dem Bundle setzen, sonst blitzt der Splash hell.
+      try { if (localStorage.getItem('lilief-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch {}
+    </script>
   </head>
   <body>
+    <div id="splash" aria-hidden="true">
+      <div class="stage stage-open">
+        <span class="mesh mesh-stage"><i></i><i></i><i></i><i></i></span>
+        <h1 class="stage-title stage-rise">LiLief</h1>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
