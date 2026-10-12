@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ZONE_HINTS, ZONE_LABELS, exerciseZones } from 'shared/muscles';
 import { useScrollLock } from '../lib/scrollLock.js';
 import { CloseButton } from './ui/Dialog.jsx';
@@ -65,7 +66,9 @@ export default function MuscleModal({ exercise, onClose }) {
 
   if (!exercise) return null;
 
-  return (
+  // Portal an den body: aus dem Detail-Sheet heraus geöffnet, wäre „fixed" sonst
+  // relativ zum Sheet (Transform/Backdrop-Filter) und die Karte säße unten darin.
+  return createPortal(
     <div
       onClick={onClose}
       className="ui-scrim"
@@ -178,6 +181,7 @@ export default function MuscleModal({ exercise, onClose }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

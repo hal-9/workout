@@ -380,17 +380,16 @@ export default function ExerciseFocus({
   const sideSuffix = (setNumber) => (exercise.unilateral ? ` · ${sideLabel(exercise, setNumber)}` : '');
   const perSide = exercise.unilateral ? ' pro Seite' : '';
 
-  // Ziel aus dem Plan, „zuletzt" aus der Historie — beides unter den Werten.
-  const targetHint = isDurationType
+  // Ziel aus dem Plan, „zuletzt" aus der Historie — beides in der Liste unter den Werten.
+  const targetValue = isDurationType
     ? exercise.target_seconds
-      ? `Ziel ${toInputValue(exercise.target_seconds, exercise.type)} ${durUnit}${perSide}`
+      ? `${toInputValue(exercise.target_seconds, exercise.type)} ${durUnit}${perSide}`
       : null
     : targetParsed
-      ? `Ziel ${targetParsed.min === targetParsed.max ? targetParsed.min : `${targetParsed.min}–${targetParsed.max}`}${perSide}`
+      ? `${targetParsed.min === targetParsed.max ? targetParsed.min : `${targetParsed.min}–${targetParsed.max}`} Wdh.${perSide}`
       : null;
   const lastSets = compare.lastSets ?? [];
   const lastWeight = lastSets[viewIndex]?.weight_kg ?? lastSets.find((s) => s.weight_kg != null)?.weight_kg;
-  const weightHint = lastWeight != null ? `zuletzt ${fmtNum(lastWeight)} kg` : null;
   // Letzte Leistung für Satz i (Kiesel + Untertitel), sonst null.
   function lastValueFor(i) {
     const s = lastSets[i];
@@ -404,15 +403,17 @@ export default function ExerciseFocus({
     return String(row.reps);
   }
   const viewLast = lastValueFor(viewIndex);
-  // Mulde zeigt nur die Zahlen — Ziel und Verlauf stehen darunter.
-  const caption = reviewing
-    ? `Satz ${viewIndex + 1} von ${rows.length}${sideSuffix(viewRow.set_number)} · erledigt`
-    : [`Satz ${viewIndex + 1} von ${rows.length}${sideSuffix(viewRow.set_number)}`, targetHint].filter(Boolean).join(' · ');
-  const history = reviewing
-    ? null
-    : [viewLast ? `letztes Mal ${viewLast}${isDurationType ? '' : ' Wdh.'}` : null, isWeighted ? weightHint : null]
-        .filter(Boolean)
-        .join(' · ') || null;
+  // Mulde zeigt nur die Zahlen — Satz, Ziel und Verlauf stehen als Liste darunter.
+  const lastLabel = viewLast
+    ? `${viewLast}${isDurationType ? '' : ' Wdh.'}${isWeighted && lastWeight != null ? ` × ${fmtNum(lastWeight)} kg` : ''}`
+    : null;
+  const infoRows = [
+    ['Satz', `${viewIndex + 1} von ${rows.length}${reviewing ? ' · erledigt' : ''}`],
+    targetValue && ['Ziel', targetValue],
+    lastLabel && ['Letztes Mal', lastLabel],
+  ].filter(Boolean);
+  // Viele Sätze: Kiesel werden schmaler, erledigte zeigen nur noch die Wdh.
+  const crowded = rows.length >= 5;
 
   const nextRow = rows[activeIndex];
   const nextSetPreview = nextRow
@@ -578,18 +579,13 @@ export default function ExerciseFocus({
           {segments.map((status, i) => (
             <span
               key={i}
-              style={{
-                height: 4,
-                borderRadius: 2,
-                background: status === 'done' ? 'var(--text)' : status === 'current' ? 'var(--primary)' : 'var(--line)',
-                opacity: status === 'done' ? 0.7 : 1,
-              }}
+              className={`fx-seg${status === 'done' ? ' is-done' : status === 'current' ? ' is-cur' : ''}`}
             />
           ))}
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', padding: '0 20px 16px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', padding: '0 20px 16px', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 22 }}>
           <button
             type="button"
@@ -634,7 +630,7 @@ export default function ExerciseFocus({
         <div
           role="group"
           aria-label="Sätze"
-          style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(Math.max(rows.length, 1), 4)}, 1fr)`, gap: 12, marginTop: 22 }}
+          style={{ display: 'flex', gap: crowded ? 8 : 12, marginTop: 22 }}
         >
           {rows.map((row, i) => {
             const state = row.logged ? 'done' : i === activeIndex ? 'cur' : 'open';
@@ -653,6 +649,7 @@ export default function ExerciseFocus({
                 key={row.set_number}
                 type="button"
                 className={cls}
+                style={{ flex: '1 1 0', fontSize: crowded ? 13 : undefined }}
                 onClick={selectable ? () => selectDot(i) : undefined}
                 disabled={!selectable}
                 aria-pressed={i === viewIndex}
@@ -662,10 +659,20 @@ export default function ExerciseFocus({
                     : `${state === 'cur' ? 'aktuell' : 'offen'}${last ? `, letztes Mal ${last}` : ''}`
                 }`}
               >
-                {row.logged ? doneLabelFor(row) : last ?? row.set_number}
+                {row.logged ? (crowded && !isDurationType ? row.reps : doneLabelFor(row)) : last ?? row.set_number}
               </button>
             );
           })}
+          {/* Gleiche Form wie die Sätze: ein weiterer Kiesel, nur mit Plus. */}
+          <button
+            type="button"
+            className="fx-peb fx-peb-add"
+            style={{ flex: '1 1 0' }}
+            onClick={onAddExtraSet}
+            aria-label="Satz hinzufügen"
+          >
+            <Icon name="plus" size={18} />
+          </button>
         </div>
         {viewSide && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
@@ -688,8 +695,13 @@ export default function ExerciseFocus({
           ref={editAreaRef}
           className="neu-inset fx-well"
           style={{
+            // Wächst in den freien Platz bis zu den Buttons, Zahlen bleiben mittig.
+            flex: '1 1 auto',
+            minHeight: 168,
+            maxHeight: 340,
             display: 'grid',
             gridTemplateColumns: sideCell ? '1fr 1fr' : '1fr',
+            alignItems: 'center',
             marginTop: 16,
             borderRadius: 26,
             padding: '18px 0',
@@ -700,27 +712,14 @@ export default function ExerciseFocus({
           {sideCell && <div style={{ borderLeft: '1px solid var(--line)' }}>{sideCell}</div>}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
-          <p aria-live="polite" style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--muted)', textAlign: 'center' }}>
-            {caption}
-            {history && (
-              <>
-                <br />
-                <span style={{ opacity: 0.8 }}>{history}</span>
-              </>
-            )}
-          </p>
-          <button
-            type="button"
-            onClick={onAddExtraSet}
-            className="btn btn-secondary"
-            aria-label="Satz hinzufügen"
-            style={{ ...pillStyle, flex: 'none', height: 36, padding: '0 12px', fontSize: 13, gap: 4, color: 'var(--muted)' }}
-          >
-            <Icon name="plus" size={14} />
-            Satz
-          </button>
-        </div>
+        <dl aria-live="polite" className="fx-info">
+          {infoRows.map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
 
         {isBanded && (
           <div style={{ marginTop: 10, fontSize: 13, color: 'var(--muted)', textAlign: 'center', minHeight: 18 }}>

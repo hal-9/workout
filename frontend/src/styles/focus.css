@@ -290,3 +290,78 @@
     radial-gradient(40% 60% at 95% 5%, color-mix(in srgb, var(--m4) 12%, transparent), transparent 70%),
     var(--bg);
 }
+
+/* Plus-Kiesel: erhaben wie die offenen Sätze, drückbar. */
+.fx-peb.fx-peb-add {
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.fx-peb.fx-peb-add:active::before {
+  box-shadow: var(--shadow-inset-sm);
+}
+
+/* Satz / Ziel / Letztes Mal als ruhige Liste unter der Mulde. */
+.fx-info {
+  margin: 18px 4px 0;
+}
+
+.fx-info > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 6px;
+}
+
+.fx-info > div + div {
+  border-top: 1px solid var(--line);
+}
+
+.fx-info dt {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.fx-info dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Übungs-Fortschritt oben: aktuelle leuchtet und atmet wie eine LED im Dunkeln,
+   erledigte glimmen ruhig grün. */
+.fx-seg {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.fx-seg.is-done {
+  background: var(--success);
+  box-shadow: 0 0 6px 1px color-mix(in srgb, var(--success) 75%, transparent),
+    0 0 14px 2px color-mix(in srgb, var(--success) 35%, transparent);
+}
+
+.fx-seg.is-cur {
+  background: var(--primary);
+  box-shadow: 0 0 6px 1px var(--primary),
+    0 0 18px 3px color-mix(in srgb, var(--primary) 55%, transparent);
+  animation: fx-seg-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes fx-seg-breathe {
+  50% {
+    opacity: 0.4;
+    box-shadow: 0 0 2px 0 color-mix(in srgb, var(--primary) 40%, transparent),
+      0 0 4px 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-seg.is-cur {
+    animation: none;
+  }
+}
