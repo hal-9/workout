@@ -410,6 +410,12 @@ main {
   z-index: -1;
   pointer-events: none;
   background: var(--m0);
+  /* Safari clippt animierte/geblurte Kinder (eigene GPU-Layer) nicht an
+     overflow + border-radius — dann ragt das Mesh eckig heraus. Eine Maske
+     erzwingt den runden Zuschnitt auch für diese Layer. */
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
+  transform: translateZ(0);
 }
 
 .mesh i {
