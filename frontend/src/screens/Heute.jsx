@@ -1023,9 +1023,9 @@ export default function Heute() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
+                gap: 10,
                 borderRadius: 999,
-                padding: '8px 12px',
+                padding: '10px 16px',
                 whiteSpace: 'nowrap',
               }}
             >

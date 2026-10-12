@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { durationUnitLabel, formatDuration, fromInputValue, toInputValue } from 'shared/duration';
 import { parseTargetReps } from '../lib/exerciseCompare.js';
 import { sideLabel } from '../lib/setRows.js';
@@ -18,7 +18,7 @@ import '../styles/focus.css';
 
 const HOLD_PREP_SECONDS = 3;
 
-const DRUM_STEP_PX = 28;
+const DRUM_STEP_PX = 46;
 const DRUM_MAX_FLICK_STEPS = 8;
 const DRUM_HINT_KEY = 'focusDrumHintSeen';
 
@@ -89,7 +89,7 @@ const linkStyle = {
 };
 
 const labelStyle = { display: 'block', fontSize: 13, fontWeight: 500, letterSpacing: '0.01em', color: 'var(--muted)' };
-const hintStyle = { display: 'block', marginTop: 6, fontSize: 13, fontWeight: 500, color: 'var(--muted)', minHeight: 17 };
+const hintStyle = { display: 'block', marginTop: 16, fontSize: 13, fontWeight: 500, color: 'var(--muted)', minHeight: 17 };
 
 const ICONS = {
   close: <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,
@@ -435,15 +435,13 @@ export default function ExerciseFocus({
   // Zweite Spalte der Wertemulde: Gewicht oder Bänder (oder keine).
   const bigCell = holdPhase ? (
     <div>
-      <span style={labelStyle}>{isDurationType ? 'Dauer' : 'Wiederholungen'}</span>
-      <div className="fx-num" style={{ marginTop: 30, marginBottom: 30, fontSize: 60 }} role="timer" aria-live="off">
+      <div className="fx-num" style={{ marginTop: 34, marginBottom: 35, fontSize: 60 }} role="timer" aria-live="off">
         {holdPhase === 'prep' ? holdSecondsLeft : formatDuration(holdSecondsLeft)}
       </div>
       <span style={hintStyle}>{holdPhase === 'prep' ? 'Gleich geht’s los' : 'Halten'}</span>
     </div>
   ) : (
     <div>
-      <span style={labelStyle}>{isDurationType ? 'Dauer' : 'Wiederholungen'}</span>
       <Drum
         value={Number(bigValue) || 0}
         step={1}
@@ -471,7 +469,6 @@ export default function ExerciseFocus({
 
   const sideCell = isWeighted ? (
     <div>
-      <span style={labelStyle}>Gewicht</span>
       <Drum
         value={Number(kgValue) || 0}
         step={weightStep}
@@ -497,7 +494,7 @@ export default function ExerciseFocus({
     </div>
   ) : isBanded ? (
     <div>
-      <span style={labelStyle}>{editing === 'bandkg' ? 'kg pro Band' : 'Bänder'}</span>
+      {editing === 'bandkg' && <span style={labelStyle}>kg pro Band</span>}
       <Drum
         value={bandCount}
         step={1}
@@ -668,24 +665,8 @@ export default function ExerciseFocus({
             );
           })}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 10, flexWrap: 'wrap' }}>
-          <p aria-live="polite" style={{ margin: 0, fontSize: 14, fontWeight: 500, color: 'var(--muted)', textAlign: 'center' }}>
-            {caption}
-          </p>
-          <button
-            type="button"
-            onClick={onAddExtraSet}
-            className="btn btn-secondary"
-            aria-label="Satz hinzufügen"
-            style={{ ...pillStyle, flex: 'none', height: 44, padding: '0 14px', fontSize: 14, gap: 4, color: 'var(--muted)' }}
-          >
-            <Icon name="plus" size={16} />
-            Satz
-          </button>
-        </div>
-
         {viewSide && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
             <span
               style={{
                 padding: '6px 16px',
@@ -709,12 +690,28 @@ export default function ExerciseFocus({
             gridTemplateColumns: sideCell ? '1fr 1fr' : '1fr',
             marginTop: 16,
             borderRadius: 26,
-            padding: '14px 0 12px',
+            padding: '18px 0 16px',
             textAlign: 'center',
           }}
         >
           {bigCell}
           {sideCell && <div style={{ borderLeft: '1px solid var(--line)' }}>{sideCell}</div>}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+          <p aria-live="polite" style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--muted)', textAlign: 'center' }}>
+            {caption}
+          </p>
+          <button
+            type="button"
+            onClick={onAddExtraSet}
+            className="btn btn-secondary"
+            aria-label="Satz hinzufügen"
+            style={{ ...pillStyle, flex: 'none', height: 36, padding: '0 12px', fontSize: 13, gap: 4, color: 'var(--muted)' }}
+          >
+            <Icon name="plus" size={14} />
+            Satz
+          </button>
         </div>
 
         {isBanded && (
@@ -937,30 +934,54 @@ function stepFeedback() {
   }
 }
 
-// Trommel: Wert mit blassen Nachbarn (kleiner oben, größer unten, wie ein
-// iOS-Picker). Hochziehen erhöht, runterziehen verringert — alle 28px ein
-// Schritt, Schwung wird hochgerechnet, Loslassen rastet weich ein. Antippen
-// eines Nachbarn setzt ihn, Antippen der Mitte öffnet die direkte Eingabe.
+// Trommel wie ein iOS-Picker: kleiner oben, größer unten. Die Zahlen folgen dem
+// Finger 1:1 (ein Schritt = DRUM_STEP_PX) und werden zum Rand hin kleiner und
+// blasser. Schwung wird hochgerechnet, Loslassen rastet weich ein. Antippen
+// eines Nachbarn rollt zu ihm, Antippen der Mitte öffnet die direkte Eingabe.
+const DRUM_SLOTS = [-2, -1, 0, 1, 2];
+
 function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onChange, onEdit }) {
-  const stripRef = useRef(null);
+  const rootRef = useRef(null);
+  const itemRefs = useRef([]);
   const dragRef = useRef(null);
   const offsetRef = useRef(0);
+  const pendingRef = useRef(null);
   const rafRef = useRef(0);
   const suppressClickUntil = useRef(0);
-  const [dragging, setDragging] = useState(false);
 
   useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
 
   const display = fmtNum(value);
-  const below = value + step;
-  const above = value - step;
-  const hasAbove = above >= min - 1e-9;
   const numSize = display.length > 4 ? 40 : display.length > 3 ? 48 : 60;
 
+  // Position, Größe und Deckkraft jeder Zahl aus ihrem Abstand zur Mitte.
   function setOffset(px) {
     offsetRef.current = px;
-    if (stripRef.current) stripRef.current.style.transform = px ? `translateY(${px}px)` : '';
+    DRUM_SLOTS.forEach((k, i) => {
+      const el = itemRefs.current[i];
+      if (!el) return;
+      const y = k * DRUM_STEP_PX + px;
+      const d = Math.abs(y) / DRUM_STEP_PX;
+      const scale = 1 - 0.58 * Math.min(d, 1);
+      const opacity = d < 1 ? 1 - 0.8 * d : Math.max(0, 0.2 * (1.6 - d) / 0.6);
+      el.style.transform = `translateY(calc(-50% + ${y}px)) scale(${scale})`;
+      el.style.opacity = opacity;
+      // Einheit nur an der Mitte; blendet aus, bevor die Nachbarzahl übernimmt.
+      el.lastChild.style.opacity = Math.max(0, 1 - 2 * d);
+    });
   }
+
+  // Nach jedem Render neu anlegen; nach Tippen/Taste vom alten Platz aus einrollen.
+  useLayoutEffect(() => {
+    if (pendingRef.current != null) {
+      const from = pendingRef.current;
+      pendingRef.current = null;
+      setOffset(from);
+      settle();
+    } else {
+      setOffset(offsetRef.current);
+    }
+  });
 
   // Kritisch gedämpft zurück auf 0, vom aktuellen Stand aus (unterbrechbar).
   function settle() {
@@ -971,10 +992,10 @@ function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onCh
       return;
     }
     const t0 = performance.now();
-    const omega = 32; // nach ~250 ms in Ruhe
+    const omega = 22; // nach ~380 ms in Ruhe
     const frame = (now) => {
       const t = (now - t0) / 1000;
-      if (t >= 0.25) {
+      if (t >= 0.38) {
         setOffset(0);
         return;
       }
@@ -984,10 +1005,13 @@ function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onCh
     rafRef.current = requestAnimationFrame(frame);
   }
 
-  // Einzelschritt (Tippen, Tastatur) mit Untergrenze.
+  // Einzelschritt (Tippen, Tastatur) mit Untergrenze — rollt sichtbar dorthin.
   function bump(delta) {
     const next = delta < 0 ? Math.max(Math.min(value, min), value + delta) : value + delta;
-    if (next !== value) onChange(next - value);
+    if (next === value) return;
+    cancelAnimationFrame(rafRef.current);
+    pendingRef.current = offsetRef.current + ((next - value) / step) * DRUM_STEP_PX;
+    onChange(next - value);
   }
 
   // Ziehen: Schritte relativ zum Start, nach oben geht nur die Differenz.
@@ -1002,12 +1026,12 @@ function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onCh
   function handlePointerDown(e) {
     if (editor || e.button !== 0) return;
     cancelAnimationFrame(rafRef.current);
+    pendingRef.current = null;
     const startOffset = offsetRef.current;
     dragRef.current = {
       id: e.pointerId,
       yStart: e.clientY,
       y0: e.clientY - startOffset,
-      startValue: value,
       // Nicht unter die Untergrenze; liegt der Wert schon darunter, nicht hochzwingen.
       minSteps: Math.min(0, Math.ceil((min - value) / step - 1e-9)),
       applied: 0,
@@ -1029,7 +1053,6 @@ function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onCh
       } catch {
         /* Pointer nicht mehr aktiv */
       }
-      setDragging(true);
     }
     const dy = e.clientY - d.y0;
     const raw = Math.round(-dy / DRUM_STEP_PX);
@@ -1056,18 +1079,26 @@ function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onCh
       const v = dt > 0 ? ((e.clientY - first.y) / dt) * 1000 : 0; // px/s
       const projected = ((v / 1000) * 0.998) / (1 - 0.998);
       const flick = Math.max(-DRUM_MAX_FLICK_STEPS, Math.min(DRUM_MAX_FLICK_STEPS, Math.round(-projected / DRUM_STEP_PX)));
-      if (Math.abs(v) > 300 && flick) applySteps(d, Math.max(d.minSteps, d.applied + flick));
+      if (Math.abs(v) > 300 && flick) {
+        const before = d.applied;
+        applySteps(d, Math.max(d.minSteps, d.applied + flick));
+        // Die letzten Schritte sichtbar auslaufen lassen (max. zwei Zeilen).
+        const moved = Math.max(-2, Math.min(2, d.applied - before));
+        if (moved) pendingRef.current = offsetRef.current + moved * DRUM_STEP_PX;
+      }
     }
     suppressClickUntil.current = performance.now() + 400;
-    setDragging(false);
-    settle();
+    if (pendingRef.current == null) settle();
   }
 
-  function handleClickCapture(e) {
-    if (performance.now() < suppressClickUntil.current) {
-      e.stopPropagation();
-      e.preventDefault();
-    }
+  // Tippen: obere/untere Zeile rollt einen Schritt, Mitte öffnet die Eingabe.
+  function handleClick(e) {
+    if (editor || performance.now() < suppressClickUntil.current) return;
+    const box = rootRef.current.getBoundingClientRect();
+    const y = e.clientY - (box.top + box.height / 2);
+    if (y < -DRUM_STEP_PX / 2) bump(-step);
+    else if (y > DRUM_STEP_PX / 2) bump(step);
+    else onEdit();
   }
 
   function handleKeyDown(e) {
@@ -1084,6 +1115,7 @@ function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onCh
 
   return (
     <div
+      ref={rootRef}
       className={`fx-drum${nudge ? ' is-nudge' : ''}`}
       role="spinbutton"
       tabIndex={editor ? -1 : 0}
@@ -1096,22 +1128,23 @@ function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onCh
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerEnd}
       onPointerCancel={handlePointerEnd}
-      onClickCapture={handleClickCapture}
+      onClick={handleClick}
     >
-      <div ref={stripRef} className="fx-strip">
-        <span className="fx-nb" aria-hidden="true" onClick={editor || !hasAbove ? undefined : () => bump(-step)}>
-          {editor || !hasAbove ? '' : fmtNum(above)}
-        </span>
-        {editor ?? (
-          <span className="fx-num" aria-hidden="true" style={{ fontSize: numSize }} onClick={onEdit}>
-            <RollingValue text={display} animate={!dragging} />
-            <span className="fx-unit">{unit}</span>
-          </span>
-        )}
-        <span className="fx-nb" aria-hidden="true" onClick={editor ? undefined : () => bump(step)}>
-          {editor ? '' : fmtNum(below)}
-        </span>
-      </div>
+      {editor ? (
+        <div className="fx-edit">{editor}</div>
+      ) : (
+        <div className="fx-strip" aria-hidden="true">
+          {DRUM_SLOTS.map((k, i) => {
+            const v = value + k * step;
+            return (
+              <span key={k} ref={(el) => (itemRefs.current[i] = el)} className="fx-num" style={{ fontSize: numSize }}>
+                {v >= min - 1e-9 ? fmtNum(v) : ''}
+                <span className="fx-unit">{unit}</span>
+              </span>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

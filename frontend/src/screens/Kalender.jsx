@@ -181,8 +181,8 @@ export default function Kalender() {
                 minHeight: 60,
                 padding: '8px 4px',
                 ...(isToday && {
-                  margin: '4px -6px',
-                  padding: '8px 10px',
+                  margin: '6px -4px',
+                  padding: '8px 8px',
                   borderRadius: 16,
                   boxShadow: 'var(--shadow-inset-sm)',
                 }),

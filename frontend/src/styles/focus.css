@@ -115,21 +115,27 @@
 }
 
 .fx-strip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  will-change: transform;
+  position: relative;
+  width: 100%;
+  height: 132px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent);
 }
 
-.fx-nb {
-  height: 30px;
-  min-width: 64px;
+.fx-strip .fx-num {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.fx-edit {
   display: grid;
   place-items: center;
-  font: 500 22px/1 var(--font-display);
-  color: var(--muted);
-  opacity: 0.45;
-  cursor: pointer;
+  height: 132px;
 }
 
 .fx-num {

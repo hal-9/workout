@@ -61,7 +61,7 @@ export default function BottomNav() {
         zIndex: 40,
         background: 'var(--bg)',
         boxShadow: '0 -8px 16px -14px var(--neu-lo)',
-        padding: '8px 0 calc(8px + env(safe-area-inset-bottom))',
+        padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
       }}
     >
       <div
