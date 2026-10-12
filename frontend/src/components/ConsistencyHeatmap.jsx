@@ -31,40 +31,64 @@ export function buildConsistencyHeatmap(plan, sessions = [], weeks = 12) {
   return { weeks: weeksData, plannedPerWeek };
 }
 
+// Eine Mulde pro Woche, Füllhöhe = erledigte Trainingstage; grün erst, wenn das
+// Wochenziel (≥ 75 %) erreicht ist.
 export default function ConsistencyHeatmap({ data }) {
   if (!data?.weeks?.length) return null;
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 48 }}>
+      <div style={{ display: 'flex', gap: 4, height: 48 }}>
         {data.weeks.map((w) => (
           <div
             key={w.weekLabel}
             title={`${w.weekLabel}: ${w.done}/${w.total}`}
+            aria-label={`${w.weekLabel}: ${w.done} von ${w.total} Trainingstagen`}
             style={{
               flex: 1,
-              height: `${Math.max(8, (w.pct / 100) * 48)}px`,
-              background: w.pct >= 75 ? 'var(--success)' : w.pct >= 50 ? 'var(--primary)' : 'var(--line)',
-              borderRadius: 4,
               minWidth: 6,
+              borderRadius: 6,
+              background: 'var(--bg)',
+              boxShadow: 'var(--shadow-inset-sm)',
+              display: 'flex',
+              alignItems: 'flex-end',
+              overflow: 'hidden',
             }}
-            aria-label={`${w.weekLabel}: ${w.done} von ${w.total} Trainingstagen`}
-          />
+          >
+            {w.pct > 0 && (
+              <div
+                style={{
+                  width: '100%',
+                  height: `${Math.min(100, w.pct)}%`,
+                  borderRadius: 6,
+                  background: w.pct >= 75 ? 'var(--success)' : 'var(--primary)',
+                }}
+              />
+            )}
+          </div>
         ))}
       </div>
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          fontFamily: 'var(--font-mono)',
-          fontSize: 10,
+          fontSize: 12,
           color: 'var(--muted)',
-          marginTop: 6,
+          marginTop: 8,
         }}
       >
         <span>{data.weeks[0]?.weekLabel}</span>
-        <span>12 Wochen</span>
         <span>{data.weeks[data.weeks.length - 1]?.weekLabel}</span>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', marginTop: 8, fontSize: 13, color: 'var(--muted)' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--success)' }} />
+          Wochenziel erreicht
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--primary)' }} />
+          Teilweise
+        </span>
       </div>
     </div>
   );

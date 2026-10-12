@@ -1,56 +1,82 @@
-// Kopf des Fortschritt-Tabs: drei Zahlen, die die Fragen „halte ich durch",
-// „werde ich stärker" und „was kommt als Nächstes" beantworten — bevor
-// irgendein Diagramm scrollt.
-export default function ProgressSummary({ items }) {
+import Card from './ui/Card.jsx';
+
+// Dezimalpunkt in Zahlen → deutsches Komma ("2.5 → 8.75 kg" → "2,5 → 8,75 kg").
+// Nur für Werte, nicht für Datumsangaben ("12.03").
+export const deNum = (value) => String(value).replace(/(\d)\.(\d)/g, '$1,$2');
+
+// Vier Wochen als kleine Säulen neben dem Durchschnitt: Füllhöhe = erledigt/geplant.
+function WeekStrip({ weeks }) {
+  return (
+    <span aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 3, height: 18 }}>
+      {weeks.map((w) => (
+        <span
+          key={w.weekLabel}
+          style={{
+            width: 6,
+            height: 18,
+            borderRadius: 3,
+            background: 'var(--bg)',
+            boxShadow: 'var(--shadow-inset-sm)',
+            display: 'flex',
+            alignItems: 'flex-end',
+            overflow: 'hidden',
+          }}
+        >
+          <span
+            style={{
+              width: '100%',
+              height: `${w.total ? Math.min(100, (w.done / w.total) * 100) : 0}%`,
+              background: 'var(--primary)',
+              borderRadius: 3,
+            }}
+          />
+        </span>
+      ))}
+    </span>
+  );
+}
+
+const valueStyle = {
+  fontSize: 21,
+  fontWeight: 600,
+  lineHeight: 1.25,
+  letterSpacing: '-0.01em',
+  color: 'var(--text)',
+};
+
+// Kopf des Fortschritt-Tabs: drei ruhige Zeilen beantworten „halte ich durch",
+// „werde ich stärker" und „was kommt als Nächstes" — bevor irgendein Diagramm scrollt.
+export default function ProgressSummary({ items, weeks }) {
   if (!items?.length) return null;
 
   return (
-    <div
-      style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--line)',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 12,
-      }}
-    >
-      <h3 style={{ margin: '0 0 12px' }}>Auf einen Blick</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {items.map((item) => (
-          <div key={item.key}>
-            <div
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 10,
-                fontWeight: 500,
-                letterSpacing: 1,
-                textTransform: 'uppercase',
-                color: 'var(--muted)',
-              }}
-            >
-              {item.label}
+    <Card>
+      <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' }}>Auf einen Blick</h2>
+      <div className="px-rows" style={{ marginTop: 6 }}>
+        {items.map((item) => {
+          // Zuwachs: Prozent und absoluter Kontext gleich laut — „+250 %" allein übertreibt.
+          const isStrength = item.key === 'strength';
+          return (
+            <div key={item.key} style={{ padding: '12px 0' }}>
+              <div style={{ fontSize: 13, color: 'var(--muted)' }}>{item.label}</div>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 10px', marginTop: 2 }}>
+                {isStrength && item.detail ? (
+                  <>
+                    <span style={valueStyle}>{deNum(item.detail.replace(': ', ' '))}</span>
+                    <span style={valueStyle}>{item.value}</span>
+                  </>
+                ) : (
+                  <span style={valueStyle}>{deNum(item.value)}</span>
+                )}
+                {item.key === 'consistency' && weeks?.length > 0 && <WeekStrip weeks={weeks} />}
+              </div>
+              {item.detail && !isStrength && (
+                <div style={{ marginTop: 2, fontSize: 14, color: 'var(--muted)' }}>{deNum(item.detail)}</div>
+              )}
             </div>
-            <div
-              style={{
-                marginTop: 2,
-                fontFamily: 'var(--font-display)',
-                fontWeight: 700,
-                fontSize: 26,
-                lineHeight: 1.1,
-                background: 'var(--primary-grad)',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                color: 'transparent',
-              }}
-            >
-              {item.value}
-            </div>
-            {item.detail && (
-              <div style={{ marginTop: 2, fontSize: 12, color: 'var(--muted)' }}>{item.detail}</div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
-    </div>
+    </Card>
   );
 }

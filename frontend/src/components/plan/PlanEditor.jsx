@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import DayEditor from './DayEditor.jsx';
+import Button from '../ui/Button.jsx';
+import Icon from '../ui/Icon.jsx';
 import {
   clonePlan,
   createEmptyDay,
@@ -12,25 +14,19 @@ import { clearDraft, loadDraft, saveDraft } from '../../lib/planDraft.js';
 
 const inputStyle = {
   width: '100%',
-  background: 'var(--surface2)',
-  border: '1px solid var(--line)',
+  minHeight: 44,
+  background: 'var(--bg)',
+  border: 'none',
+  boxShadow: 'var(--shadow-inset-sm)',
   color: 'var(--text)',
-  borderRadius: 9,
-  padding: '10px 12px',
-  fontSize: 15,
+  borderRadius: 14,
+  padding: '10px 14px',
+  fontSize: 16,
 };
 
-const primaryBtnStyle = {
-  width: '100%',
-  border: 'none',
-  borderRadius: 13,
-  padding: 15,
-  fontWeight: 600,
-  fontSize: 15,
-  cursor: 'pointer',
-  background: 'var(--primary-grad)',
-  color: 'var(--on-primary)',
-};
+const labelStyle = { display: 'block', fontSize: 13, color: 'var(--muted)', margin: '14px 0 6px' };
+
+const hintStyle = { color: 'var(--muted)', fontSize: 13, lineHeight: 1.45, margin: '6px 0 0' };
 
 function moveItem(list, from, to) {
   if (to < 0 || to >= list.length) return list;
@@ -114,65 +110,44 @@ export default function PlanEditor({
 
   return (
     <form onSubmit={handleSubmit}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h3 style={{ margin: 0 }}>Plan bearbeiten</h3>
-        <button
-          type="button"
-          onClick={handleCancel}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--muted)',
-            fontSize: 13,
-            cursor: 'pointer',
-          }}
-        >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' }}>Plan bearbeiten</h3>
+        <Button variant="ghost" onClick={handleCancel} style={{ padding: '0 4px', fontWeight: 500 }}>
           Abbrechen
-        </button>
+        </Button>
       </div>
 
       {recoverable && !isDirty && (
-        <div
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--primary)',
-            borderRadius: 12,
-            padding: 12,
-            marginBottom: 12,
-            fontSize: 13,
-          }}
-        >
-          <div style={{ marginBottom: 8 }}>
+        <div className="neu-inset" style={{ borderRadius: 20, padding: 16, marginBottom: 16 }}>
+          <div style={{ fontSize: 14, lineHeight: 1.45, marginBottom: 12 }}>
             Nicht gespeicherter Entwurf von {new Date(recoverable.saved_at).toLocaleString('de-DE')}.
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              type="button"
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Button
+              variant="secondary"
               onClick={() => {
                 setDraft(clonePlan(recoverable.plan));
                 setRecoverable(null);
               }}
-              style={{ ...inputStyle, width: 'auto', cursor: 'pointer', fontSize: 13 }}
+              style={{ flex: 1, fontSize: 14 }}
             >
               Entwurf laden
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="ghost"
               onClick={() => {
                 clearDraft();
                 setRecoverable(null);
               }}
-              style={{ ...inputStyle, width: 'auto', cursor: 'pointer', fontSize: 13, color: 'var(--muted)' }}
+              style={{ flex: 1, fontSize: 14, color: 'var(--muted)' }}
             >
               Verwerfen
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
-      <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>
-        Planname
-      </label>
+      <label style={{ ...labelStyle, marginTop: 8 }}>Planname</label>
       <input
         type="text"
         value={draft.name}
@@ -182,9 +157,7 @@ export default function PlanEditor({
         required
       />
 
-      <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', margin: '10px 0 4px' }}>
-        Deload alle … Wochen (optional)
-      </label>
+      <label style={labelStyle}>Deload alle … Wochen (optional)</label>
       <input
         type="number"
         min={2}
@@ -195,13 +168,11 @@ export default function PlanEditor({
         style={inputStyle}
         placeholder="z. B. 6 — leer lassen für keinen Deload"
       />
-      <p style={{ color: 'var(--muted)', fontSize: 12, margin: '4px 0 0' }}>
+      <p style={hintStyle}>
         Zeigt in der gewählten Woche einen Hinweis auf Heute, Gewichte etwa 10 % zurückzunehmen.
       </p>
 
-      <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', margin: '10px 0 4px' }}>
-        Musik-Playlist (optional)
-      </label>
+      <label style={labelStyle}>Musik-Playlist (optional)</label>
       <input
         type="url"
         inputMode="url"
@@ -210,11 +181,12 @@ export default function PlanEditor({
         style={inputStyle}
         placeholder="https://music.apple.com/… oder https://open.spotify.com/…"
       />
-      <p style={{ color: 'var(--muted)', fontSize: 12, margin: '4px 0 0' }}>
+      <p style={hintStyle}>
         Öffnet beim Training die native Musik-App — dort läuft die Wiedergabe auch im Hintergrund weiter.
       </p>
 
-      <p style={{ color: 'var(--muted)', fontSize: 13, margin: '16px 0 8px' }}>
+      <h3 style={{ margin: '28px 0 0', fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' }}>Trainingstage</h3>
+      <p style={{ ...hintStyle, margin: '4px 0 16px' }}>
         {allHaveWeekday
           ? 'Alle Tage haben einen Wochentag — dieser Wochenplan wird verwendet.'
           : 'Wenn alle Tage einen Wochentag haben, wird dieser Plan genutzt — sonst verteilt die App die Tage automatisch.'}
@@ -237,26 +209,13 @@ export default function PlanEditor({
         />
       ))}
 
-      <button
-        type="button"
-        onClick={handleAddDay}
-        style={{
-          width: '100%',
-          background: 'var(--surface)',
-          border: '1px dashed var(--line)',
-          borderRadius: 12,
-          padding: 12,
-          fontSize: 14,
-          cursor: 'pointer',
-          color: 'var(--text)',
-          marginBottom: 16,
-        }}
-      >
-        + Trainingstag hinzufügen
-      </button>
+      <Button variant="secondary" fullWidth onClick={handleAddDay} style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <Icon name="plus" size={18} />
+        Trainingstag hinzufügen
+      </Button>
 
       {errors.length > 0 && (
-        <div style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 12 }}>
+        <div role="alert" style={{ color: 'var(--danger)', fontSize: 14, marginBottom: 12 }}>
           <strong>Bitte korrigieren:</strong>
           <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
             {errors.map((msg) => (
@@ -266,7 +225,7 @@ export default function PlanEditor({
         </div>
       )}
 
-      {/* Speichern bleibt erreichbar, egal wie lang der Plan wird. */}
+      {/* Speichern bleibt erreichbar, egal wie lang der Plan wird: feste Leiste im Grundmaterial. */}
       <div
         style={{
           position: 'sticky',
@@ -274,21 +233,19 @@ export default function PlanEditor({
           zIndex: 5,
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
-          background: 'var(--surface)',
-          border: '1px solid var(--line)',
-          borderRadius: 14,
-          padding: 10,
-          marginTop: 8,
-          boxShadow: 'var(--shadow-card)',
+          gap: 12,
+          background: 'var(--bg)',
+          margin: '8px -16px 0',
+          padding: '12px 16px',
+          boxShadow: '0 -10px 18px -12px var(--neu-lo)',
         }}
       >
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+        <span style={{ fontSize: 13, color: isDirty ? 'var(--text)' : 'var(--muted)', flexShrink: 0 }}>
           {isDirty ? 'Nicht gespeichert' : 'Gespeichert'}
         </span>
-        <button type="submit" className="btn primary" style={{ ...primaryBtnStyle, flex: 1, width: 'auto', padding: 12 }} disabled={saving}>
+        <Button type="submit" disabled={saving} style={{ flex: 1 }}>
           {saving ? 'Speichern…' : 'Plan speichern'}
-        </button>
+        </Button>
       </div>
     </form>
   );

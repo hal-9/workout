@@ -1,29 +1,40 @@
 import { useMemo, useRef, useState } from 'react';
 import { EQUIPMENT } from 'shared/muscles';
 import { buildPlanPrompt } from '../../lib/planPrompt.js';
+import Button from '../ui/Button.jsx';
+import Card from '../ui/Card.jsx';
+import Icon from '../ui/Icon.jsx';
 
+// Ausrüstungs-Chips: Behälter eingelassen, gewählt erhaben in --text, sonst flach gedämpft.
 const chipStyle = (active) => ({
-  background: active ? 'var(--primary-dim)' : 'var(--surface2)',
-  border: `1px solid ${active ? 'var(--primary)' : 'var(--line)'}`,
-  color: active ? 'var(--primary)' : 'var(--muted)',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  minHeight: 44,
+  background: 'var(--bg)',
+  border: 'none',
+  boxShadow: active ? 'var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim)' : 'none',
+  color: active ? 'var(--text)' : 'var(--muted)',
   borderRadius: 999,
-  padding: '6px 11px',
-  fontFamily: 'var(--font-mono)',
-  fontSize: 11,
+  padding: '8px 14px',
+  fontSize: 14,
+  fontWeight: active ? 600 : 500,
   cursor: 'pointer',
 });
 
 const fieldStyle = {
   width: '100%',
-  background: 'var(--surface2)',
-  border: '1px solid var(--line)',
+  minHeight: 44,
+  background: 'var(--bg)',
+  border: 'none',
+  boxShadow: 'var(--shadow-inset-sm)',
   color: 'var(--text)',
-  borderRadius: 9,
-  padding: '9px 11px',
-  fontSize: 15,
+  borderRadius: 14,
+  padding: '10px 14px',
+  fontSize: 16,
 };
 
-const labelStyle = { display: 'block', fontSize: 13, color: 'var(--muted)', margin: '12px 0 5px' };
+const labelStyle = { display: 'block', fontSize: 13, color: 'var(--muted)', margin: '14px 0 6px' };
 
 export default function PlanPromptExport() {
   const [daysPerWeek, setDaysPerWeek] = useState(4);
@@ -61,17 +72,9 @@ export default function PlanPromptExport() {
   };
 
   return (
-    <div
-      style={{
-        border: '1px solid var(--line)',
-        borderRadius: 12,
-        padding: 12,
-        background: 'var(--surface)',
-        marginBottom: 16,
-      }}
-    >
-      <strong style={{ fontSize: 14 }}>Plan von einer KI erstellen lassen</strong>
-      <p style={{ color: 'var(--muted)', fontSize: 13, margin: '4px 0 0' }}>
+    <Card style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 16, fontWeight: 600 }}>Plan von einer KI erstellen lassen</div>
+      <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.45, margin: '4px 0 0' }}>
         Angaben ausfüllen, Prompt kopieren, in deinen KI-Assistenten einfügen — das Ergebnis unten importieren.
       </p>
 
@@ -90,15 +93,17 @@ export default function PlanPromptExport() {
       </select>
 
       <span style={labelStyle}>Ausrüstung</span>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      <div className="neu-inset" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: 6, borderRadius: 24 }}>
         {EQUIPMENT.map((item) => (
           <button
             key={item.key}
             type="button"
             onClick={() => toggleEquipment(item.key)}
             aria-pressed={equipment.has(item.key)}
+            className="btn"
             style={chipStyle(equipment.has(item.key))}
           >
+            {equipment.has(item.key) && <Icon name="check" size={16} style={{ color: 'var(--primary)' }} />}
             {item.label}
           </button>
         ))}
@@ -124,38 +129,40 @@ export default function PlanPromptExport() {
         onChange={(e) => { setNotes(e.target.value); setCopied(false); }}
         rows={2}
         placeholder="z.B. Knieprobleme, max. 45 Minuten pro Einheit"
-        style={{ ...fieldStyle, fontSize: 14 }}
+        style={{ ...fieldStyle, lineHeight: 1.45 }}
       />
 
-      <button
-        type="button"
+      <Button
+        variant="secondary"
+        fullWidth
         onClick={handleCopy}
         style={{
-          width: '100%',
-          marginTop: 12,
-          border: 'none',
-          borderRadius: 12,
-          padding: 13,
-          fontWeight: 600,
-          fontSize: 14,
-          cursor: 'pointer',
-          background: copied ? 'var(--success-dim)' : 'var(--primary-grad)',
-          color: copied ? 'var(--success)' : 'var(--on-primary)',
+          marginTop: 16,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          color: copied ? 'var(--success)' : 'var(--text)',
         }}
       >
-        {copied ? '✓ Prompt kopiert' : 'Prompt kopieren'}
-      </button>
+        {copied && <Icon name="check" size={18} />}
+        {copied ? 'Prompt kopiert' : 'Prompt kopieren'}
+      </Button>
 
       <button
         type="button"
         onClick={() => setShowPrompt((value) => !value)}
+        className="btn"
         style={{
+          minHeight: 44,
+          marginTop: 4,
           background: 'none',
           border: 'none',
-          color: 'var(--muted)',
-          fontSize: 13,
+          color: 'var(--primary)',
+          fontSize: 14,
+          fontWeight: 500,
           cursor: 'pointer',
-          padding: '8px 0 0',
+          padding: '0 4px',
         }}
         aria-expanded={showPrompt}
       >
@@ -173,16 +180,17 @@ export default function PlanPromptExport() {
           style={{
             width: '100%',
             marginTop: 8,
-            background: 'var(--surface2)',
-            border: '1px solid var(--line)',
+            background: 'var(--bg)',
+            border: 'none',
+            boxShadow: 'var(--shadow-inset-sm)',
             color: 'var(--text)',
-            borderRadius: 9,
-            padding: 10,
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
+            borderRadius: 14,
+            padding: '12px 14px',
+            fontSize: 13,
+            lineHeight: 1.45,
           }}
         />
       )}
-    </div>
+    </Card>
   );
 }

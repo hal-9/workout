@@ -1,3 +1,4 @@
+// Platzhalter als flache Mulde — dort erscheint gleich ein Wert.
 export default function Skeleton({ width = '100%', height = 16, style }) {
   return (
     <div
@@ -6,8 +7,9 @@ export default function Skeleton({ width = '100%', height = 16, style }) {
       style={{
         width,
         height,
-        borderRadius: 8,
-        background: 'var(--line)',
+        borderRadius: 10,
+        background: 'var(--bg)',
+        boxShadow: 'var(--shadow-inset-sm)',
         ...style,
       }}
     />

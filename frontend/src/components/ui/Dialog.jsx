@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useScrollLock } from '../../lib/scrollLock.js';
+import '../../styles/ui.css';
 
 const FOCUSABLE =
   'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
@@ -57,14 +58,12 @@ export default function Dialog({ open, onClose, title, children, ariaLabel }) {
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel ?? title}
+      className="ui-scrim"
       style={{
         position: 'fixed',
         inset: 0,
         height: '100dvh',
         zIndex: 70,
-        background: 'rgba(46,36,64,.35)',
-        WebkitBackdropFilter: 'blur(6px)',
-        backdropFilter: 'blur(6px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -75,20 +74,57 @@ export default function Dialog({ open, onClose, title, children, ariaLabel }) {
       <div
         ref={ref}
         tabIndex={-1}
-        className="glass ed-sheet"
+        className="ui-rise"
         onClick={(e) => e.stopPropagation()}
         style={{
-          borderRadius: 20,
+          background: 'var(--bg)',
+          boxShadow: 'var(--shadow-card)',
+          borderRadius: 24,
           padding: 20,
           width: 'min(92vw, 400px)',
           maxHeight: '85dvh',
           overflow: 'auto',
           overscrollBehavior: 'contain',
+          outline: 'none',
         }}
       >
-        {title && <h2 style={{ margin: '0 0 14px', fontSize: 18 }}>{title}</h2>}
+        {title && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', minWidth: 0 }}>{title}</h2>
+            <CloseButton onClick={onClose} />
+          </div>
+        )}
         {children}
       </div>
     </div>
+  );
+}
+
+// Runder, erhabener Schließen-Knopf — auch von MuscleModal und Tausch-Sheet genutzt.
+export function CloseButton({ onClick, label = 'Schließen' }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="btn btn-secondary"
+      aria-label={label}
+      style={{
+        background: 'var(--bg)',
+        border: 'none',
+        borderRadius: '50%',
+        width: 44,
+        height: 44,
+        padding: 0,
+        display: 'grid',
+        placeItems: 'center',
+        color: 'var(--text)',
+        cursor: 'pointer',
+        flexShrink: 0,
+      }}
+    >
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+        <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />
+      </svg>
+    </button>
   );
 }

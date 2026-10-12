@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import AuthShell from '../components/AuthShell.jsx';
-import { authInputStyle, authButtonStyle, authLinkStyle } from '../components/authStyles.js';
+import Button from '../components/ui/Button.jsx';
+import { authErrorStyle, authFieldStyle, authLinkStyle } from '../components/authStyles.js';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -22,47 +23,49 @@ export default function Login() {
       queryClient.setQueryData(['me'], user);
       navigate(user.onboarded ? '/heute' : '/willkommen');
     } catch {
-      setError('E-Mail oder Passwort falsch.');
+      setError('E-Mail oder Passwort stimmt nicht. Prüf beides und versuch es noch mal.');
     } finally {
       setPending(false);
     }
   }
 
   return (
-    <AuthShell title="LiLief-Workout">
+    <AuthShell subtitle="Dein Trainingstagebuch.">
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: 12 }}>
+        <div style={authFieldStyle}>
           {/* type=text statt email: Bestandsnutzer ohne nachgetragene E-Mail
               koennen sich uebergangsweise noch mit ihrem Namen anmelden. */}
           <input
             type="text"
             inputMode="email"
             placeholder="E-Mail"
+            aria-label="E-Mail"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="username"
             required
-            style={authInputStyle}
+            className="ui-input"
           />
         </div>
-        <div style={{ marginBottom: 12 }}>
+        <div style={authFieldStyle}>
           <input
             type="password"
             placeholder="Passwort"
+            aria-label="Passwort"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
             required
-            style={authInputStyle}
+            className="ui-input"
           />
         </div>
-        {error && <p style={{ color: 'var(--danger)' }}>{error}</p>}
-        <button type="submit" className="btn primary" style={authButtonStyle} disabled={pending}>
-          {pending ? 'Wird eingeloggt…' : 'Einloggen'}
-        </button>
+        {error && <p role="alert" style={authErrorStyle}>{error}</p>}
+        <Button type="submit" fullWidth disabled={pending} style={{ marginTop: 6, minHeight: 52, fontSize: 16 }}>
+          {pending ? 'Wird angemeldet…' : 'Anmelden'}
+        </Button>
       </form>
       <Link to="/registrieren" style={authLinkStyle}>
-        Noch keinen Account? <strong style={{ color: 'var(--primary)' }}>Registrieren</strong>
+        Noch keinen Account?&nbsp;<strong style={{ color: 'var(--primary)' }}>Registrieren</strong>
       </Link>
     </AuthShell>
   );

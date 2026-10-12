@@ -5,6 +5,10 @@ import Card from './ui/Card.jsx';
 import Button from './ui/Button.jsx';
 import Field, { fieldInputStyle } from './ui/Field.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { deNum } from './ProgressSummary.jsx';
+
+// "2026-10-12" → "12.10.2026"
+const formatDate = (date) => date.split('-').reverse().join('.');
 
 const KIND_LABELS = {
   pushups: 'Liegestütze (max)',
@@ -47,16 +51,35 @@ export default function MaxTestsSection() {
 
   return (
     <Card>
-      <h3 style={{ margin: '0 0 12px', fontSize: 16 }}>Max-Tests & Körpergewicht</h3>
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        {Object.entries(KIND_LABELS).map(([k, label]) => (
-          <div key={k} style={{ flex: '1 1 100px' }}>
-            <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>{label}</div>
-            <div style={{ fontSize: 18, fontWeight: 600 }}>
-              {latestByKind[k] ? latestByKind[k].value : '—'}
+      <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' }}>Max-Tests & Körpergewicht</h3>
+      <p style={{ margin: '4px 0 12px', fontSize: 14, color: 'var(--muted)' }}>Letzter Eintrag je Test</p>
+      {/* Werte liegen in einer Mulde, durch Haarlinien getrennt. */}
+      <div
+        style={{
+          display: 'flex',
+          background: 'var(--bg)',
+          boxShadow: 'var(--shadow-inset-sm)',
+          borderRadius: 16,
+          padding: '10px 0',
+          marginBottom: 16,
+        }}
+      >
+        {Object.entries(KIND_LABELS).map(([k, label], i) => (
+          <div
+            key={k}
+            style={{
+              flex: '1 1 0',
+              minWidth: 0,
+              padding: '0 12px',
+              borderLeft: i > 0 ? '1px solid var(--line)' : 'none',
+            }}
+          >
+            <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.3 }}>{label}</div>
+            <div style={{ fontSize: 20, fontWeight: 600, marginTop: 2 }}>
+              {latestByKind[k] ? deNum(latestByKind[k].value) : '—'}
             </div>
             {latestByKind[k] && (
-              <div style={{ fontSize: 10, color: 'var(--muted)' }}>{latestByKind[k].date}</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>{formatDate(latestByKind[k].date)}</div>
             )}
           </div>
         ))}
@@ -83,7 +106,7 @@ export default function MaxTestsSection() {
             style={fieldInputStyle}
           />
         </Field>
-        <Button type="submit" fullWidth disabled={addMutation.isPending}>
+        <Button type="submit" variant="secondary" fullWidth disabled={addMutation.isPending}>
           Eintragen
         </Button>
       </form>

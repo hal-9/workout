@@ -1023,7 +1023,12 @@ function Drum({ value, step, min, unit, ariaUnit, ariaLabel, nudge, editor, onCh
       // Erst ab ~8px ist es ein Ziehen — sonst bleibt es ein Tippen.
       if (Math.abs(e.clientY - d.yStart) < 8) return;
       d.active = true;
-      e.currentTarget.setPointerCapture?.(e.pointerId);
+      // Kann werfen, wenn iOS den Touch schon abgebrochen hat — dann ohne Capture weiter.
+      try {
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+      } catch {
+        /* Pointer nicht mehr aktiv */
+      }
       setDragging(true);
     }
     const dy = e.clientY - d.y0;

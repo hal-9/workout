@@ -9,21 +9,38 @@ import { EXERCISE_TYPES } from '../../lib/planDefaults.js';
 
 const inputStyle = {
   width: '100%',
-  background: 'var(--surface2)',
-  border: '1px solid var(--line)',
+  minHeight: 44,
+  background: 'var(--bg)',
+  border: 'none',
+  boxShadow: 'var(--shadow-inset-sm)',
   color: 'var(--text)',
-  borderRadius: 9,
-  padding: '10px 12px',
-  fontSize: 15,
+  borderRadius: 14,
+  padding: '10px 14px',
+  fontSize: 16,
 };
 
 const labelStyle = {
   display: 'block',
-  fontSize: 12,
+  fontSize: 13,
   color: 'var(--muted)',
-  marginBottom: 4,
-  marginTop: 10,
+  marginBottom: 6,
+  marginTop: 12,
 };
+
+// Häkchen-Zeile: ganze Zeile ist Ziel (≥ 44 px), Text in normaler Farbe.
+const checkRowStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  minHeight: 44,
+  marginTop: 4,
+  fontSize: 14,
+  lineHeight: 1.4,
+  color: 'var(--text)',
+  cursor: 'pointer',
+};
+
+const checkboxStyle = { width: 20, height: 20, flexShrink: 0, accentColor: 'var(--primary)' };
 
 export default function ExerciseEditor({ exercise, onChange }) {
   const showReps = exercise.type === 'bw' || exercise.type === 'wt';
@@ -85,16 +102,11 @@ export default function ExerciseEditor({ exercise, onChange }) {
       </select>
 
       <label
-        style={{
-          ...labelStyle,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          cursor: 'pointer',
-        }}
+        style={checkRowStyle}
       >
         <input
           type="checkbox"
+          style={checkboxStyle}
           checked={isCooldown}
           onChange={(e) => onChange({ ...exercise, phase: e.target.checked ? 'cooldown' : 'main' })}
         />
@@ -102,16 +114,11 @@ export default function ExerciseEditor({ exercise, onChange }) {
       </label>
 
       <label
-        style={{
-          ...labelStyle,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          cursor: 'pointer',
-        }}
+        style={checkRowStyle}
       >
         <input
           type="checkbox"
+          style={checkboxStyle}
           checked={Boolean(exercise.unilateral)}
           onChange={(e) => onChange({ ...exercise, unilateral: e.target.checked })}
         />
@@ -120,16 +127,11 @@ export default function ExerciseEditor({ exercise, onChange }) {
 
       {(exercise.type === 'bw' || exercise.type === 'time') && (
         <label
-          style={{
-            ...labelStyle,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            cursor: 'pointer',
-          }}
+          style={checkRowStyle}
         >
           <input
             type="checkbox"
+            style={checkboxStyle}
             checked={isBandAssisted(exercise)}
             onChange={(e) => onChange({ ...exercise, band_assisted: e.target.checked })}
           />
@@ -203,24 +205,16 @@ export default function ExerciseEditor({ exercise, onChange }) {
       {showProgression && (
         <div
           style={{
-            border: '1px solid var(--line)',
-            borderRadius: 10,
-            padding: '10px 11px',
-            marginTop: 12,
+            borderTop: '1px solid var(--line)',
+            borderBottom: '1px solid var(--line)',
+            padding: '6px 0 14px',
+            marginTop: 16,
           }}
         >
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontSize: 12,
-              color: 'var(--text)',
-              cursor: 'pointer',
-            }}
-          >
+          <label style={{ ...checkRowStyle, marginTop: 0, fontWeight: 500 }}>
             <input
               type="checkbox"
+              style={checkboxStyle}
               checked={progression.enabled}
               onChange={(e) => onChange(withProgression(exercise, { enabled: e.target.checked }))}
             />
@@ -258,7 +252,7 @@ export default function ExerciseEditor({ exercise, onChange }) {
               </div>
             </div>
           )}
-          <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--muted)' }}>
+          <p style={{ margin: '10px 0 0', fontSize: 13, lineHeight: 1.45, color: 'var(--muted)' }}>
             Vorschlag erscheint in der Auswertung — der Plan ändert sich erst nach Bestätigung.
           </p>
         </div>
@@ -269,7 +263,7 @@ export default function ExerciseEditor({ exercise, onChange }) {
         value={exercise.cue}
         onChange={(e) => onChange({ ...exercise, cue: e.target.value })}
         rows={2}
-        style={{ ...inputStyle, resize: 'vertical' }}
+        style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.45 }}
         placeholder="Kurzer Form-Hinweis"
       />
 

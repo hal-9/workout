@@ -8,6 +8,7 @@ import PlanEditor from '../components/plan/PlanEditor.jsx';
 import PlanWizard from '../components/plan/PlanWizard.jsx';
 import PlanOverview from '../components/plan/PlanOverview.jsx';
 import PlanAdvancedImport from '../components/plan/PlanAdvancedImport.jsx';
+import '../styles/plan.css';
 
 const MODES = {
   overview: 'overview',
@@ -97,7 +98,7 @@ export default function Plan() {
 
   return (
     <div className="wrap">
-      <h2>Plan</h2>
+      <h2 style={{ margin: '16px 0 16px', fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15 }}>Plan</h2>
 
       {isLoading && (
         <p style={{ color: 'var(--muted)' }}>Plan wird geladen…</p>
@@ -111,11 +112,12 @@ export default function Plan() {
         <div
           style={{
             marginBottom: 16,
-            padding: '10px 12px',
-            borderRadius: 10,
+            padding: '12px 16px',
+            borderRadius: 14,
             background: 'var(--success-dim)',
             color: 'var(--success)',
-            fontSize: 14,
+            fontSize: 15,
+            fontWeight: 500,
           }}
           role="status"
         >
@@ -126,7 +128,7 @@ export default function Plan() {
       {activeMode === MODES.wizard && (
         <>
           {!hasActivePlan && (
-            <p style={{ color: 'var(--muted)' }}>Noch kein aktiver Plan — bau dir in ein paar Schritten einen.</p>
+            <p style={{ color: 'var(--muted)', fontSize: 15, margin: '0 0 16px' }}>Noch kein aktiver Plan — bau dir in ein paar Schritten einen.</p>
           )}
           <PlanWizard
             onSave={handleSavePlan}

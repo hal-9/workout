@@ -1,15 +1,31 @@
 import { getTemplatePlan } from '../../data/templates/index.js';
 import { createEmptyPlan } from '../../lib/planDefaults.js';
+import Icon from '../ui/Icon.jsx';
 
+// Antippbare Karte = erhaben; Druck über .btn.
 const cardStyle = {
-  background: 'var(--surface)',
-  border: '1px solid var(--line)',
-  borderRadius: 14,
+  display: 'block',
+  background: 'var(--bg)',
+  border: 'none',
+  borderRadius: 20,
   padding: 16,
-  marginBottom: 12,
+  marginBottom: 16,
   cursor: 'pointer',
   textAlign: 'left',
   width: '100%',
+  color: 'var(--text)',
+};
+
+const daysBadgeStyle = {
+  flexShrink: 0,
+  fontSize: 13,
+  fontWeight: 500,
+  color: 'var(--muted)',
+  background: 'var(--bg)',
+  boxShadow: 'var(--shadow-inset-sm)',
+  padding: '5px 10px',
+  borderRadius: 999,
+  whiteSpace: 'nowrap',
 };
 
 export default function PlanTemplatePicker({ templates, onSelect, onBlank }) {
@@ -20,7 +36,7 @@ export default function PlanTemplatePicker({ templates, onSelect, onBlank }) {
 
   return (
     <div>
-      <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 0 }}>
+      <p style={{ color: 'var(--muted)', fontSize: 15, lineHeight: 1.45, margin: '0 0 16px' }}>
         Wähle eine Vorlage als Startpunkt — du kannst alles danach anpassen.
       </p>
 
@@ -29,25 +45,16 @@ export default function PlanTemplatePicker({ templates, onSelect, onBlank }) {
           key={template.id}
           type="button"
           onClick={() => handleSelectTemplate(template.id)}
+          className="neu-raised btn"
           style={cardStyle}
           aria-label={`Vorlage ${template.title} auswählen`}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
             <div>
               <strong style={{ fontSize: 16 }}>{template.title}</strong>
-              <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>{template.description}</div>
+              <div style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.45, marginTop: 4 }}>{template.description}</div>
             </div>
-            <span
-              style={{
-                flexShrink: 0,
-                fontFamily: 'var(--font-mono)',
-                fontSize: 12,
-                color: 'var(--primary)',
-                background: 'var(--primary-dim)',
-                padding: '4px 8px',
-                borderRadius: 8,
-              }}
-            >
+            <span style={daysBadgeStyle}>
               {template.days} Tage
             </span>
           </div>
@@ -57,29 +64,31 @@ export default function PlanTemplatePicker({ templates, onSelect, onBlank }) {
       <button
         type="button"
         onClick={() => onSelect(createEmptyPlan())}
-        style={{
-          ...cardStyle,
-          borderStyle: 'dashed',
-          color: 'var(--muted)',
-        }}
+        className="neu-raised btn"
+        style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 12 }}
         aria-label="Leeren Plan von Grund auf erstellen"
       >
-        <strong style={{ color: 'var(--text)' }}>Leerer Plan</strong>
-        <div style={{ fontSize: 13, marginTop: 4 }}>Von Grund auf selbst aufbauen</div>
+        <Icon name="plus" size={20} style={{ color: 'var(--muted)' }} />
+        <span>
+          <strong style={{ fontSize: 16 }}>Leerer Plan</strong>
+          <span style={{ display: 'block', fontSize: 14, color: 'var(--muted)', marginTop: 4 }}>Von Grund auf selbst aufbauen</span>
+        </span>
       </button>
 
       {onBlank && (
         <button
           type="button"
           onClick={onBlank}
+          className="btn"
           style={{
-            marginTop: 8,
+            minHeight: 44,
             background: 'none',
             border: 'none',
-            color: 'var(--muted)',
-            fontSize: 13,
+            color: 'var(--primary)',
+            fontSize: 15,
+            fontWeight: 500,
             cursor: 'pointer',
-            padding: 0,
+            padding: '0 4px',
           }}
         >
           Zurück zum Assistenten

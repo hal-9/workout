@@ -66,23 +66,38 @@ export default function OfflineIndicator() {
       ? `Sync läuft… · ${pending} Sätze`
       : 'Synchronisiert';
 
+  // Offline: Wolke durchgestrichen · Sync: Pfeile im Kreis · fertig: Haken
+  const iconPath = !isOnline
+    ? 'M3 3l18 18M7.5 18h9.2a3.8 3.8 0 0 0 1.6-7.2M15.5 6.6A5.5 5.5 0 0 0 7 9.1 4.5 4.5 0 0 0 7.5 18'
+    : pending > 0
+      ? 'M20 12a8 8 0 0 1-14.2 5M4 12a8 8 0 0 1 14.2-5M18.5 3v4h-4M5.5 21v-4h4'
+      : 'M5 12.5l4.5 4.5L19 7.5';
+
   return (
     <div
+      role="status"
       style={{
         position: 'fixed',
-        top: 'calc(60px + env(safe-area-inset-top))',
+        top: 'calc(64px + env(safe-area-inset-top))',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 50,
-        background: 'var(--surface2)',
-        border: '1px solid var(--line)',
-        color: isOnline ? 'var(--success)' : 'var(--muted)',
-        borderRadius: 10,
-        padding: '6px 12px',
-        fontFamily: 'var(--font-mono)',
-        fontSize: 12,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        maxWidth: 'calc(100vw - 32px)',
+        background: 'var(--bg)',
+        boxShadow: 'var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim)',
+        color: isOnline && pending === 0 ? 'var(--success)' : 'var(--text)',
+        borderRadius: 999,
+        padding: '8px 16px 8px 12px',
+        fontSize: 13,
+        fontWeight: 500,
       }}
     >
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, color: isOnline ? undefined : 'var(--muted)' }}>
+        <path d={iconPath} />
+      </svg>
       {label}
     </div>
   );

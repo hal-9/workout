@@ -1,0 +1,80 @@
+/* ---- Kalender, Freunde, Auswertung, Abschluss, Rückblick (Therme) ---- */
+
+/* Liste in einer Mulde, Zeilen flach mit Haarlinien (wie .hx-tray). */
+.kal-tray {
+  list-style: none;
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 24px;
+  background: var(--bg);
+  box-shadow: var(--shadow-inset);
+}
+
+.kal-tray > li + li {
+  border-top: 1px solid var(--line);
+}
+
+/* Heute sitzt als eigene kleine Mulde in der Liste: Haarlinien drumherum ausblenden. */
+.kal-tray > li.kal-today,
+.kal-tray > li.kal-today + li {
+  border-top-color: transparent;
+}
+
+/* Ruhiger Lesetext für die Markdown-Auswertung. */
+.kal-prose {
+  max-width: 65ch;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.kal-prose > :first-child {
+  margin-top: 0;
+}
+
+.kal-prose h1,
+.kal-prose h2 {
+  margin: 1.4em 0 0.4em;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.kal-prose h3,
+.kal-prose h4 {
+  margin: 1.2em 0 0.3em;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.kal-prose p,
+.kal-prose ul,
+.kal-prose ol {
+  margin: 0 0 0.9em;
+}
+
+.kal-prose ul,
+.kal-prose ol {
+  padding-left: 1.3em;
+}
+
+.kal-prose li + li {
+  margin-top: 0.3em;
+}
+
+.kal-prose strong {
+  font-weight: 650;
+}
+
+/* Rückblick: Mesh als große Bühne, Schrift wie auf dem Hauptbutton. */
+.kal-story {
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--m0);
+  color: var(--m-ink);
+  text-shadow: 0 1px 14px rgba(30, 6, 40, 0.35);
+}
+
+.kal-story-close {
+  background: color-mix(in srgb, var(--m-ink) 18%, transparent);
+}

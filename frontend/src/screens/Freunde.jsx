@@ -1,41 +1,46 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
+import Button from '../components/ui/Button.jsx';
+import Card from '../components/ui/Card.jsx';
+import '../styles/kal.css';
 
-const cardStyle = {
-  borderRadius: 16,
-  padding: 16,
-  marginBottom: 14,
-};
+const sectionTitle = { margin: '28px 0 12px', fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' };
 
 const rowStyle = {
   display: 'flex',
   alignItems: 'center',
-  gap: 8,
-  padding: '10px 0',
-  borderBottom: '1px solid var(--line)',
+  gap: 10,
+  padding: '8px 4px',
+  minHeight: 60,
 };
 
 // Lange Namen kuerzen statt die Buttons wegzudruecken.
 const nameStyle = {
   flex: 1,
   minWidth: 0,
+  fontSize: 15,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
 };
 
-const smallButton = (variant) => ({
-  border: 'none',
-  borderRadius: 10,
-  padding: '8px 12px',
-  fontSize: 13,
+// Zeilen-Aktionen: erhabene Pille (positiv) oder Textbutton (zurückhaltend).
+const pillButton = {
+  flexShrink: 0,
+  borderRadius: 999,
+  padding: '0 14px',
+  minHeight: 44,
+  fontSize: 14,
   fontWeight: 600,
-  cursor: 'pointer',
-  minHeight: 36,
-  background: variant === 'primary' ? 'var(--primary-grad)' : 'var(--surface2)',
-  color: variant === 'primary' ? 'var(--on-primary)' : 'var(--muted)',
-});
+};
+
+const quietButton = {
+  ...pillButton,
+  padding: '0 8px',
+  fontWeight: 500,
+  color: 'var(--muted)',
+};
 
 const ADD_ERRORS = {
   'user not found': 'Kein Account mit dieser E-Mail. Frag nach der Adresse, mit der registriert wurde.',
@@ -49,17 +54,18 @@ function Avatar({ name }) {
   return (
     <div
       style={{
-        width: 34,
-        height: 34,
+        width: 36,
+        height: 36,
         flexShrink: 0,
         borderRadius: '50%',
-        background: 'var(--primary-grad)',
-        color: 'var(--on-primary)',
+        background: 'var(--bg)',
+        boxShadow: 'var(--shadow-inset-sm)',
+        color: 'var(--text)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: 14,
-        fontWeight: 700,
+        fontSize: 15,
+        fontWeight: 600,
       }}
     >
       {name.slice(0, 1).toUpperCase()}
@@ -128,118 +134,136 @@ export default function Freunde() {
 
   return (
     <div className="wrap">
-      <h2>Freunde</h2>
-      <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: -6 }}>
-        Ihr seht euren Fortschritt gegenseitig — erst wenn beide Seiten bestätigt haben.
-      </p>
+      <header style={{ marginTop: 16, marginBottom: 16 }}>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em' }}>Freunde</h1>
+        <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.45, color: 'var(--muted)' }}>
+          Ihr seht euren Fortschritt gegenseitig — erst wenn beide Seiten bestätigt haben.
+        </p>
+      </header>
 
-      <form onSubmit={handleSubmit} className="glass" style={cardStyle}>
-        <label htmlFor="friend-email" style={{ fontSize: 13, color: 'var(--muted)' }}>
-          Freund per E-Mail hinzufügen
-        </label>
-        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <input
-            id="friend-email"
-            type="email"
-            placeholder="name@beispiel.de"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{
-              flex: 1,
-              minWidth: 0,
-              background: 'var(--surface2)',
-              border: '1px solid var(--line)',
-              color: 'var(--text)',
-              borderRadius: 10,
-              padding: '11px 12px',
-              fontSize: 16,
-            }}
-          />
-          <button type="submit" disabled={addFriend.isPending} style={smallButton('primary')}>
-            Anfragen
-          </button>
-        </div>
-        {feedback && (
-          <p
-            style={{
-              margin: '10px 0 0',
-              fontSize: 13,
-              color: feedback.tone === 'error' ? 'var(--danger)' : 'var(--success)',
-            }}
-          >
-            {feedback.text}
-          </p>
-        )}
-      </form>
+      <Card style={{ marginBottom: 0 }}>
+        <form onSubmit={handleSubmit}>
+          <label htmlFor="friend-email" style={{ fontSize: 13, color: 'var(--muted)' }}>
+            Freund per E-Mail hinzufügen
+          </label>
+          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+            <input
+              id="friend-email"
+              type="email"
+              placeholder="name@beispiel.de"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{
+                flex: 1,
+                minWidth: 0,
+                minHeight: 44,
+                background: 'var(--bg)',
+                boxShadow: 'var(--shadow-inset-sm)',
+                border: 'none',
+                color: 'var(--text)',
+                borderRadius: 14,
+                padding: '11px 14px',
+                fontSize: 16,
+              }}
+            />
+            <Button type="submit" disabled={addFriend.isPending} style={{ flexShrink: 0, padding: '0 18px' }}>
+              Anfragen
+            </Button>
+          </div>
+          {feedback && (
+            <p
+              role="status"
+              style={{
+                margin: '10px 0 0',
+                fontSize: 14,
+                color: feedback.tone === 'error' ? 'var(--danger)' : 'var(--success)',
+              }}
+            >
+              {feedback.text}
+            </p>
+          )}
+        </form>
+      </Card>
 
       {incoming.length > 0 && (
-        <div className="glass" style={cardStyle}>
-          <h3 style={{ margin: '0 0 4px', fontSize: 16 }}>Anfragen an dich</h3>
-          {incoming.map((r) => (
-            <div key={r.id} style={rowStyle}>
-              <Avatar name={r.name} />
-              <span style={nameStyle}>{r.name}</span>
-              <button onClick={() => accept.mutate(r.id)} style={smallButton('primary')}>
-                Annehmen
-              </button>
-              <button onClick={() => removeRequest.mutate(r.id)} style={smallButton()}>
-                Ablehnen
-              </button>
-            </div>
-          ))}
-        </div>
+        <section>
+          <h2 style={sectionTitle}>Anfragen an dich</h2>
+          <ul className="kal-tray">
+            {incoming.map((r) => (
+              <li key={r.id} style={rowStyle}>
+                <Avatar name={r.name} />
+                <span style={nameStyle}>{r.name}</span>
+                <Button variant="secondary" onClick={() => accept.mutate(r.id)} style={{ ...pillButton, color: 'var(--primary)' }}>
+                  Annehmen
+                </Button>
+                <Button variant="ghost" onClick={() => removeRequest.mutate(r.id)} style={quietButton}>
+                  Ablehnen
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {outgoing.length > 0 && (
-        <div className="glass" style={cardStyle}>
-          <h3 style={{ margin: '0 0 4px', fontSize: 16 }}>Gesendet</h3>
-          {outgoing.map((r) => (
-            <div key={r.id} style={rowStyle}>
-              <Avatar name={r.name} />
-              <span style={nameStyle}>{r.name}</span>
-              <span style={{ fontSize: 13, color: 'var(--muted)', flexShrink: 0 }}>wartet</span>
-              <button onClick={() => removeRequest.mutate(r.id)} style={smallButton()}>
-                Zurückziehen
-              </button>
-            </div>
-          ))}
-        </div>
+        <section>
+          <h2 style={sectionTitle}>Gesendet</h2>
+          <ul className="kal-tray">
+            {outgoing.map((r) => (
+              <li key={r.id} style={rowStyle}>
+                <Avatar name={r.name} />
+                <span style={nameStyle}>
+                  {r.name}
+                  <span style={{ display: 'block', fontSize: 13, color: 'var(--muted)' }}>wartet</span>
+                </span>
+                <Button variant="ghost" onClick={() => removeRequest.mutate(r.id)} style={quietButton}>
+                  Zurückziehen
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {(activityData?.activity ?? []).length > 0 && (
-        <div className="glass" style={cardStyle}>
-          <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>Diese Woche</h3>
-          {activityData.activity.map((a) => (
-            <div key={a.user_id} style={rowStyle}>
-              <Avatar name={a.name} />
-              <span style={nameStyle}>{a.name}</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
-                {a.workouts_this_week} Workout{a.workouts_this_week === 1 ? '' : 's'}
-              </span>
-            </div>
-          ))}
-        </div>
+        <section>
+          <h2 style={sectionTitle}>Diese Woche</h2>
+          <ul className="kal-tray">
+            {activityData.activity.map((a) => (
+              <li key={a.user_id} style={rowStyle}>
+                <Avatar name={a.name} />
+                <span style={nameStyle}>{a.name}</span>
+                <span style={{ fontSize: 14, color: 'var(--muted)', flexShrink: 0 }}>
+                  <span style={{ color: 'var(--text)', fontWeight: 600 }}>{a.workouts_this_week}</span> Workout
+                  {a.workouts_this_week === 1 ? '' : 's'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
-      <div className="glass" style={cardStyle}>
-        <h3 style={{ margin: '0 0 4px', fontSize: 16 }}>Verbunden</h3>
-        {isLoading && <p style={{ color: 'var(--muted)', fontSize: 14 }}>Lädt…</p>}
+      <section style={{ paddingBottom: 24 }}>
+        <h2 style={sectionTitle}>Verbunden</h2>
+        {isLoading && <p style={{ color: 'var(--muted)', fontSize: 14, margin: 0 }}>Lädt…</p>}
         {!isLoading && friends.length === 0 && (
-          <p style={{ color: 'var(--muted)', fontSize: 14 }}>
-            Noch niemand. Schick oben eine Anfrage raus.
-          </p>
+          <p style={{ color: 'var(--muted)', fontSize: 14, margin: 0 }}>Noch niemand. Schick oben eine Anfrage raus.</p>
         )}
-        {friends.map((f) => (
-          <div key={f.id} style={rowStyle}>
-            <Avatar name={f.name} />
-            <span style={nameStyle}>{f.name}</span>
-            <button onClick={() => unfriend.mutate(f.id)} style={smallButton()}>
-              Entfernen
-            </button>
-          </div>
-        ))}
-      </div>
+        {friends.length > 0 && (
+          <ul className="kal-tray">
+            {friends.map((f) => (
+              <li key={f.id} style={rowStyle}>
+                <Avatar name={f.name} />
+                <span style={nameStyle}>{f.name}</span>
+                <Button variant="ghost" onClick={() => unfriend.mutate(f.id)} style={quietButton}>
+                  Entfernen
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

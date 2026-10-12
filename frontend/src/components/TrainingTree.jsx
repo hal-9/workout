@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { buildTree, TREE_WIDTH, TREE_HEIGHT } from '../lib/tree.js';
+import Card from './ui/Card.jsx';
+import { ToggleButton } from './RecoveryMap.jsx';
 
 // Der Trainingsbaum wächst aus der echten Historie: Ast pro Trainingswoche,
 // Blüte pro PR, Frucht pro Max-Test. Farben folgen der aktiven Palette.
@@ -8,6 +10,9 @@ const LEAF_A = 'var(--grad-from)';
 const LEAF_B = 'var(--grad-to)';
 const BLOSSOM = 'var(--accent)';
 const FRUIT = 'var(--primary)';
+
+const legendItemStyle = { display: 'inline-flex', alignItems: 'center', gap: 6 };
+const dotStyle = (color) => ({ width: 8, height: 8, borderRadius: 999, background: color });
 
 function LeafCluster({ leaf, tone }) {
   const fill = tone === 'a' ? LEAF_A : LEAF_B;
@@ -26,37 +31,14 @@ export default function TrainingTree({ weeks }) {
   const { totals } = tree;
 
   return (
-    <div
-      style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--line)',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 12,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-        <h3 style={{ margin: 0 }}>Dein Trainingsbaum</h3>
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            color: 'var(--primary)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
-            cursor: 'pointer',
-          }}
-        >
-          {open ? 'Einklappen' : 'Anzeigen'}
-        </button>
+    <Card>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' }}>Dein Trainingsbaum</h3>
+        <ToggleButton open={open} onClick={() => setOpen((o) => !o)} />
       </div>
 
       {!open && (
-        <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+        <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--muted)' }}>
           {tree.seedling
             ? 'Dein Setzling wartet — jedes Workout lässt ihn wachsen.'
             : `${totals.weeks} Woche${totals.weeks === 1 ? '' : 'n'} · ${totals.workouts} Workouts · ${totals.prs} PR${
@@ -75,7 +57,7 @@ export default function TrainingTree({ weeks }) {
           aria-label="Trainingsbaum aus deiner Trainingshistorie"
         >
           {/* Boden */}
-          <ellipse cx={TREE_WIDTH / 2} cy={320} rx={92} ry={9} fill="var(--surface2)" />
+          <ellipse cx={TREE_WIDTH / 2} cy={320} rx={92} ry={9} fill="var(--line)" />
 
           {tree.seedling ? (
             <g>
@@ -104,10 +86,10 @@ export default function TrainingTree({ weeks }) {
                   />
                   <LeafCluster leaf={branch.leaf} tone={branch.leafTone} />
                   {branch.fruits.map((fruit, i) => (
-                    <circle key={`f${i}`} cx={fruit.x} cy={fruit.y} r={3.4} fill={FRUIT} stroke="var(--surface)" strokeWidth={1} />
+                    <circle key={`f${i}`} cx={fruit.x} cy={fruit.y} r={3.4} fill={FRUIT} stroke="var(--bg)" strokeWidth={1} />
                   ))}
                   {branch.blossoms.map((blossom, i) => (
-                    <circle key={`b${i}`} cx={blossom.x} cy={blossom.y} r={2.6} fill={BLOSSOM} stroke="var(--surface)" strokeWidth={0.8} />
+                    <circle key={`b${i}`} cx={blossom.x} cy={blossom.y} r={2.6} fill={BLOSSOM} stroke="var(--bg)" strokeWidth={0.8} />
                   ))}
                 </g>
               ))}
@@ -117,26 +99,26 @@ export default function TrainingTree({ weeks }) {
         </svg>
 
         {tree.seedling ? (
-          <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+          <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--muted)' }}>
             Dein Setzling wartet — jedes Workout lässt ihn wachsen.
           </p>
         ) : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', marginTop: 8, fontSize: 13, color: 'var(--muted)' }}>
             <span>{totals.workouts} Workouts</span>
             {totals.prs > 0 && (
-              <span>
-                <span style={{ color: 'var(--accent)' }}>●</span> {totals.prs} PRs
+              <span style={legendItemStyle}>
+                <span style={dotStyle('var(--accent)')} /> {totals.prs} PRs
               </span>
             )}
             {totals.maxTests > 0 && (
-              <span>
-                <span style={{ color: 'var(--primary)' }}>●</span> {totals.maxTests} Max-Tests
+              <span style={legendItemStyle}>
+                <span style={dotStyle('var(--primary)')} /> {totals.maxTests} Max-Tests
               </span>
             )}
           </div>
         )}
         </>
       )}
-    </div>
+    </Card>
   );
 }

@@ -6,6 +6,8 @@ import Chip from './ui/Chip.jsx';
 const ENERGY_LABELS = ['Sehr müde', 'Müde', 'Okay', 'Gut', 'Top'];
 const SORENESS_LABELS = ['Keine', 'Leicht', 'Mittel', 'Stark', 'Sehr stark'];
 
+const labelStyle = { fontSize: 13, color: 'var(--muted)', marginBottom: 8 };
+
 export default function ReadinessDialog({ open, onClose, onSubmit }) {
   const [energy, setEnergy] = useState(3);
   const [soreness, setSoreness] = useState(2);
@@ -18,15 +20,15 @@ export default function ReadinessDialog({ open, onClose, onSubmit }) {
 
   return (
     <Dialog open={open} onClose={onClose} title="Tagesform" ariaLabel="Kurzer Check vor dem Training">
-      <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 16px' }}>
+      <p style={{ fontSize: 14, color: 'var(--muted)', margin: '0 0 18px' }}>
         Kurzer Check — keine medizinische Bewertung, nur für Session-Anpassungen.
       </p>
 
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>
-          ENERGIE
+        <div style={labelStyle}>
+          Energie
         </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[1, 2, 3, 4, 5].map((v) => (
             <Chip key={v} active={energy === v} onClick={() => setEnergy(v)} ariaLabel={`Energie ${v}`}>
               {v} · {ENERGY_LABELS[v - 1]}
@@ -36,10 +38,10 @@ export default function ReadinessDialog({ open, onClose, onSubmit }) {
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>
-          MUSKELKATER
+        <div style={labelStyle}>
+          Muskelkater
         </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[1, 2, 3, 4, 5].map((v) => (
             <Chip key={v} active={soreness === v} onClick={() => setSoreness(v)} ariaLabel={`Muskelkater ${v}`}>
               {v} · {SORENESS_LABELS[v - 1]}
@@ -49,10 +51,10 @@ export default function ReadinessDialog({ open, onClose, onSubmit }) {
       </div>
 
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>
-          ZEIT HEUTE (MIN.)
+        <div style={labelStyle}>
+          Zeit heute in Minuten
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
           {[30, 45, 60, 90].map((m) => (
             <Chip key={m} active={timeMin === m} onClick={() => setTimeMin(m)} ariaLabel={`${m} Minuten`}>
               {m}

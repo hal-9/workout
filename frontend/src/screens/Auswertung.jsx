@@ -9,6 +9,12 @@ import { clearOverride } from '../lib/weightOverrides.js';
 import { shareCard, shareCardColors } from '../lib/shareCard.js';
 import CoachSummary from '../components/CoachSummary.jsx';
 import { hintKey } from '../lib/coachSummary.js';
+import Button from '../components/ui/Button.jsx';
+import Card from '../components/ui/Card.jsx';
+import Icon from '../components/ui/Icon.jsx';
+import '../styles/kal.css';
+
+const sectionTitle = { margin: '0 0 4px', fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' };
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 60000;
@@ -162,110 +168,91 @@ export default function Auswertung() {
   }
 
   return (
-    <div className="wrap">
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-        <h2>Auswertung</h2>
-        {shareStats && (
-          <button
-            type="button"
-            onClick={handleShare}
-            disabled={sharing}
-            style={{
-              background: 'var(--surface2)',
-              border: '1px solid var(--line)',
-              borderRadius: 11,
-              padding: '8px 12px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 12,
-              color: 'var(--text)',
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
-          >
-            {sharing ? 'Erstelle…' : 'Als Bild teilen'}
-          </button>
+    <div className="wrap" style={{ paddingBottom: 24 }}>
+      <header style={{ marginTop: 16, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em' }}>Auswertung</h1>
+          {shareStats && (
+            <Button
+              variant="secondary"
+              onClick={handleShare}
+              disabled={sharing}
+              style={{ flexShrink: 0, padding: '0 16px', fontSize: 14 }}
+            >
+              {sharing ? 'Erstelle…' : 'Als Bild teilen'}
+            </Button>
+          )}
+        </div>
+        {fetched?.day_name && (
+          <p style={{ margin: '6px 0 0', color: 'var(--muted)', fontSize: 14 }}>
+            {fetched.day_name}
+            {fetched.finished_at &&
+              ` · ${new Date(fetched.finished_at.replace(' ', 'T') + 'Z').toLocaleDateString('de-DE')}`}
+          </p>
         )}
-      </div>
-      {fetched?.day_name && (
-        <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: -6 }}>
-          {fetched.day_name}
-          {fetched.finished_at &&
-            ` · ${new Date(fetched.finished_at.replace(' ', 'T') + 'Z').toLocaleDateString('de-DE')}`}
-        </p>
-      )}
+      </header>
 
-      {!known && <p style={{ color: 'var(--muted)' }}>Lade…</p>}
+      {!known && <p style={{ color: 'var(--muted)', fontSize: 15 }}>Lade…</p>}
 
       {known && !hasEvaluation && (
-        <p style={{ color: 'var(--muted)' }}>Keine Auswertung (keine Sätze geloggt).</p>
+        <p style={{ color: 'var(--muted)', fontSize: 15 }}>Keine Auswertung (keine Sätze geloggt).</p>
       )}
 
       {hasEvaluation && (!evaluation || evaluation.status === 'pending') && (
-        <p style={{ color: 'var(--muted)' }}>Auswertung wird erstellt…</p>
+        <p role="status" style={{ color: 'var(--muted)', fontSize: 15 }}>
+          Auswertung wird erstellt…
+        </p>
       )}
 
       {hasEvaluation && evaluation?.status === 'ok' && (
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 28 }}>
           {evaluation.summary ? (
             <CoachSummary summary={evaluation.summary} hintStates={hintStates} onApply={applyHint} />
           ) : (
             // Auswertungen vor der strukturierten Version liegen nur als Markdown vor.
-            <ReactMarkdown>{evaluation.summary_md}</ReactMarkdown>
+            <div className="kal-prose">
+              <ReactMarkdown>{evaluation.summary_md}</ReactMarkdown>
+            </div>
           )}
         </div>
       )}
 
       {hasEvaluation && evaluation?.status === 'failed' && (
-        <div style={{ marginBottom: 20 }}>
-          <p style={{ color: 'var(--danger)' }}>{evaluation.error}</p>
-          <button
-            onClick={retry}
-            className="btn primary"
-            style={{
-              border: 'none',
-              borderRadius: 13,
-              padding: 15,
-              fontWeight: 600,
-              fontSize: 15,
-              cursor: 'pointer',
-              background: 'var(--primary-grad)',
-              color: 'var(--on-primary)',
-            }}
-          >
+        <div style={{ marginBottom: 28 }}>
+          <p style={{ color: 'var(--danger)', fontSize: 15, margin: '0 0 12px' }}>{evaluation.error}</p>
+          <Button variant="secondary" onClick={retry}>
             Erneut auswerten
-          </button>
+          </Button>
         </div>
       )}
 
       {applyState.status === 'done' && (
         <div
+          role="status"
+          className="neu-inset"
           style={{
-            background: 'var(--success-dim)',
-            border: '1px solid var(--success)',
-            borderRadius: 14,
-            padding: '12px 14px',
-            marginBottom: 20,
-            fontSize: 13,
-            color: 'var(--success)',
+            display: 'flex',
+            gap: 10,
+            alignItems: 'flex-start',
+            borderRadius: 20,
+            padding: '14px 16px',
+            marginBottom: 28,
+            fontSize: 14,
+            lineHeight: 1.45,
           }}
         >
-          Plan aktualisiert — {applyState.count} Übung{applyState.count === 1 ? '' : 'en'} angepasst.
-          Die alte Version bleibt als Historie erhalten.
+          <Icon name="check" size={18} style={{ color: 'var(--success)', marginTop: 1 }} />
+          <span>
+            Plan aktualisiert — {applyState.count} Übung{applyState.count === 1 ? '' : 'en'} angepasst.
+            <span style={{ color: 'var(--muted)' }}> Die alte Version bleibt als Historie erhalten.</span>
+          </span>
         </div>
       )}
 
       {applyState.status !== 'done' && proposals.length > 0 && (
-        <div
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--line)',
-            borderRadius: 16,
-            padding: 16,
-            marginBottom: 20,
-          }}
-        >
-          <h3 style={{ marginTop: 0, marginBottom: 4 }}>Plan anpassen?</h3>
-          <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--muted)' }}>
+        <Card style={{ marginBottom: 28 }}>
+          <h2 style={sectionTitle}>Plan anpassen?</h2>
+          <p style={{ margin: '0 0 8px', fontSize: 14, color: 'var(--muted)' }}>
             Ziel mehrfach erreicht. Übernehmen legt eine neue Plan-Version an.
           </p>
 
@@ -277,8 +264,9 @@ export default function Auswertung() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 10,
-                  padding: '9px 0',
+                  gap: 12,
+                  minHeight: 52,
+                  padding: '8px 0',
                   borderTop: '1px solid var(--line)',
                   cursor: 'pointer',
                 }}
@@ -287,21 +275,13 @@ export default function Auswertung() {
                   type="checkbox"
                   checked={checked}
                   onChange={() => toggleProposal(proposal.exercise_id)}
+                  style={{ width: 22, height: 22, margin: 0, flexShrink: 0, accentColor: 'var(--primary)' }}
                 />
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 14, display: 'block' }}>{proposal.name}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-                    {proposalReason(proposal)}
-                  </span>
+                  <span style={{ fontSize: 15, display: 'block' }}>{proposal.name}</span>
+                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>{proposalReason(proposal)}</span>
                 </span>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 12,
-                    color: 'var(--primary)',
-                    flexShrink: 0,
-                  }}
-                >
+                <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--primary)', flexShrink: 0 }}>
                   {formatProposalChange(proposal)}
                 </span>
               </label>
@@ -309,58 +289,39 @@ export default function Auswertung() {
           })}
 
           {applyState.error && (
-            <p style={{ color: 'var(--danger)', fontSize: 12, margin: '10px 0 0' }}>{applyState.error}</p>
+            <p style={{ color: 'var(--danger)', fontSize: 14, margin: '10px 0 0' }}>{applyState.error}</p>
           )}
 
-          <button
-            type="button"
+          <Button
+            fullWidth
             onClick={applyProposals}
             disabled={applyState.status === 'saving' || selected.size === 0}
-            className="btn primary"
-            style={{
-              width: '100%',
-              marginTop: 14,
-              border: 'none',
-              borderRadius: 13,
-              padding: 13,
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: selected.size === 0 ? 'not-allowed' : 'pointer',
-              background: selected.size === 0 ? 'var(--surface2)' : 'var(--primary-grad)',
-              color: selected.size === 0 ? 'var(--muted)' : 'var(--on-primary)',
-            }}
+            style={{ marginTop: 14 }}
           >
             {applyState.status === 'saving' ? 'Wird gespeichert…' : 'Plan anpassen'}
-          </button>
-        </div>
+          </Button>
+        </Card>
       )}
 
       {summary && (
-        <div>
-          <h3>Session-Zusammenfassung</h3>
-          {summary.exercises.map((ex) => (
-            <div
-              key={ex.exercise_id}
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--line)',
-                borderRadius: 14,
-                padding: 12,
-                marginBottom: 8,
-              }}
-            >
-              <strong>{ex.name ?? ex.exercise_id}</strong>
-              <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-                {ex.sets
-                  .map(
-                    (s) =>
-                      `Satz ${s.set_number}: ${s.reps ?? (s.duration_s != null ? formatDuration(s.duration_s) : '-')}`
-                  )
-                  .join(' · ')}
-              </div>
-            </div>
-          ))}
-        </div>
+        <section>
+          <h2 style={{ ...sectionTitle, marginBottom: 12 }}>Session-Zusammenfassung</h2>
+          <ul className="kal-tray">
+            {summary.exercises.map((ex) => (
+              <li key={ex.exercise_id} style={{ padding: '10px 4px' }}>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{ex.name ?? ex.exercise_id}</div>
+                <div style={{ fontSize: 14, color: 'var(--muted)', marginTop: 2 }}>
+                  {ex.sets
+                    .map(
+                      (s) =>
+                        `Satz ${s.set_number}: ${s.reps ?? (s.duration_s != null ? formatDuration(s.duration_s) : '-')}`
+                    )
+                    .join(' · ')}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   );

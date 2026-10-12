@@ -75,75 +75,117 @@ export default function PushSettingsDialog({ open, onClose }) {
   return (
     <Dialog open={open} onClose={onClose} title="Mitteilungen">
       {!supported && needsInstall && (
-        <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--muted)' }}>
+        <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--muted)' }}>
           Push funktioniert auf dem iPhone nur in der installierten App: Teilen-Menü → „Zum
           Home-Bildschirm" — dann hier wieder vorbeischauen.
         </p>
       )}
       {!supported && !needsInstall && (
-        <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--muted)' }}>
+        <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--muted)' }}>
           Dieser Browser unterstützt keine Push-Mitteilungen.
         </p>
       )}
 
       {supported && (
         <>
+          {/* Hauptschalter: erhabene Zeile, Schalter als Mulde mit Knopf */}
           <button
             type="button"
             onClick={handleToggle}
             disabled={busy}
             aria-pressed={enabled}
+            className="btn btn-secondary"
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: 10,
+              gap: 12,
               width: '100%',
-              padding: '10px 12px',
-              background: 'var(--surface2)',
-              border: '1px solid var(--line)',
-              borderRadius: 12,
+              minHeight: 56,
+              padding: '10px 14px 10px 18px',
+              background: 'var(--bg)',
+              border: 'none',
+              borderRadius: 20,
               color: 'var(--text)',
-              fontSize: 14,
+              fontSize: 16,
               fontWeight: 600,
-              cursor: 'pointer',
-              marginBottom: 12,
+              cursor: busy ? 'default' : 'pointer',
+              marginBottom: 16,
             }}
           >
             <span>{busy ? 'Einen Moment…' : 'Push-Mitteilungen'}</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: enabled ? 'var(--success)' : 'var(--muted)' }}>
-              {enabled ? 'An' : 'Aus'}
+            <span
+              aria-hidden="true"
+              style={{
+                position: 'relative',
+                width: 52,
+                height: 30,
+                borderRadius: 999,
+                flexShrink: 0,
+                background: enabled ? 'var(--primary)' : 'var(--bg)',
+                boxShadow: 'var(--shadow-inset-sm)',
+              }}
+              className="ui-knob"
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 3,
+                  left: enabled ? 25 : 3,
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  background: 'var(--bg)',
+                  boxShadow: 'var(--shadow-raised-sm)',
+                }}
+                className="ui-knob"
+              />
             </span>
           </button>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, opacity: enabled ? 1 : 0.55 }}>
-            {PUSH_CATEGORY_OPTIONS.map((option) => {
+          <div
+            style={{
+              borderRadius: 24,
+              padding: '4px 14px',
+              background: 'var(--bg)',
+              boxShadow: 'var(--shadow-inset)',
+              opacity: enabled ? 1 : 0.6,
+            }}
+          >
+            {PUSH_CATEGORY_OPTIONS.map((option, i) => {
               const active = categories.includes(option.id);
               return (
                 <label
                   key={option.id}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 4px', cursor: 'pointer' }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 12,
+                    padding: '12px 0',
+                    borderTop: i ? '1px solid var(--line)' : 'none',
+                    cursor: 'pointer',
+                  }}
                 >
                   <input
                     type="checkbox"
                     checked={active}
                     onChange={() => toggleCategory(option.id)}
-                    style={{ marginTop: 3 }}
+                    style={{ width: 20, height: 20, margin: '1px 0 0', accentColor: 'var(--primary)', flexShrink: 0 }}
                   />
                   <span>
-                    <span style={{ display: 'block', fontSize: 14 }}>{option.label}</span>
-                    <span style={{ display: 'block', fontSize: 12, color: 'var(--muted)' }}>{option.hint}</span>
+                    <span style={{ display: 'block', fontSize: 15 }}>{option.label}</span>
+                    <span style={{ display: 'block', fontSize: 13, color: 'var(--muted)' }}>{option.hint}</span>
                   </span>
                 </label>
               );
             })}
           </div>
 
-          {error && <p style={{ color: 'var(--danger)', fontSize: 12, margin: '10px 0 0' }}>{error}</p>}
+          {error && <p style={{ color: 'var(--danger)', fontSize: 13, margin: '12px 0 0' }}>{error}</p>}
         </>
       )}
 
-      <Button variant="secondary" fullWidth onClick={onClose} style={{ marginTop: 14 }}>
+      <Button variant="secondary" fullWidth onClick={onClose} style={{ marginTop: 18 }}>
         Fertig
       </Button>
     </Dialog>

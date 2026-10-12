@@ -4,6 +4,8 @@ import { useScrollLock } from '../lib/scrollLock.js';
 import { formatRecordValue } from '../lib/records.js';
 import { playWorkoutComplete } from '../lib/workoutSounds.js';
 import { shareCard, shareCardColors } from '../lib/shareCard.js';
+import Button from './ui/Button.jsx';
+import '../styles/kal.css';
 
 const PARTICLES = particleLayout(14);
 const COUNT_UP_MS = 700;
@@ -51,22 +53,21 @@ function useCountUp(target, animate) {
 function Stat({ label, value, unit }) {
   return (
     <div style={{ textAlign: 'center', minWidth: 62 }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, color: 'var(--text)' }}>
+      <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)' }}>
         {value}
-        {unit && <span style={{ fontSize: 12, color: 'var(--muted)' }}> {unit}</span>}
+        {unit && <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted)' }}> {unit}</span>}
       </div>
-      <div
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 10,
-          textTransform: 'uppercase',
-          color: 'var(--muted)',
-          marginTop: 2,
-        }}
-      >
-        {label}
-      </div>
+      <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{label}</div>
     </div>
+  );
+}
+
+// Rekord-Stern als Linien-Icon statt ★-Glyphe.
+function StarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" style={{ flexShrink: 0 }}>
+      <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />
+    </svg>
   );
 }
 
@@ -121,17 +122,15 @@ export default function WorkoutCompleteOverlay({ stats, records = [], dayName, o
         alignItems: 'center',
         justifyContent: 'center',
         padding: 24,
-        background: 'rgba(246, 242, 251, 0.72)',
-        WebkitBackdropFilter: 'blur(16px) saturate(1.4)',
-        backdropFilter: 'blur(16px) saturate(1.4)',
+        background: 'var(--bg)',
         cursor: 'pointer',
       }}
     >
       <div
-        className="wc-card glass"
+        className="wc-card neu-raised"
         style={{
           borderRadius: 24,
-          padding: '28px 24px 24px',
+          padding: '28px 20px 20px',
           width: '100%',
           maxWidth: 340,
           textAlign: 'center',
@@ -140,9 +139,9 @@ export default function WorkoutCompleteOverlay({ stats, records = [], dayName, o
         <div
           style={{
             position: 'relative',
-            width: 88,
-            height: 88,
-            margin: '0 auto 14px',
+            width: 96,
+            height: 96,
+            margin: '0 auto 18px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -154,8 +153,7 @@ export default function WorkoutCompleteOverlay({ stats, records = [], dayName, o
               position: 'absolute',
               inset: 0,
               borderRadius: '50%',
-              background:
-                'radial-gradient(circle, rgba(139, 92, 246, 0.45), rgba(236, 72, 153, 0.18) 55%, transparent 72%)',
+              background: 'var(--primary-dim)',
               pointerEvents: 'none',
             }}
           />
@@ -179,126 +177,109 @@ export default function WorkoutCompleteOverlay({ stats, records = [], dayName, o
             />
           ))}
 
-          <svg width="80" height="80" viewBox="0 0 80 80" style={{ position: 'relative' }}>
-            <circle
-              className="wc-ring"
-              cx="40"
-              cy="40"
-              r={RING_RADIUS}
-              fill="none"
-              stroke="var(--primary)"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeDasharray={RING_LENGTH}
-              strokeDashoffset={RING_LENGTH}
-              transform="rotate(-90 40 40)"
-            />
-            <path
-              className="wc-check"
-              d={CHECK_PATH}
-              fill="none"
-              stroke="var(--primary)"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray={CHECK_LENGTH}
-              strokeDashoffset={CHECK_LENGTH}
-            />
-          </svg>
+          {/* Ring zeichnet sich in einer eingelassenen Mulde: „erledigt" = eingelassen. */}
+          <div
+            className="neu-inset"
+            style={{
+              position: 'relative',
+              width: 96,
+              height: 96,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <svg width="80" height="80" viewBox="0 0 80 80" aria-hidden="true">
+              <circle
+                className="wc-ring"
+                cx="40"
+                cy="40"
+                r={RING_RADIUS}
+                fill="none"
+                stroke="var(--primary)"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeDasharray={RING_LENGTH}
+                strokeDashoffset={RING_LENGTH}
+                transform="rotate(-90 40 40)"
+              />
+              <path
+                className="wc-check"
+                d={CHECK_PATH}
+                fill="none"
+                stroke="var(--primary)"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray={CHECK_LENGTH}
+                strokeDashoffset={CHECK_LENGTH}
+              />
+            </svg>
+          </div>
         </div>
 
-        <h2 style={{ margin: '0 0 4px', fontSize: 21 }}>{completionHeadline(records)}</h2>
-        <p style={{ margin: '0 0 18px', fontSize: 13, color: 'var(--muted)' }}>
+        <h2 style={{ margin: '0 0 4px', fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em' }}>
+          {completionHeadline(records)}
+        </h2>
+        <p style={{ margin: '0 0 20px', fontSize: 14, color: 'var(--muted)' }}>
           {stats?.exercises
             ? `${stats.exercises} Übung${stats.exercises === 1 ? '' : 'en'} abgeschlossen`
             : 'Session gespeichert'}
           {stats?.cooldown_sets ? ' · Cooldown erledigt' : ''}
         </p>
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 18, marginBottom: records.length ? 18 : 4 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: records.length ? 18 : 4 }}>
           <Stat label="Sätze" value={sets} />
           {(stats?.tonnage_kg ?? 0) > 0 && <Stat label="Tonnage" value={tonnage} unit="kg" />}
           {(stats?.duration_min ?? 0) > 0 && <Stat label="Dauer" value={minutes} unit="min" />}
         </div>
 
         {records.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {records.slice(0, 3).map((record) => (
-              <div
-                key={record.exercise_id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 8,
-                  background: 'var(--primary-dim)',
-                  borderRadius: 11,
-                  padding: '8px 11px',
-                  textAlign: 'left',
-                }}
-              >
-                <span style={{ fontSize: 13, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  ★ {record.name}
-                </span>
-                <span
+          <>
+            <ul className="kal-tray" style={{ padding: '2px 12px', borderRadius: 20, textAlign: 'left' }}>
+              {records.slice(0, 3).map((record) => (
+                <li
+                  key={record.exercise_id}
                   style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 12,
-                    color: 'var(--primary)',
-                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 8,
+                    padding: '10px 2px',
                   }}
                 >
-                  {formatRecordValue(record.kind, record.value)}
-                </span>
-              </div>
-            ))}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, fontSize: 14 }}>
+                    <span style={{ color: 'var(--primary)', display: 'flex' }}>
+                      <StarIcon />
+                    </span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{record.name}</span>
+                  </span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--primary)', flexShrink: 0 }}>
+                    {formatRecordValue(record.kind, record.value)}
+                  </span>
+                </li>
+              ))}
+            </ul>
             {records.length > 3 && (
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-                +{records.length - 3} weitere
-              </span>
+              <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 8 }}>+{records.length - 3} weitere</div>
             )}
-          </div>
+          </>
         )}
 
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          fullWidth
           onClick={handleShare}
           disabled={sharing}
-          style={{
-            width: '100%',
-            marginTop: 16,
-            background: 'var(--surface2)',
-            border: '1px solid var(--line)',
-            borderRadius: 13,
-            padding: 13,
-            fontWeight: 600,
-            fontSize: 14,
-            color: 'var(--text)',
-            cursor: 'pointer',
-          }}
+          style={{ marginTop: 20, fontSize: 15 }}
         >
           {sharing ? 'Bild wird erstellt…' : 'Als Bild teilen'}
-        </button>
+        </Button>
 
-        <button
-          type="button"
-          onClick={onDone}
-          className="btn primary"
-          style={{
-            width: '100%',
-            marginTop: 10,
-            border: 'none',
-            borderRadius: 13,
-            padding: 15,
-            fontWeight: 600,
-            fontSize: 15,
-            cursor: 'pointer',
-            background: 'var(--primary-grad)',
-            color: 'var(--on-primary)',
-          }}
-        >
+        <Button fullWidth onClick={(e) => { e.stopPropagation(); onDone(); }} style={{ marginTop: 12, minHeight: 52 }}>
           Zur Auswertung
-        </button>
+        </Button>
       </div>
     </div>
   );

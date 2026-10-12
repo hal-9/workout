@@ -10,79 +10,97 @@ import {
   proposalsFor,
   selectionCount,
 } from '../../lib/planWizard.js';
+import Button from '../ui/Button.jsx';
+import Card from '../ui/Card.jsx';
+import Icon from '../ui/Icon.jsx';
 
+// Antippbare Karte = erhaben; Druck über .btn.
 const cardStyle = {
-  background: 'var(--surface)',
-  border: '1px solid var(--line)',
-  borderRadius: 14,
+  display: 'block',
+  background: 'var(--bg)',
+  border: 'none',
+  borderRadius: 20,
   padding: 16,
-  marginBottom: 12,
+  marginBottom: 16,
   cursor: 'pointer',
   textAlign: 'left',
   width: '100%',
   color: 'var(--text)',
 };
 
-const primaryBtnStyle = {
-  width: '100%',
-  border: 'none',
-  borderRadius: 13,
-  padding: 15,
-  fontWeight: 600,
-  fontSize: 15,
-  cursor: 'pointer',
-  background: 'var(--primary-grad)',
-  color: 'var(--on-primary)',
-};
-
-const ghostBtnStyle = {
-  background: 'var(--surface2)',
-  border: '1px solid var(--line)',
-  borderRadius: 12,
-  padding: '12px 16px',
-  fontSize: 14,
-  cursor: 'pointer',
-  color: 'var(--muted)',
-};
-
+// Ausrüstungs-Chips: Behälter eingelassen, gewählt erhaben in --text, sonst flach gedämpft.
 const chipStyle = (active) => ({
-  background: active ? 'var(--primary-dim)' : 'var(--surface2)',
-  border: `1px solid ${active ? 'var(--primary)' : 'var(--line)'}`,
-  color: active ? 'var(--primary)' : 'var(--muted)',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  minHeight: 44,
+  background: 'var(--bg)',
+  border: 'none',
+  boxShadow: active ? 'var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim)' : 'none',
+  color: active ? 'var(--text)' : 'var(--muted)',
   borderRadius: 999,
-  padding: '8px 13px',
-  fontFamily: 'var(--font-mono)',
-  fontSize: 12,
+  padding: '8px 14px',
+  fontSize: 14,
+  fontWeight: active ? 600 : 500,
   cursor: 'pointer',
 });
 
 const inputStyle = {
   width: '100%',
-  background: 'var(--surface2)',
-  border: '1px solid var(--line)',
+  minHeight: 44,
+  background: 'var(--bg)',
+  border: 'none',
+  boxShadow: 'var(--shadow-inset-sm)',
   color: 'var(--text)',
-  borderRadius: 9,
-  padding: '10px 12px',
-  fontSize: 15,
+  borderRadius: 14,
+  padding: '10px 14px',
+  fontSize: 16,
 };
+
+const headingStyle = { margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' };
+
+const subStyle = { color: 'var(--muted)', fontSize: 14, lineHeight: 1.45, margin: '4px 0 16px' };
 
 function ProgressBar({ step, total }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>
         Schritt {step + 1} von {total}
       </div>
-      <div style={{ height: 4, borderRadius: 999, background: 'var(--surface2)', overflow: 'hidden' }}>
+      <div className="neu-inset" style={{ height: 8, borderRadius: 999, overflow: 'hidden', boxShadow: 'var(--shadow-inset-sm)' }}>
         <div
+          className="pl-progress-fill"
           style={{
             height: '100%',
             width: `${((step + 1) / total) * 100}%`,
-            background: 'var(--primary-grad)',
-            transition: 'width .2s ease',
+            borderRadius: 999,
+            background: 'var(--primary)',
           }}
         />
       </div>
     </div>
+  );
+}
+
+// Auswahl-Kiesel rechts: gewählt = gefüllt mit Haken, sonst leere Mulde.
+function PickPebble({ picked }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: 24,
+        height: 22,
+        flexShrink: 0,
+        display: 'grid',
+        placeItems: 'center',
+        borderRadius: '52% 48% 50% 50% / 58% 55% 45% 42%',
+        background: picked ? 'var(--primary)' : 'var(--bg)',
+        boxShadow: picked ? 'none' : 'var(--shadow-inset-sm)',
+        color: 'var(--on-primary)',
+      }}
+    >
+      {picked && <Icon name="check" size={14} style={{ strokeWidth: 2.6 }} />}
+    </span>
   );
 }
 
@@ -92,31 +110,29 @@ function ProposalRow({ entry, picked, onToggle }) {
       type="button"
       onClick={onToggle}
       aria-pressed={picked}
+      className="pl-press"
       style={{
-        display: 'block',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
         width: '100%',
+        minHeight: 44,
         textAlign: 'left',
-        background: picked ? 'var(--primary-dim)' : 'var(--surface2)',
-        border: `1px solid ${picked ? 'var(--primary)' : 'var(--line)'}`,
-        borderRadius: 10,
-        padding: '10px 12px',
-        marginBottom: 6,
+        background: 'none',
+        border: 'none',
+        borderRadius: 14,
+        padding: '10px 6px',
         cursor: 'pointer',
         color: 'var(--text)',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{ fontSize: 14 }}>
-          {picked && <span style={{ color: 'var(--primary)' }}>✓ </span>}
-          {entry.name}
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'block', fontSize: 15, lineHeight: 1.35, fontWeight: picked ? 600 : 400 }}>{entry.name}</span>
+        <span style={{ display: 'block', fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
+          {formatExercisePrescription(entry)} · {EQUIPMENT_LABELS[entry.equipment] ?? entry.equipment} · {entry.muscle}
         </span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>
-          {formatExercisePrescription(entry)}
-        </span>
-      </div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
-        {EQUIPMENT_LABELS[entry.equipment] ?? entry.equipment} · {entry.muscle}
-      </div>
+      </span>
+      <PickPebble picked={picked} />
     </button>
   );
 }
@@ -128,33 +144,37 @@ function BlockSection({ dayKey, zone, count, equipment, entries, selection, onTo
   const visible = expanded ? proposals : proposals.slice(0, Math.max(count + 2, 3));
 
   return (
-    <div style={{ marginBottom: 18 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 7 }}>
-        <strong style={{ fontSize: 15 }}>{blockLabel(zone)}</strong>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 16, fontWeight: 600 }}>{blockLabel(zone)}</span>
+        <span style={{ fontSize: 13, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
           {picked.length} gewählt · {count} empfohlen
         </span>
       </div>
 
       {proposals.length === 0 ? (
-        <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0 }}>
+        <p style={{ fontSize: 14, lineHeight: 1.45, color: 'var(--muted)', margin: 0 }}>
           Keine Übung für {blockLabel(zone)} mit deiner Ausrüstung. Ausrüstung erweitern oder später im Editor ergänzen.
         </p>
       ) : (
         <>
-          {visible.map((entry) => (
-            <ProposalRow
-              key={entry.id}
-              entry={entry}
-              picked={picked.includes(entry.id)}
-              onToggle={() => onToggle(dayKey, zone, entry.id)}
-            />
-          ))}
+          <ul className="pl-tray">
+            {visible.map((entry) => (
+              <li key={entry.id}>
+                <ProposalRow
+                  entry={entry}
+                  picked={picked.includes(entry.id)}
+                  onToggle={() => onToggle(dayKey, zone, entry.id)}
+                />
+              </li>
+            ))}
+          </ul>
           {proposals.length > visible.length && (
             <button
               type="button"
               onClick={() => setExpanded(true)}
-              style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: 13, cursor: 'pointer', padding: 0 }}
+              className="btn"
+              style={{ minHeight: 44, marginTop: 4, background: 'none', border: 'none', color: 'var(--primary)', fontSize: 14, fontWeight: 500, cursor: 'pointer', padding: '0 4px' }}
             >
               {proposals.length - visible.length} weitere anzeigen
             </button>
@@ -218,25 +238,27 @@ export default function PlanWizard({ onSave, onRefine, onCancel, onUseTemplate, 
 
       {step === 0 && (
         <>
-          <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 0 }}>
+          <p style={{ color: 'var(--muted)', fontSize: 15, lineHeight: 1.45, margin: '0 0 16px' }}>
             Wähle einen Split — danach gehst du Muskelgruppe für Muskelgruppe durch und suchst dir Übungen aus.
           </p>
           {SPLITS.map((item) => (
-            <button key={item.key} type="button" onClick={() => handlePickSplit(item)} style={cardStyle}>
+            <button key={item.key} type="button" onClick={() => handlePickSplit(item)} className="neu-raised btn" style={cardStyle}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                 <div>
                   <strong style={{ fontSize: 16 }}>{item.title}</strong>
-                  <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>{item.description}</div>
+                  <div style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.45, marginTop: 4 }}>{item.description}</div>
                 </div>
                 <span
                   style={{
                     flexShrink: 0,
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 12,
-                    color: 'var(--primary)',
-                    background: 'var(--primary-dim)',
-                    padding: '4px 8px',
-                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: 'var(--muted)',
+                    background: 'var(--bg)',
+                    boxShadow: 'var(--shadow-inset-sm)',
+                    padding: '5px 10px',
+                    borderRadius: 999,
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {item.days.length} Tage
@@ -247,14 +269,14 @@ export default function PlanWizard({ onSave, onRefine, onCancel, onUseTemplate, 
 
           <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
             {onUseTemplate && (
-              <button type="button" onClick={onUseTemplate} style={{ ...ghostBtnStyle, flex: 1 }}>
+              <Button variant="secondary" onClick={onUseTemplate} style={{ flex: 1 }}>
                 Fertige Vorlage nutzen
-              </button>
+              </Button>
             )}
             {onCancel && (
-              <button type="button" onClick={onCancel} style={{ ...ghostBtnStyle, flex: 1 }}>
+              <Button variant="ghost" onClick={onCancel} style={{ flex: 1 }}>
                 Abbrechen
-              </button>
+              </Button>
             )}
           </div>
         </>
@@ -262,20 +284,19 @@ export default function PlanWizard({ onSave, onRefine, onCancel, onUseTemplate, 
 
       {step === 1 && split && (
         <>
-          <h3 style={{ margin: '0 0 4px', fontSize: 17 }}>Was hast du zur Verfügung?</h3>
-          <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 0 }}>
-            Nur passende Übungen werden vorgeschlagen.
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+          <h3 style={headingStyle}>Was hast du zur Verfügung?</h3>
+          <p style={subStyle}>Nur passende Übungen werden vorgeschlagen.</p>
+          <div className="neu-inset" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: 6, borderRadius: 24, marginBottom: 20 }}>
             {EQUIPMENT.map((item) => (
               <button
                 key={item.key}
                 type="button"
                 onClick={() => toggleEquipment(item.key)}
                 aria-pressed={equipment.has(item.key)}
+                className="btn"
                 style={chipStyle(equipment.has(item.key))}
               >
-                {equipment.has(item.key) ? '✓ ' : ''}
+                {equipment.has(item.key) && <Icon name="check" size={16} style={{ color: 'var(--primary)' }} />}
                 {item.label}
               </button>
             ))}
@@ -285,10 +306,8 @@ export default function PlanWizard({ onSave, onRefine, onCancel, onUseTemplate, 
 
       {split && dayIndex >= 0 && dayIndex < split.days.length && (
         <>
-          <h3 style={{ margin: '0 0 2px', fontSize: 17 }}>{split.days[dayIndex].name}</h3>
-          <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 0, marginBottom: 18 }}>
-            {split.days[dayIndex].focus}
-          </p>
+          <h3 style={headingStyle}>{split.days[dayIndex].name}</h3>
+          <p style={{ ...subStyle, marginBottom: 20 }}>{split.days[dayIndex].focus}</p>
           {split.days[dayIndex].blocks.map(([zone, count]) => (
             <BlockSection
               key={zone}
@@ -306,78 +325,73 @@ export default function PlanWizard({ onSave, onRefine, onCancel, onUseTemplate, 
 
       {split && step === totalSteps - 1 && (
         <>
-          <h3 style={{ margin: '0 0 12px', fontSize: 17 }}>Fertig — passt das so?</h3>
-          <label htmlFor="wizard-plan-name" style={{ fontSize: 13, color: 'var(--muted)' }}>
+          <h3 style={{ ...headingStyle, marginBottom: 16 }}>Fertig — passt das so?</h3>
+          <label htmlFor="wizard-plan-name" style={{ display: 'block', fontSize: 13, color: 'var(--muted)' }}>
             Name des Plans
           </label>
           <input
             id="wizard-plan-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            style={{ ...inputStyle, marginTop: 6, marginBottom: 16 }}
+            style={{ ...inputStyle, marginTop: 6, marginBottom: 20 }}
           />
 
           {draftPlan.days.map((day) => (
-            <div
-              key={day.key}
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--line)',
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 10,
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <strong style={{ fontSize: 15 }}>{day.name}</strong>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+            <Card key={day.key} style={{ paddingBottom: 6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
+                <span style={{ fontSize: 16, fontWeight: 600 }}>{day.name}</span>
+                <span style={{ fontSize: 13, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
                   {day.exercises.length} Übungen
                 </span>
               </div>
-              <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 13, color: 'var(--muted)' }}>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {day.exercises.map((ex) => (
-                  <li key={ex.id}>
-                    {ex.name} — {formatExercisePrescription(ex)}
+                  <li
+                    key={ex.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'baseline',
+                      gap: 12,
+                      padding: '10px 0',
+                      borderTop: '1px solid var(--line)',
+                      fontSize: 15,
+                    }}
+                  >
+                    <span style={{ minWidth: 0 }}>{ex.name}</span>
+                    <span style={{ flexShrink: 0, fontSize: 14, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+                      {formatExercisePrescription(ex)}
+                    </span>
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           ))}
 
           {!canSave && (
-            <p style={{ color: 'var(--danger)', fontSize: 13 }}>
+            <p style={{ color: 'var(--danger)', fontSize: 14 }}>
               Noch keine Übung gewählt — geh zurück und wähle mindestens eine aus.
             </p>
           )}
 
-          <button
-            type="button"
-            onClick={() => onSave(draftPlan)}
-            disabled={!canSave || saving}
-            style={{ ...primaryBtnStyle, marginTop: 6, opacity: canSave && !saving ? 1 : 0.6 }}
-          >
+          <Button fullWidth onClick={() => onSave(draftPlan)} disabled={!canSave || saving} style={{ marginTop: 6 }}>
             {saving ? 'Speichern…' : 'Plan speichern'}
-          </button>
-          <button
-            type="button"
-            onClick={() => onRefine(draftPlan)}
-            disabled={!canSave}
-            style={{ ...ghostBtnStyle, width: '100%', marginTop: 8 }}
-          >
+          </Button>
+          <Button variant="secondary" fullWidth onClick={() => onRefine(draftPlan)} disabled={!canSave} style={{ marginTop: 12 }}>
             Im Editor feinjustieren
-          </button>
+          </Button>
         </>
       )}
 
       {step > 0 && (
         <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-          <button type="button" onClick={() => setStep((s) => s - 1)} style={{ ...ghostBtnStyle, flex: 1 }}>
+          <Button variant="secondary" onClick={() => setStep((s) => s - 1)} style={{ flex: 1 }}>
             Zurück
-          </button>
+          </Button>
           {step < totalSteps - 1 && (
-            <button type="button" onClick={() => setStep((s) => s + 1)} style={{ ...primaryBtnStyle, flex: 2 }}>
+            <Button onClick={() => setStep((s) => s + 1)} style={{ flex: 2 }}>
               Weiter{step >= 2 ? ` · ${selectionCount(selection)} Übungen` : ''}
-            </button>
+            </Button>
           )}
         </div>
       )}

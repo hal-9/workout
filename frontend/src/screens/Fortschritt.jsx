@@ -20,31 +20,66 @@ import TrainingTree from '../components/TrainingTree.jsx';
 import WrappedStory, { monthLabel } from '../components/WrappedStory.jsx';
 import ProgressionProposals from '../components/ProgressionProposals.jsx';
 import ProgressLayoutEditor from '../components/ProgressLayoutEditor.jsx';
-import ProgressSummary from '../components/ProgressSummary.jsx';
+import ProgressSummary, { deNum } from '../components/ProgressSummary.jsx';
 import { buildProgressSummary } from '../lib/progressSummary.js';
 import PageHeader from '../components/ui/PageHeader.jsx';
 import Button from '../components/ui/Button.jsx';
+import Card from '../components/ui/Card.jsx';
+import Icon from '../components/ui/Icon.jsx';
+import '../styles/prog.css';
 
-const cardStyle = {
-  background: 'var(--surface)',
-  border: '1px solid var(--line)',
-  borderRadius: 16,
-  padding: 16,
-  marginBottom: 12,
+const sectionHeading = { margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' };
+const contextLine = { margin: '4px 0 12px', fontSize: 14, color: 'var(--muted)' };
+
+// Kleine Linien-Icons, die Icon.jsx nicht hat (Strich 1.8, runde Enden).
+const LineIcon = ({ d, size = 18, style }) => (
+  <svg
+    viewBox="0 0 24 24"
+    width={size}
+    height={size}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    focusable="false"
+    style={{ flexShrink: 0, ...style }}
+  >
+    <path d={d} />
+  </svg>
+);
+const MORE_PATH = 'M5 12h.01M12 12h.01M19 12h.01';
+const SLIDERS_PATH = 'M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4';
+const FLAT_PATH = 'M4 12h16';
+const ALERT_PATH = 'M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17zM12 7.5v5.5M12 16.4v.2';
+
+// Trend als Icon + Wort; Farbe aus TREND_LABELS, der Pfeil-Glyph im Text fällt weg.
+const TrendBadge = ({ trend }) => {
+  const meta = TREND_LABELS[trend];
+  if (!meta) return null;
+  const word = meta.text.replace(/^\S+\s/, '');
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        fontSize: 13,
+        fontWeight: 600,
+        color: meta.color,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {trend === 'same' ? (
+        <LineIcon d={FLAT_PATH} size={16} />
+      ) : (
+        <Icon name="trend" size={16} style={trend === 'down' ? { transform: 'scaleY(-1)' } : undefined} />
+      )}
+      {word}
+    </span>
+  );
 };
-
-const tabButtonStyle = (active) => ({
-  flex: '0 0 auto',
-  background: active ? 'var(--primary-dim)' : 'var(--surface)',
-  border: `1px solid ${active ? 'var(--primary)' : 'var(--line)'}`,
-  color: active ? 'var(--primary)' : 'var(--muted)',
-  borderRadius: 11,
-  padding: '9px 13px',
-  fontFamily: 'var(--font-mono)',
-  fontSize: 12,
-  cursor: 'pointer',
-  whiteSpace: 'nowrap',
-});
 
 // Karten des eigenen Fortschritt-Tabs: Reihenfolge + Sichtbarkeit sind pro
 // User anpassbar (Anpassen-Modus), Titel dienen auch den eingeklappten Zeilen.
@@ -64,61 +99,95 @@ const CARD_IDS = Object.keys(CARD_TITLES);
 
 const ExerciseProgressCard = ({ exercise }) => {
   const delta = formatProgressDelta(exercise.first_value, exercise.latest_value, exercise.metric_label);
-  const trendMeta = exercise.trend ? TREND_LABELS[exercise.trend] : null;
 
   return (
-    <div style={cardStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: 16 }}>{exercise.name}</h3>
-          <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 2 }}>{exercise.muscle}</div>
+    <Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+        <div style={{ minWidth: 0 }}>
+          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>{exercise.name}</h3>
+          <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 2 }}>{exercise.muscle}</div>
         </div>
-        {trendMeta && (
-          <span
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 11,
-              color: trendMeta.color,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {trendMeta.text}
-          </span>
-        )}
+        {exercise.trend && <TrendBadge trend={exercise.trend} />}
       </div>
       {delta && (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--primary)', marginBottom: 8 }}>
-          {delta}
-        </div>
+        <div style={{ fontSize: 15, fontWeight: 600, margin: '8px 0 0' }}>{deNum(delta)}</div>
       )}
-      <ExerciseChart points={exercise.points} target={exercise.target} metricLabel={exercise.metric_label} />
-    </div>
+      <div style={{ marginTop: 12 }}>
+        <ExerciseChart points={exercise.points} target={exercise.target} metricLabel={exercise.metric_label} />
+      </div>
+    </Card>
   );
 };
 
+// Kleine erhabene Pille (Freunde, Anpassen).
+const pillLinkStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  flexShrink: 0,
+  minHeight: 44,
+  padding: '0 14px',
+  borderRadius: 999,
+  background: 'var(--bg)',
+  color: 'var(--text)',
+  fontSize: 14,
+  fontWeight: 500,
+  textDecoration: 'none',
+  whiteSpace: 'nowrap',
+};
+
+// Status der KI-Auswertung als Icon statt Glyph.
+const EvaluationStatus = ({ status }) => {
+  if (status === 'ok') {
+    return (
+      <span role="img" aria-label="ausgewertet" style={{ display: 'inline-flex', color: 'var(--success)' }}>
+        <Icon name="check" size={16} />
+      </span>
+    );
+  }
+  if (status === 'pending') {
+    return (
+      <span role="img" aria-label="Auswertung läuft" style={{ display: 'inline-flex', color: 'var(--muted)' }}>
+        <Icon name="timer" size={16} />
+      </span>
+    );
+  }
+  if (status === 'failed') {
+    return (
+      <span role="img" aria-label="Auswertung fehlgeschlagen" style={{ display: 'inline-flex', color: 'var(--danger)' }}>
+        <LineIcon d={ALERT_PATH} size={16} />
+      </span>
+    );
+  }
+  return <span style={{ width: 16, textAlign: 'center', color: 'var(--muted)' }}>–</span>;
+};
+
+// Ausgeblendete Karte: drückbare, leise Zeile zum Wieder-Einblenden.
 const CollapsedCard = ({ title, onShow }) => (
   <button
     type="button"
     onClick={onShow}
+    className="btn btn-secondary"
     style={{
-      ...cardStyle,
       width: '100%',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
       gap: 8,
-      padding: '11px 16px',
-      opacity: 0.45,
-      color: 'var(--text)',
+      minHeight: 48,
+      padding: '0 16px',
+      marginBottom: 16,
+      border: 'none',
+      borderRadius: 20,
+      background: 'var(--bg)',
+      color: 'var(--muted)',
       textAlign: 'left',
       cursor: 'pointer',
-      fontSize: 14,
+      fontSize: 15,
     }}
   >
     <span>{title}</span>
-    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-      Einblenden
-    </span>
+    <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--primary)', whiteSpace: 'nowrap' }}>Einblenden</span>
   </button>
 );
 
@@ -263,27 +332,23 @@ export default function Fortschritt() {
   };
 
   const exerciseSection = progress && (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
-        <h3 style={{ margin: 0 }}>Übungs-Fortschritt</h3>
-        {planSinceLabel && (
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-            Seit {planSinceLabel}
-          </span>
-        )}
-      </div>
-      {viewPartner && progress.name && (
-        <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 0, marginBottom: 12 }}>
-          Plan: {progress.plan_name}
+    <div>
+      <h2 style={sectionHeading}>Übungs-Fortschritt</h2>
+      {(planSinceLabel || (viewPartner && progress.name)) && (
+        <p style={contextLine}>
+          {viewPartner && progress.name && `Plan: ${progress.plan_name}`}
+          {viewPartner && progress.name && planSinceLabel && ' · '}
+          {planSinceLabel && `Seit ${planSinceLabel}`}
         </p>
       )}
+      {!planSinceLabel && !(viewPartner && progress.name) && <div style={{ height: 12 }} />}
 
       {highlights.length === 0 && (
-        <div style={cardStyle}>
-          <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0 }}>
+        <Card>
+          <p style={{ color: 'var(--muted)', fontSize: 14, margin: 0 }}>
             Nach dem ersten Workout siehst du hier deinen Fortschritt.
           </p>
-        </div>
+        </Card>
       )}
 
       {highlights.map((exercise) => (
@@ -291,25 +356,27 @@ export default function Fortschritt() {
       ))}
 
       {moreExercises.length > 0 && (
-        <div style={{ marginTop: 4 }}>
-          <button
-            type="button"
+        <div style={{ marginBottom: 16 }}>
+          <Button
+            variant="secondary"
+            fullWidth
             onClick={() => setShowAllExercises((open) => !open)}
+            aria-expanded={showAllExercises}
             style={{
-              width: '100%',
-              background: 'var(--surface)',
-              border: '1px solid var(--line)',
-              color: 'var(--primary)',
-              borderRadius: 11,
-              padding: '10px 12px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 12,
-              cursor: 'pointer',
-              marginBottom: showAllExercises ? 12 : 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              marginBottom: showAllExercises ? 16 : 0,
             }}
           >
             {showAllExercises ? 'Weniger anzeigen' : `Alle Übungen (${moreExercises.length})`}
-          </button>
+            <Icon
+              name="chevronDown"
+              size={16}
+              style={{ color: 'var(--muted)', transform: showAllExercises ? 'rotate(180deg)' : 'none' }}
+            />
+          </Button>
           {showAllExercises &&
             moreExercises.map((exercise) => (
               <ExerciseProgressCard key={exercise.exercise_id} exercise={exercise} />
@@ -327,43 +394,43 @@ export default function Fortschritt() {
     ),
     recovery: heatmapRange && <RecoveryMap sessions={heatmapRange.sessions} />,
     consistency: heatmapData && (
-      <div style={cardStyle}>
-        <h3 style={{ marginTop: 0 }}>Konsistenz (12 Wochen)</h3>
+      <Card>
+        <h3 style={sectionHeading}>Konsistenz</h3>
+        <p style={contextLine}>Trainingstage pro Woche, letzte 12 Wochen</p>
         <ConsistencyHeatmap data={heatmapData} />
-      </div>
+      </Card>
     ),
     maxtests: <MaxTestsSection />,
     weeks: weekRecap && weekRecap.weeks.length > 0 && (
-      <div style={cardStyle}>
-        <h3 style={{ marginTop: 0 }}>Trainingswochen</h3>
+      <Card>
+        <h3 style={sectionHeading}>Trainingswochen</h3>
+        <p style={contextLine}>
+          Ø {deNum(weekRecap.averageDone)} von {weekRecap.total}
+          {weekRecap.streak > 0 && ` · Serie: ${weekRecap.streak} Woche${weekRecap.streak === 1 ? '' : 'n'}`}
+        </p>
         {weekRecap.weeks.map((w) => (
-          <div key={w.weekLabel} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <div style={{ width: 52, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-              {w.weekLabel}
-            </div>
-            <div style={{ flex: 1, display: 'flex', gap: 3 }}>
+          <div key={w.weekLabel} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <div style={{ width: 52, fontSize: 13, color: 'var(--muted)' }}>{w.weekLabel}</div>
+            <div style={{ flex: 1, display: 'flex', gap: 4 }}>
               {Array.from({ length: w.total }).map((_, i) => (
                 <div
                   key={i}
                   style={{
                     flex: 1,
-                    height: 8,
-                    borderRadius: 4,
-                    background: i < w.done ? 'var(--primary)' : 'var(--line)',
+                    height: 10,
+                    borderRadius: 5,
+                    background: i < w.done ? 'var(--primary)' : 'var(--bg)',
+                    boxShadow: i < w.done ? 'none' : 'var(--shadow-inset-sm)',
                   }}
                 />
               ))}
             </div>
-            <div style={{ width: 36, fontFamily: 'var(--font-mono)', fontSize: 11, textAlign: 'right' }}>
+            <div style={{ width: 36, fontSize: 14, textAlign: 'right' }}>
               {w.done}/{w.total}
             </div>
           </div>
         ))}
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>
-          Ø {weekRecap.averageDone}/{weekRecap.total}
-          {weekRecap.streak > 0 && ` · Serie: ${weekRecap.streak} Woche${weekRecap.streak === 1 ? '' : 'n'}`}
-        </div>
-      </div>
+      </Card>
     ),
     stats: stats && <StatsSection stats={stats} />,
     exercises: exerciseSection,
@@ -371,66 +438,66 @@ export default function Fortschritt() {
       <button
         type="button"
         onClick={() => setWrappedOpen(true)}
+        className="btn btn-secondary"
         style={{
           width: '100%',
-          background: 'var(--surface)',
-          border: '1px solid var(--line)',
-          borderRadius: 16,
-          padding: '13px 16px',
-          marginBottom: 12,
+          background: 'var(--bg)',
+          border: 'none',
+          borderRadius: 20,
+          minHeight: 56,
+          padding: '0 16px',
+          marginBottom: 16,
           color: 'var(--text)',
-          fontSize: 14,
+          fontSize: 15,
+          fontWeight: 600,
           textAlign: 'left',
           cursor: 'pointer',
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
-          gap: 8,
+          gap: 10,
         }}
       >
-        <span>🎁 Rückblick {monthLabel(wrappedLatest.month)}</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--primary)' }}>Ansehen →</span>
+        <Icon name="gift" size={20} style={{ color: 'var(--primary)' }} />
+        <span style={{ flex: 1 }}>Rückblick {monthLabel(wrappedLatest.month)}</span>
+        <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--muted)' }}>Ansehen</span>
+        <Icon name="chevronRight" size={18} style={{ color: 'var(--muted)' }} />
       </button>
     ),
     recent: (
-      <div style={cardStyle}>
-        <h3 style={{ marginTop: 0 }}>Auswertungen</h3>
+      <Card>
+        <h3 style={sectionHeading}>Auswertungen</h3>
         {(recent?.sessions ?? []).length === 0 && (
-          <p style={{ color: 'var(--muted)', fontSize: 13 }}>Noch keine abgeschlossenen Workouts.</p>
+          <p style={{ color: 'var(--muted)', fontSize: 14, margin: '4px 0 0' }}>Noch keine abgeschlossenen Workouts.</p>
         )}
-        {(recent?.sessions ?? []).map((s) => (
-          <Link
-            key={s.session_id}
-            to={`/session/${s.session_id}/auswertung`}
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 8,
-              padding: '9px 0',
-              borderBottom: '1px solid var(--line)',
-              color: 'var(--text)',
-              textDecoration: 'none',
-              fontSize: 14,
-            }}
-          >
-            <span>{s.day_name}</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
-              {new Date(s.finished_at.replace(' ', 'T') + 'Z').toLocaleDateString('de-DE', {
-                day: '2-digit',
-                month: '2-digit',
-              })}{' '}
-              {s.evaluation_status === 'ok'
-                ? '✓'
-                : s.evaluation_status === 'pending'
-                  ? '…'
-                  : s.evaluation_status === 'failed'
-                    ? '⚠'
-                    : '–'}
-            </span>
-          </Link>
-        ))}
-      </div>
+        <div className="px-rows" style={{ marginTop: 6 }}>
+          {(recent?.sessions ?? []).map((s) => (
+            <Link
+              key={s.session_id}
+              to={`/session/${s.session_id}/auswertung`}
+              className="px-row"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                minHeight: 48,
+                color: 'var(--text)',
+                textDecoration: 'none',
+                fontSize: 15,
+              }}
+            >
+              <span style={{ flex: 1, minWidth: 0 }}>{s.day_name}</span>
+              <span style={{ fontSize: 14, color: 'var(--muted)' }}>
+                {new Date(s.finished_at.replace(' ', 'T') + 'Z').toLocaleDateString('de-DE', {
+                  day: '2-digit',
+                  month: '2-digit',
+                })}
+              </span>
+              <EvaluationStatus status={s.evaluation_status} />
+              <Icon name="chevronRight" size={16} style={{ color: 'var(--muted)' }} />
+            </Link>
+          ))}
+        </div>
+      </Card>
     ),
   };
 
@@ -445,9 +512,16 @@ export default function Fortschritt() {
               onClick={() => setExportOpen((o) => !o)}
               ariaLabel="Daten exportieren"
               ariaPressed={exportOpen}
-              style={{ padding: '8px 12px', fontSize: 12, minHeight: 36 }}
+              style={{
+                width: 44,
+                padding: 0,
+                display: 'grid',
+                placeItems: 'center',
+                color: exportOpen ? 'var(--primary)' : 'var(--text)',
+                boxShadow: exportOpen ? 'var(--shadow-inset-sm)' : undefined,
+              }}
             >
-              ⋯
+              <LineIcon d={MORE_PATH} size={20} style={{ strokeWidth: 2.6 }} />
             </Button>
           )
         }
@@ -460,30 +534,31 @@ export default function Fortschritt() {
             display: 'flex',
             gap: 8,
             alignItems: 'center',
-            background: 'var(--surface)',
-            border: '1px solid var(--line)',
-            borderRadius: 12,
-            padding: 12,
-            marginBottom: 12,
+            background: 'var(--bg)',
+            boxShadow: 'var(--shadow-inset)',
+            borderRadius: 24,
+            padding: '10px 10px 10px 16px',
+            marginBottom: 16,
           }}
         >
-          <span style={{ fontSize: 12, color: 'var(--muted)', marginRight: 'auto' }}>Daten exportieren</span>
-          <Button variant="secondary" onClick={handleExportJson} style={{ padding: '8px 12px', fontSize: 12, minHeight: 36 }}>
+          <span style={{ fontSize: 14, color: 'var(--muted)', marginRight: 'auto' }}>Daten exportieren</span>
+          <Button variant="secondary" onClick={handleExportJson} style={{ padding: '0 16px', fontSize: 14 }}>
             JSON
           </Button>
           <a
             href="/api/export.csv"
+            className="btn btn-secondary"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              padding: '8px 12px',
-              fontSize: 12,
-              borderRadius: 13,
-              background: 'var(--surface2)',
-              border: '1px solid var(--line)',
+              padding: '0 16px',
+              minHeight: 44,
+              fontSize: 14,
+              fontWeight: 600,
+              borderRadius: 999,
+              background: 'var(--bg)',
               color: 'var(--text)',
               textDecoration: 'none',
-              minHeight: 36,
             }}
           >
             CSV
@@ -491,32 +566,52 @@ export default function Fortschritt() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', margin: '0 0 16px' }}>
-        <button type="button" onClick={() => setSelectedUserId(null)} style={tabButtonStyle(!viewPartner)}>
-          Ich
-        </button>
-        {(others ?? []).map((u) => (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+        <div className="px-seg" style={{ minWidth: 0 }}>
           <button
-            key={u.id}
             type="button"
-            onClick={() => setSelectedUserId(u.id)}
-            style={tabButtonStyle(selectedUserId === u.id)}
+            className="px-seg-opt"
+            aria-pressed={!viewPartner}
+            onClick={() => setSelectedUserId(null)}
           >
-            {u.name}
+            Ich
           </button>
-        ))}
-        <Link to="/freunde" style={{ ...tabButtonStyle(false), textDecoration: 'none' }}>
-          + Freunde
-        </Link>
-      </div>
-
-      {!viewPartner && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-          <button type="button" onClick={() => setEditMode((m) => !m)} style={tabButtonStyle(editMode)}>
-            {editMode ? 'Fertig' : '≡ Anpassen'}
-          </button>
+          {(others ?? []).map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              className="px-seg-opt"
+              aria-pressed={selectedUserId === u.id}
+              onClick={() => setSelectedUserId(u.id)}
+            >
+              {u.name}
+            </button>
+          ))}
         </div>
-      )}
+        <Link to="/freunde" className="btn btn-secondary" aria-label="Freunde hinzufügen" style={pillLinkStyle}>
+          <Icon name="plus" size={16} />
+          Freunde
+        </Link>
+        {!viewPartner && (
+          <button
+            type="button"
+            onClick={() => setEditMode((m) => !m)}
+            aria-pressed={editMode}
+            className="btn btn-secondary"
+            style={{
+              ...pillLinkStyle,
+              marginLeft: 'auto',
+              border: 'none',
+              cursor: 'pointer',
+              color: editMode ? 'var(--primary)' : 'var(--text)',
+              boxShadow: editMode ? 'var(--shadow-inset-sm)' : undefined,
+            }}
+          >
+            {editMode ? <Icon name="check" size={16} /> : <LineIcon d={SLIDERS_PATH} size={16} />}
+            {editMode ? 'Fertig' : 'Anpassen'}
+          </button>
+        )}
+      </div>
 
       {!viewPartner && editMode && (
         <ProgressLayoutEditor
@@ -526,7 +621,7 @@ export default function Fortschritt() {
         />
       )}
 
-      {!viewPartner && !editMode && <ProgressSummary items={summaryItems} />}
+      {!viewPartner && !editMode && <ProgressSummary items={summaryItems} weeks={weekRecap?.weeks} />}
 
       {!viewPartner &&
         !editMode &&

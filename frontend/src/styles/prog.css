@@ -1,0 +1,70 @@
+/* ---- Fortschritt (Therme): Zustände, die Inline-Styles nicht können ---- */
+
+/* Segment-Leiste (Ich / Freunde): Mulde, gewählte Option liegt erhaben darin. */
+.px-seg {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--bg);
+  box-shadow: var(--shadow-inset-sm);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.px-seg::-webkit-scrollbar {
+  display: none;
+}
+
+.px-seg-opt {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: box-shadow 160ms var(--ease), color 160ms var(--ease);
+}
+
+.px-seg-opt[aria-pressed='true'] {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim);
+}
+
+/* Flache Zeile in einer Mulde/Karte: Feedback beim Aufsetzen, ohne Skalierung. */
+.px-row {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background-color 160ms var(--ease);
+}
+
+.px-row:active {
+  background-color: var(--surface2);
+  transition-duration: 60ms;
+}
+
+/* Zeilen in Mulden und Karten durch Haarlinien trennen. */
+.px-rows > * + * {
+  border-top: 1px solid var(--line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .px-seg-opt,
+  .px-row {
+    transition: none;
+  }
+
+  /* Nachbarzeilen springen statt zu gleiten. */
+  .px-drag-row {
+    transition: none !important;
+  }
+}

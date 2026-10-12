@@ -1,3 +1,5 @@
+import Logo from '../Logo.jsx';
+
 export default function LoadingScreen({ label = 'Lädt…' }) {
   return (
     <div
@@ -9,21 +11,18 @@ export default function LoadingScreen({ label = 'Lädt…' }) {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '50vh',
-        gap: 12,
+        gap: 14,
         color: 'var(--muted)',
       }}
     >
       <div
-        className="skeleton-pulse"
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: '50%',
-          background: 'var(--primary-dim)',
-        }}
+        className="skeleton-pulse neu-raised"
         aria-hidden="true"
-      />
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>{label}</span>
+        style={{ width: 64, height: 64, borderRadius: '50%', display: 'grid', placeItems: 'center' }}
+      >
+        <Logo size={34} />
+      </div>
+      <span style={{ fontSize: 14 }}>{label}</span>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import Logo from '../components/Logo.jsx';
+import Button from '../components/ui/Button.jsx';
 
 const SLIDES = [
   {
@@ -13,17 +14,20 @@ const SLIDES = [
   {
     title: '1. Plan anlegen',
     body: 'Nimm eine Vorlage oder bau dir deinen Plan selbst. Deine Trainingstage verteilt die App auf feste Wochentage — im Kalender siehst du, was wann dran ist.',
-    icon: '🗓️',
+    // Kalender
+    icon: 'M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM4 10h16M8 3v4M16 3v4',
   },
   {
     title: '2. Trainieren',
     body: 'Im Tab „Heute“ hakst du Satz für Satz ab. Gewicht und Wiederholungen sind vom letzten Mal vorbelegt. Pausentimer läuft mit, danach trägst du ein, wie schwer es war (RPE).',
-    icon: '🏋️',
+    // Hantel
+    icon: 'M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11',
   },
   {
     title: '3. Fortschritt & Freunde',
     body: 'Kurven pro Übung, Rekorde und deine Trainingswochen auf einen Blick. Wer will, verbindet sich mit Freunden und sieht deren Fortschritt — nur nach gegenseitiger Bestätigung.',
-    icon: '📈',
+    // Kurve nach oben
+    icon: 'M4 16l5-5 4 4 7-7M15 8h5v5',
   },
 ];
 
@@ -73,31 +77,35 @@ export default function Onboarding() {
       onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
       onTouchEnd={handleTouchEnd}
     >
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
-        <Logo size={56} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+        <Logo size={44} />
+        <span className="wordmark" style={{ fontSize: 40, fontWeight: 800, letterSpacing: '-0.035em', lineHeight: 1.05 }}>
+          LiLief
+        </span>
       </div>
 
       {/* Fixe Mindesthoehe, damit Punkte und Button beim Blaettern nicht springen. */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-        <div className="glass" style={{ width: '100%', minHeight: 300, borderRadius: 18, padding: 24 }}>
-          {slide.icon && <div style={{ fontSize: 44, marginBottom: 12 }}>{slide.icon}</div>}
-          <h2
-            style={{
-              margin: '0 0 12px',
-              fontSize: 24,
-              background: 'var(--primary-grad)',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              color: 'transparent',
-            }}
-          >
+        <div aria-live="polite" style={{ width: '100%', minHeight: 300, padding: '24px 4px' }}>
+          {slide.icon && (
+            <div
+              className="neu-inset"
+              aria-hidden="true"
+              style={{ width: 72, height: 72, borderRadius: '50%', display: 'grid', placeItems: 'center', marginBottom: 20, color: 'var(--primary)' }}
+            >
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d={slide.icon} />
+              </svg>
+            </div>
+          )}
+          <h1 style={{ margin: '0 0 10px', fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             {slide.title}
-          </h2>
-          <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: 'var(--text)' }}>{slide.body}</p>
+          </h1>
+          <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: 'var(--muted)' }}>{slide.body}</p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 7, margin: '20px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0 16px' }}>
         {SLIDES.map((s, i) => (
           <button
             key={s.title}
@@ -106,56 +114,39 @@ export default function Onboarding() {
             aria-current={i === index}
             onClick={() => setIndex(i)}
             style={{
-              width: i === index ? 22 : 8,
-              height: 8,
+              width: 44,
+              height: 44,
               padding: 0,
-              borderRadius: 4,
               border: 'none',
+              background: 'none',
+              display: 'grid',
+              placeItems: 'center',
               cursor: 'pointer',
-              transition: 'width 160ms',
-              background: i === index ? 'var(--primary)' : 'var(--line)',
             }}
-          />
+          >
+            {/* Aktiver Schritt: Akzent-Pille, sonst kleine Mulde */}
+            <span
+              style={{
+                width: i === index ? 22 : 10,
+                height: 10,
+                borderRadius: 999,
+                background: i === index ? 'var(--primary)' : 'var(--bg)',
+                boxShadow: i === index ? 'none' : 'var(--shadow-inset-sm)',
+                transition: 'width 160ms var(--ease)',
+              }}
+            />
+          </button>
         ))}
       </div>
 
-      <button
-        type="button"
-        className="btn primary"
-        disabled={busy}
-        onClick={() => (isLast ? finish() : go(1))}
-        style={{
-          width: '100%',
-          border: 'none',
-          borderRadius: 13,
-          padding: 15,
-          fontWeight: 600,
-          fontSize: 15,
-          cursor: 'pointer',
-          background: 'var(--primary-grad)',
-          color: 'var(--on-primary)',
-          opacity: busy ? 0.6 : 1,
-        }}
-      >
+      <Button fullWidth disabled={busy} onClick={() => (isLast ? finish() : go(1))} style={{ minHeight: 52, fontSize: 16 }}>
         {isLast ? 'Plan anlegen' : 'Weiter'}
-      </button>
+      </Button>
 
       {!isLast && (
-        <button
-          type="button"
-          onClick={finish}
-          style={{
-            marginTop: 10,
-            padding: 12,
-            background: 'none',
-            border: 'none',
-            color: 'var(--muted)',
-            fontSize: 14,
-            cursor: 'pointer',
-          }}
-        >
+        <Button variant="ghost" fullWidth onClick={finish} style={{ marginTop: 8, color: 'var(--muted)', fontWeight: 500 }}>
           Überspringen
-        </button>
+        </Button>
       )}
     </div>
   );

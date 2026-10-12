@@ -2,29 +2,20 @@ import { useMemo, useState } from 'react';
 import { planSchema } from 'shared';
 import { formatZodDetails } from '../../lib/planValidation.js';
 import PlanPromptExport from './PlanPromptExport.jsx';
+import Button from '../ui/Button.jsx';
+import Icon from '../ui/Icon.jsx';
 
 const textareaStyle = {
   width: '100%',
-  background: 'var(--surface2)',
-  border: '1px solid var(--line)',
-  color: 'var(--text)',
-  borderRadius: 9,
-  padding: 10,
-  fontFamily: 'var(--font-mono)',
-  fontSize: 14,
-};
-
-const primaryBtnStyle = {
-  marginTop: 10,
-  width: '100%',
+  minHeight: 44,
+  background: 'var(--bg)',
   border: 'none',
-  borderRadius: 13,
-  padding: 15,
-  fontWeight: 600,
-  fontSize: 15,
-  cursor: 'pointer',
-  background: 'var(--primary-grad)',
-  color: 'var(--on-primary)',
+  boxShadow: 'var(--shadow-inset-sm)',
+  color: 'var(--text)',
+  borderRadius: 14,
+  padding: '12px 14px',
+  fontSize: 14,
+  lineHeight: 1.45,
 };
 
 function parseImportText(text) {
@@ -108,41 +99,53 @@ export default function PlanAdvancedImport({ hasActivePlan, onImport, importing 
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
+        className="btn btn-secondary"
         style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
           width: '100%',
-          background: 'var(--surface)',
-          border: '1px solid var(--line)',
-          borderRadius: 12,
-          padding: '12px 14px',
-          fontSize: 14,
+          minHeight: 52,
+          background: 'var(--bg)',
+          border: 'none',
+          borderRadius: 20,
+          padding: '12px 16px',
+          fontSize: 15,
           fontWeight: 600,
           cursor: 'pointer',
-          color: 'var(--muted)',
+          color: 'var(--text)',
           textAlign: 'left',
         }}
         aria-expanded={open}
       >
-        Plan von KI erstellen & importieren {open ? '▾' : '▸'}
+        Plan von KI erstellen & importieren
+        <span className="pl-chevron" data-open={open} style={{ display: 'flex', color: 'var(--muted)' }}>
+          <Icon name="chevronRight" size={18} />
+        </span>
       </button>
 
       {open && (
-        <form onSubmit={handleImport} style={{ marginTop: 12 }}>
+        <form onSubmit={handleImport} style={{ marginTop: 20 }}>
           <PlanPromptExport />
 
-          <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 0 }}>
+          <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.45, margin: '0 0 12px' }}>
             Antwort der KI hier einfügen — oder eine .json-Datei hochladen.
           </p>
 
           <label
             htmlFor="plan-json-file"
+            className="btn btn-secondary"
             style={{
-              display: 'inline-block',
-              marginBottom: 10,
-              padding: '8px 12px',
-              background: 'var(--surface2)',
-              border: '1px solid var(--line)',
-              borderRadius: 9,
-              fontSize: 13,
+              display: 'inline-flex',
+              alignItems: 'center',
+              minHeight: 44,
+              marginBottom: 14,
+              padding: '8px 16px',
+              background: 'var(--bg)',
+              borderRadius: 999,
+              fontSize: 14,
+              fontWeight: 500,
               cursor: 'pointer',
             }}
           >
@@ -171,11 +174,12 @@ export default function PlanAdvancedImport({ hasActivePlan, onImport, importing 
           {preview && !importError && (
             <div
               style={{
-                marginTop: 8,
-                padding: 10,
-                borderRadius: 9,
-                background: preview.error ? 'rgba(221,74,114,.08)' : 'var(--success-dim)',
-                fontSize: 13,
+                marginTop: 10,
+                padding: '10px 14px',
+                borderRadius: 14,
+                background: preview.error ? 'none' : 'var(--success-dim)',
+                fontSize: 14,
+                lineHeight: 1.45,
                 color: preview.error ? 'var(--danger)' : 'var(--success)',
               }}
             >
@@ -200,7 +204,7 @@ export default function PlanAdvancedImport({ hasActivePlan, onImport, importing 
           )}
 
           {importError && (
-            <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 8 }}>
+            <div style={{ color: 'var(--danger)', fontSize: 14, lineHeight: 1.45, marginTop: 10 }}>
               <div>{importError.error}</div>
               {importError.details && (
                 <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
@@ -212,9 +216,10 @@ export default function PlanAdvancedImport({ hasActivePlan, onImport, importing 
             </div>
           )}
 
-          <button type="submit" className="btn primary" style={primaryBtnStyle} disabled={importing || !preview?.data}>
+          {/* Sekundär: Hauptaktion der Ansicht bleibt „Bearbeiten" bzw. der Assistent. */}
+          <Button type="submit" variant="secondary" fullWidth disabled={importing || !preview?.data} style={{ marginTop: 14 }}>
             {importing ? 'Importieren…' : 'JSON importieren'}
-          </button>
+          </Button>
         </form>
       )}
     </div>

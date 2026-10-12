@@ -1,16 +1,20 @@
 import { useMemo, useState } from 'react';
 import { formatDuration } from 'shared/duration';
 import { libraryEntries, libraryGroups, searchLibrary } from '../../lib/exerciseLibrary.js';
+import Icon from '../ui/Icon.jsx';
 
+// Gewählt = erhaben in --text, sonst flach gedämpft — der Behälter ist eingelassen.
 const chipStyle = (active) => ({
   flex: '0 0 auto',
-  background: active ? 'var(--primary-dim)' : 'var(--surface2)',
-  border: `1px solid ${active ? 'var(--primary)' : 'var(--line)'}`,
-  color: active ? 'var(--primary)' : 'var(--muted)',
+  minHeight: 44,
+  background: 'var(--bg)',
+  border: 'none',
+  boxShadow: active ? 'var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim)' : 'none',
+  color: active ? 'var(--text)' : 'var(--muted)',
   borderRadius: 999,
-  padding: '6px 11px',
-  fontFamily: 'var(--font-mono)',
-  fontSize: 11,
+  padding: '8px 14px',
+  fontSize: 14,
+  fontWeight: active ? 600 : 500,
   cursor: 'pointer',
   whiteSpace: 'nowrap',
 });
@@ -32,26 +36,22 @@ export default function ExerciseLibraryPicker({ onPick, onClose, usedNames = new
   const results = useMemo(() => searchLibrary(query, group, entries), [query, group, entries]);
 
   return (
-    <div
-      style={{
-        border: '1px solid var(--primary)',
-        borderRadius: 12,
-        padding: 12,
-        marginTop: 8,
-        background: 'var(--surface)',
-      }}
-    >
+    <div style={{ marginTop: 18 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-        <strong style={{ fontSize: 14 }}>Bibliothek</strong>
+        <span style={{ fontSize: 16, fontWeight: 600 }}>Bibliothek</span>
         <button
           type="button"
           onClick={onClose}
+          className="btn"
           style={{
+            minHeight: 44,
             background: 'none',
             border: 'none',
-            color: 'var(--muted)',
-            fontSize: 13,
+            color: 'var(--primary)',
+            fontSize: 14,
+            fontWeight: 500,
             cursor: 'pointer',
+            padding: '0 4px',
           }}
         >
           Schließen
@@ -65,73 +65,73 @@ export default function ExerciseLibraryPicker({ onPick, onClose, usedNames = new
         placeholder="Übung suchen…"
         style={{
           width: '100%',
-          background: 'var(--surface2)',
-          border: '1px solid var(--line)',
+          minHeight: 44,
+          background: 'var(--bg)',
+          border: 'none',
+          boxShadow: 'var(--shadow-inset-sm)',
           color: 'var(--text)',
-          borderRadius: 9,
-          padding: '9px 11px',
-          fontSize: 15,
-          marginTop: 8,
+          borderRadius: 14,
+          padding: '10px 14px',
+          fontSize: 16,
+          marginTop: 6,
         }}
       />
 
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', margin: '8px 0' }}>
-        <button type="button" onClick={() => setGroup(null)} style={chipStyle(group === null)}>
+      <div
+        className="neu-inset"
+        style={{ display: 'flex', gap: 4, overflowX: 'auto', margin: '12px 0', padding: 4, borderRadius: 999 }}
+      >
+        <button type="button" onClick={() => setGroup(null)} aria-pressed={group === null} className="btn" style={chipStyle(group === null)}>
           Alle
         </button>
         {groups.map((key) => (
-          <button key={key} type="button" onClick={() => setGroup(key)} style={chipStyle(group === key)}>
+          <button key={key} type="button" onClick={() => setGroup(key)} aria-pressed={group === key} className="btn" style={chipStyle(group === key)}>
             {key}
           </button>
         ))}
       </div>
 
-      <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+      <ul className="pl-tray" style={{ maxHeight: 320, overflowY: 'auto' }}>
         {results.length === 0 && (
-          <p style={{ color: 'var(--muted)', fontSize: 13, margin: '8px 0' }}>Nichts gefunden.</p>
+          <li style={{ color: 'var(--muted)', fontSize: 14, padding: '12px 6px' }}>Nichts gefunden.</li>
         )}
         {results.map((entry) => {
           const alreadyUsed = usedNames.has(entry.name.toLowerCase());
           return (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => onPick(entry)}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                background: 'var(--surface2)',
-                border: '1px solid var(--line)',
-                borderRadius: 10,
-                padding: '9px 11px',
-                marginBottom: 6,
-                cursor: 'pointer',
-                color: 'var(--text)',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                <span style={{ fontSize: 14 }}>{entry.name}</span>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 11,
-                    color: 'var(--muted)',
-                    flexShrink: 0,
-                  }}
-                >
-                  {prescription(entry)}
+            <li key={entry.id}>
+              <button
+                type="button"
+                onClick={() => onPick(entry)}
+                className="pl-press"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  width: '100%',
+                  minHeight: 44,
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  borderRadius: 14,
+                  padding: '10px 6px',
+                  cursor: 'pointer',
+                  color: 'var(--text)',
+                }}
+              >
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 15, lineHeight: 1.35 }}>{entry.name}</span>
+                  <span style={{ display: 'block', fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
+                    {prescription(entry)} · {entry.muscle}
+                    {entry.phase === 'cooldown' && ' · Cooldown'}
+                    {alreadyUsed && ' · schon im Tag'}
+                  </span>
                 </span>
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
-                {entry.muscle}
-                {entry.phase === 'cooldown' && ' · Cooldown'}
-                {alreadyUsed && ' · schon im Tag'}
-              </div>
-            </button>
+                <Icon name="plus" size={18} style={{ color: 'var(--muted)' }} />
+              </button>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </div>
   );
 }

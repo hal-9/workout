@@ -1,12 +1,18 @@
 import { useRef, useState } from 'react';
 
-const ROW_GAP = 8;
+const ROW_GAP = 0;
 
 const EyeIcon = ({ off }) => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
     <circle cx="12" cy="12" r="3" />
     {off && <line x1="3" y1="3" x2="21" y2="21" />}
+  </svg>
+);
+
+const GripIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+    <path d="M5 8h14M5 12h14M5 16h14" />
   </svg>
 );
 
@@ -39,7 +45,15 @@ export default function ProgressLayoutEditor({ cards, hidden, onChange }) {
   };
 
   return (
-    <div>
+    <div
+      style={{
+        background: 'var(--bg)',
+        boxShadow: 'var(--shadow-inset)',
+        borderRadius: 24,
+        padding: '4px 8px',
+        marginBottom: 16,
+      }}
+    >
       {cards.map((card, i) => {
         const isDragged = drag?.id === card.id;
         let shift = 0;
@@ -53,21 +67,23 @@ export default function ProgressLayoutEditor({ cards, hidden, onChange }) {
           <div
             key={card.id}
             ref={i === 0 ? rowRef : undefined}
+            className="px-drag-row"
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              background: 'var(--surface)',
-              border: '1px solid var(--line)',
-              borderRadius: 12,
-              padding: '6px 8px',
+              background: 'var(--bg)',
+              borderTop: i > 0 && !isDragged ? '1px solid var(--line)' : '1px solid transparent',
+              borderRadius: isDragged ? 14 : 0,
+              padding: '2px 0',
               marginBottom: ROW_GAP,
               opacity: isHidden && !isDragged ? 0.5 : 1,
               transform: `translateY(${isDragged ? drag.dy : shift}px)`,
               transition: isDragged ? 'none' : 'transform 120ms ease',
               position: 'relative',
               zIndex: isDragged ? 2 : 1,
-              boxShadow: isDragged ? '0 6px 18px rgba(0, 0, 0, 0.25)' : 'none',
+              // Angehobene Zeile: erhaben über der Mulde.
+              boxShadow: isDragged ? 'var(--shadow-raised-sm)' : 'none',
             }}
           >
             <button
@@ -92,14 +108,16 @@ export default function ProgressLayoutEditor({ cards, hidden, onChange }) {
                 border: 'none',
                 cursor: isDragged ? 'grabbing' : 'grab',
                 color: 'var(--muted)',
-                padding: '8px 10px',
-                fontSize: 16,
-                lineHeight: 1,
+                minWidth: 44,
+                minHeight: 44,
+                display: 'grid',
+                placeItems: 'center',
+                padding: 0,
               }}
             >
-              ≡
+              <GripIcon />
             </button>
-            <span style={{ flex: 1, fontSize: 14, minWidth: 0 }}>{card.title}</span>
+            <span style={{ flex: 1, fontSize: 15, minWidth: 0 }}>{card.title}</span>
             <button
               type="button"
               aria-label={isHidden ? `${card.title} einblenden` : `${card.title} ausblenden`}
@@ -109,8 +127,11 @@ export default function ProgressLayoutEditor({ cards, hidden, onChange }) {
                 border: 'none',
                 cursor: 'pointer',
                 color: isHidden ? 'var(--muted)' : 'var(--primary)',
-                padding: '8px 10px',
-                display: 'flex',
+                minWidth: 44,
+                minHeight: 44,
+                padding: 0,
+                display: 'grid',
+                placeItems: 'center',
               }}
             >
               <EyeIcon off={isHidden} />

@@ -2,16 +2,7 @@ export default function Field({ label, children }) {
   return (
     <label style={{ display: 'block', marginBottom: 12 }}>
       {label && (
-        <span
-          style={{
-            display: 'block',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            textTransform: 'uppercase',
-            color: 'var(--muted)',
-            marginBottom: 6,
-          }}
-        >
+        <span style={{ display: 'block', fontSize: 13, color: 'var(--muted)', marginBottom: 6 }}>
           {label}
         </span>
       )}
@@ -20,12 +11,15 @@ export default function Field({ label, children }) {
   );
 }
 
+// Eingelassenes Feld (Rolle: Wert). Inline, weil Aufrufer es per Spread erweitern.
 export const fieldInputStyle = {
   width: '100%',
-  background: 'var(--surface2)',
-  border: '1px solid var(--line)',
+  minHeight: 44,
+  background: 'var(--bg)',
+  boxShadow: 'var(--shadow-inset-sm)',
+  border: 'none',
   color: 'var(--text)',
-  borderRadius: 12,
-  padding: '10px 12px',
+  borderRadius: 14,
+  padding: '10px 14px',
   fontSize: 16,
 };

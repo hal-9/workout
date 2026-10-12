@@ -1,0 +1,59 @@
+/* ---- Plan (Therme): Zustände, die Inline-Styles nicht können ---- */
+
+/* Aufklapp-Karten (Tage in Übersicht und Editor): eigener Pfeil statt Marker. */
+.pl-day > summary {
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pl-day > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pl-chevron {
+  transition: transform 200ms var(--ease);
+}
+
+.pl-day[open] > summary .pl-chevron,
+.pl-chevron[data-open='true'] {
+  transform: rotate(90deg);
+}
+
+/* Mulde mit Haarlinien-Zeilen. */
+.pl-tray {
+  list-style: none;
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: 24px;
+  background: var(--bg);
+  box-shadow: var(--shadow-inset);
+}
+
+.pl-tray > li + li {
+  border-top: 1px solid var(--line);
+}
+
+/* Drückbare flache Zeile / Icon-Knopf: Feedback beim Aufsetzen, ohne Skalierung. */
+.pl-press {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background-color 160ms var(--ease);
+}
+
+.pl-press:active:not(:disabled) {
+  background-color: var(--surface2);
+  transition-duration: 60ms;
+}
+
+/* Wizard-Fortschritt */
+.pl-progress-fill {
+  transition: width 200ms var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-chevron,
+  .pl-press,
+  .pl-progress-fill {
+    transition: none;
+  }
+}

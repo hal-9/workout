@@ -8,33 +8,43 @@ import ExerciseEditor from './ExerciseEditor.jsx';
 import ExerciseRow from './ExerciseRow.jsx';
 import Dialog from '../ui/Dialog.jsx';
 import Button from '../ui/Button.jsx';
+import Icon from '../ui/Icon.jsx';
+import { DayPebble } from './PlanOverview.jsx';
 import ExerciseLibraryPicker from './ExerciseLibraryPicker.jsx';
 import { libraryEntryToExercise } from '../../lib/exerciseLibrary.js';
 
 const inputStyle = {
   width: '100%',
-  background: 'var(--surface2)',
-  border: '1px solid var(--line)',
+  minHeight: 44,
+  background: 'var(--bg)',
+  border: 'none',
+  boxShadow: 'var(--shadow-inset-sm)',
   color: 'var(--text)',
-  borderRadius: 9,
-  padding: '10px 12px',
-  fontSize: 15,
+  borderRadius: 14,
+  padding: '10px 14px',
+  fontSize: 16,
 };
 
 const labelStyle = {
   display: 'block',
-  fontSize: 12,
+  fontSize: 13,
   color: 'var(--muted)',
-  marginBottom: 4,
-  marginTop: 10,
+  marginBottom: 6,
+  marginTop: 12,
 };
 
 const smallBtnStyle = {
-  background: 'var(--surface2)',
-  border: '1px solid var(--line)',
-  borderRadius: 8,
-  padding: '6px 10px',
-  fontSize: 12,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 6,
+  minHeight: 44,
+  background: 'var(--bg)',
+  border: 'none',
+  borderRadius: 999,
+  padding: '8px 14px',
+  fontSize: 14,
+  fontWeight: 500,
   cursor: 'pointer',
   color: 'var(--text)',
 };
@@ -113,131 +123,136 @@ export default function DayEditor({
     <details
       open={open}
       onToggle={(e) => setOpen(e.target.open)}
+      className="neu-raised pl-day"
       style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--line)',
-        borderRadius: 14,
-        padding: '4px 12px 12px',
-        marginBottom: 10,
+        borderRadius: 20,
+        padding: '0 16px',
+        marginBottom: 14,
       }}
     >
       <summary
         style={{
           cursor: 'pointer',
-          padding: '10px 0',
-          listStyle: 'none',
+          padding: '14px 0',
+          minHeight: 44,
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
+          gap: 12,
         }}
       >
-        <span>
-          <span
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 11,
-              color: 'var(--primary)',
-              background: 'var(--primary-dim)',
-              padding: '2px 6px',
-              borderRadius: 6,
-              marginRight: 8,
-            }}
-          >
-            Tag {index + 1}
+        <DayPebble active={open}>{String.fromCharCode(65 + index)}</DayPebble>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 16, fontWeight: 600, lineHeight: 1.35 }}>
+          {day.name || 'Unbenannter Tag'}
+          <span style={{ display: 'block', fontSize: 13, fontWeight: 400, color: 'var(--muted)', marginTop: 2 }}>
+            Tag {index + 1} · {day.exercises.length} Übungen
           </span>
-          <strong>{day.name || 'Unbenannter Tag'}</strong>
         </span>
-        <span style={{ color: 'var(--muted)', fontSize: 18 }}>{open ? '›' : '›'}</span>
+        <span className="pl-chevron" style={{ display: 'flex', color: 'var(--muted)' }}>
+          <Icon name="chevronRight" size={18} />
+        </span>
       </summary>
 
-      <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-        <button type="button" onClick={onMoveUp} disabled={index === 0} style={smallBtnStyle}>
-          Tag ↑
-        </button>
-        <button type="button" onClick={onMoveDown} disabled={index === total - 1} style={smallBtnStyle}>
-          Tag ↓
-        </button>
-        <button
-          type="button"
-          onClick={onRemove}
-          disabled={total <= 1}
-          style={{ ...smallBtnStyle, color: 'var(--danger)' }}
+      <div style={{ paddingBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={onMoveUp}
+            disabled={index === 0}
+            aria-label="Tag nach oben"
+            className="btn btn-secondary"
+            style={{ ...smallBtnStyle, width: 44, padding: 0, opacity: index === 0 ? 0.45 : 1 }}
+          >
+            <Icon name="chevronDown" size={18} style={{ transform: 'rotate(180deg)' }} />
+          </button>
+          <button
+            type="button"
+            onClick={onMoveDown}
+            disabled={index === total - 1}
+            aria-label="Tag nach unten"
+            className="btn btn-secondary"
+            style={{ ...smallBtnStyle, width: 44, padding: 0, opacity: index === total - 1 ? 0.45 : 1 }}
+          >
+            <Icon name="chevronDown" size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            disabled={total <= 1}
+            className="btn"
+            style={{
+              ...smallBtnStyle,
+              marginLeft: 'auto',
+              background: 'none',
+              color: 'var(--danger)',
+              opacity: total <= 1 ? 0.45 : 1,
+            }}
+          >
+            Tag entfernen
+          </button>
+        </div>
+
+        <label style={labelStyle}>Name</label>
+        <input
+          type="text"
+          value={day.name}
+          onChange={(e) => handleNameChange(e.target.value)}
+          style={inputStyle}
+          placeholder="z. B. Oberkörper A"
+        />
+
+        <label style={labelStyle}>Fokus (optional)</label>
+        <input
+          type="text"
+          value={day.focus}
+          onChange={(e) => onChange({ ...day, focus: e.target.value })}
+          style={inputStyle}
+          placeholder="z. B. Brust, Schultern, Trizeps"
+        />
+
+        <label style={labelStyle}>Ziel-Wochentag (optional)</label>
+        <select
+          value={day.weekday ?? ''}
+          onChange={(e) => onChange({ ...day, weekday: e.target.value || null })}
+          style={inputStyle}
         >
-          Tag entfernen
-        </button>
-      </div>
+          <option value="">Automatisch</option>
+          {WEEKDAYS.map((wd) => (
+            <option key={wd} value={wd}>
+              {WEEKDAY_LABELS[wd]}
+            </option>
+          ))}
+        </select>
 
-      <label style={{ ...labelStyle, marginTop: 0 }}>Name</label>
-      <input
-        type="text"
-        value={day.name}
-        onChange={(e) => handleNameChange(e.target.value)}
-        style={inputStyle}
-        placeholder="z. B. Oberkörper A"
-      />
-
-      <label style={labelStyle}>Fokus (optional)</label>
-      <input
-        type="text"
-        value={day.focus}
-        onChange={(e) => onChange({ ...day, focus: e.target.value })}
-        style={inputStyle}
-        placeholder="z. B. Brust, Schultern, Trizeps"
-      />
-
-      <label style={labelStyle}>Ziel-Wochentag (optional)</label>
-      <select
-        value={day.weekday ?? ''}
-        onChange={(e) => onChange({ ...day, weekday: e.target.value || null })}
-        style={inputStyle}
-      >
-        <option value="">Automatisch</option>
-        {WEEKDAYS.map((wd) => (
-          <option key={wd} value={wd}>
-            {WEEKDAY_LABELS[wd]}
-          </option>
-        ))}
-      </select>
-
-      <div style={{ marginTop: 16 }}>
-        <strong style={{ fontSize: 14 }}>Übungen</strong>
-        {day.exercises.map((exercise, exIndex) => (
-          <Fragment key={exercise.id}>
-            {exIndex === firstCooldownIndex && (
-              <div
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
-                  textTransform: 'uppercase',
-                  color: 'var(--muted)',
-                  borderTop: '1px solid var(--line)',
-                  paddingTop: 10,
-                  marginTop: 6,
-                  marginBottom: 8,
-                }}
-              >
-                Cooldown
-              </div>
-            )}
-            <ExerciseRow
-              exercise={exercise}
-              index={exIndex}
-              total={day.exercises.length}
-              onEdit={() => setEditIndex(exIndex)}
-              onMoveUp={() => onChange({ ...day, exercises: moveItem(day.exercises, exIndex, exIndex - 1) })}
-              onMoveDown={() => onChange({ ...day, exercises: moveItem(day.exercises, exIndex, exIndex + 1) })}
-            />
-          </Fragment>
-        ))}
-        <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 16, fontWeight: 600, margin: '20px 0 10px' }}>Übungen</div>
+        <ul className="pl-tray">
+          {day.exercises.map((exercise, exIndex) => (
+            <Fragment key={exercise.id}>
+              {exIndex === firstCooldownIndex && (
+                <li style={{ fontSize: 13, color: 'var(--muted)', padding: '12px 6px 4px' }}>Cooldown</li>
+              )}
+              <li>
+                <ExerciseRow
+                  exercise={exercise}
+                  index={exIndex}
+                  total={day.exercises.length}
+                  onEdit={() => setEditIndex(exIndex)}
+                  onMoveUp={() => onChange({ ...day, exercises: moveItem(day.exercises, exIndex, exIndex - 1) })}
+                  onMoveDown={() => onChange({ ...day, exercises: moveItem(day.exercises, exIndex, exIndex + 1) })}
+                />
+              </li>
+            </Fragment>
+          ))}
+        </ul>
+        <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={() => setLibraryOpen((open) => !open)}
+            aria-expanded={libraryOpen}
+            className={libraryOpen ? 'btn' : 'btn btn-secondary'}
             style={{
               ...smallBtnStyle,
               flex: '1 1 100%',
-              padding: '10px',
-              borderColor: libraryOpen ? 'var(--primary)' : 'var(--line)',
+              boxShadow: libraryOpen ? 'var(--shadow-inset-sm)' : undefined,
               color: libraryOpen ? 'var(--primary)' : 'var(--text)',
             }}
           >
@@ -246,17 +261,21 @@ export default function DayEditor({
           <button
             type="button"
             onClick={handleAddExercise}
-            style={{ ...smallBtnStyle, flex: 1, padding: '10px' }}
+            className="btn btn-secondary"
+            style={{ ...smallBtnStyle, flex: '1 1 auto' }}
           >
-            + Leere Übung
+            <Icon name="plus" size={16} />
+            Leere Übung
           </button>
           {firstCooldownIndex === -1 && (
             <button
               type="button"
               onClick={handleAddCooldown}
-              style={{ ...smallBtnStyle, flex: 1, padding: '10px' }}
+              className="btn btn-secondary"
+              style={{ ...smallBtnStyle, flex: '1 1 auto' }}
             >
-              + Cooldown vorschlagen
+              <Icon name="plus" size={16} />
+              Cooldown vorschlagen
             </button>
           )}
         </div>
@@ -280,7 +299,7 @@ export default function DayEditor({
                 exercise={day.exercises[editIndex]}
                 onChange={(next) => handleExerciseChange(editIndex, next)}
               />
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                 <Button
                   variant="secondary"
                   onClick={() => {
@@ -288,11 +307,11 @@ export default function DayEditor({
                     setEditIndex(null);
                   }}
                   disabled={day.exercises.length <= 1}
-                  style={{ flex: 1, color: 'var(--danger)', fontSize: 13 }}
+                  style={{ flex: 1, color: 'var(--danger)' }}
                 >
                   Entfernen
                 </Button>
-                <Button onClick={() => setEditIndex(null)} style={{ flex: 1, fontSize: 13 }}>
+                <Button onClick={() => setEditIndex(null)} style={{ flex: 1 }}>
                   Fertig
                 </Button>
               </div>

@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { formatRecordValue } from '../lib/records.js';
 import TrainingTree from './TrainingTree.jsx';
 import { useScrollLock } from '../lib/scrollLock.js';
+import '../styles/kal.css';
 
 const MuscleBody3D = lazy(() => import('./MuscleBody3D.jsx'));
 
@@ -22,13 +23,29 @@ const bigNumber = {
   letterSpacing: -2,
 };
 
+// Ruhige Fläche auf dem Mesh, damit Baum und Körper ihre eigenen Farben behalten.
+const panel = {
+  width: '100%',
+  borderRadius: 24,
+  padding: 12,
+  background: 'var(--bg)',
+  color: 'var(--text)',
+  textShadow: 'none',
+};
+
+function StarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={28} height={28} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" style={{ flexShrink: 0 }}>
+      <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />
+    </svg>
+  );
+}
+
 function Slide({ kicker, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, flex: 1, textAlign: 'center', padding: '0 28px' }}>
       {kicker && (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.8 }}>
-          {kicker}
-        </div>
+        <div style={{ fontSize: 16, fontWeight: 600, opacity: 0.85 }}>{kicker}</div>
       )}
       {children}
     </div>
@@ -82,7 +99,7 @@ export default function WrappedStory({ month, onClose }) {
           <div style={bigNumber}>{data.tonnage_kg.toLocaleString('de-DE')}</div>
           <div style={{ fontSize: 20, fontWeight: 600 }}>Kilogramm gestemmt</div>
           {delta != null && (
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, opacity: 0.85 }}>
+            <div style={{ fontSize: 16, opacity: 0.85 }}>
               {delta >= 0 ? '+' : ''}
               {delta} % vs. Vormonat
             </div>
@@ -93,8 +110,11 @@ export default function WrappedStory({ month, onClose }) {
     if (data.top_pr) {
       list.push(
         <Slide key="pr" kicker="Stärkster Moment">
-          <div style={{ fontSize: 30, fontWeight: 700 }}>★ {data.top_pr.name}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 30, fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em' }}>
+            <StarIcon />
+            {data.top_pr.name}
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 600 }}>
             {formatRecordValue(data.top_pr.kind, data.top_pr.previous)} → {formatRecordValue(data.top_pr.kind, data.top_pr.value)}
           </div>
         </Slide>
@@ -104,13 +124,13 @@ export default function WrappedStory({ month, onClose }) {
       const view = BACK_ZONES.includes(data.top_zone.zone) ? 'back' : 'front';
       list.push(
         <Slide key="zone" kicker="Muskel des Monats">
-          <div style={{ fontSize: 30, fontWeight: 700 }}>{data.top_zone.label}</div>
-          <div style={{ width: '100%', maxWidth: 300 }}>
+          <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-0.02em' }}>{data.top_zone.label}</div>
+          <div style={{ ...panel, maxWidth: 300 }}>
             <Suspense fallback={<div style={{ height: 260 }} />}>
               <MuscleBody3D primary={[data.top_zone.zone]} view={view} height={260} interactive={false} />
             </Suspense>
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, opacity: 0.85 }}>
+          <div style={{ fontSize: 16, opacity: 0.85 }}>
             {data.top_zone.sets} Sätze
           </div>
         </Slide>
@@ -121,7 +141,7 @@ export default function WrappedStory({ month, onClose }) {
         <div style={{ fontSize: 20, fontWeight: 600 }}>
           +{data.weeks_grown} {data.weeks_grown === 1 ? 'Ast' : 'Äste'} gewachsen
         </div>
-        <div style={{ width: '100%', maxWidth: 320, textAlign: 'left' }}>
+        <div style={{ ...panel, maxWidth: 320, textAlign: 'left' }}>
           {treeData && <TrainingTree weeks={treeData.weeks} />}
         </div>
       </Slide>
@@ -146,19 +166,25 @@ export default function WrappedStory({ month, onClose }) {
   return (
     <div
       onClick={advance}
+      className="kal-story"
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 100,
         display: 'flex',
         flexDirection: 'column',
-        background: 'var(--primary-grad)',
-        color: 'var(--on-primary)',
         cursor: 'pointer',
         paddingTop: 'env(safe-area-inset-top)',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
+      {/* Der eine festliche Ort: das Mesh als ganze Bühne. */}
+      <span className="mesh" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+      </span>
       <div style={{ display: 'flex', gap: 5, padding: '14px 16px 0' }}>
         {slides.map((_, i) => (
           <div
@@ -167,12 +193,13 @@ export default function WrappedStory({ month, onClose }) {
               flex: 1,
               height: 3,
               borderRadius: 999,
-              background: i <= index ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.3)',
+              background: 'var(--m-ink)',
+              opacity: i <= index ? 0.95 : 0.3,
             }}
           />
         ))}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px 12px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 8px 0' }}>
         <button
           type="button"
           onClick={(e) => {
@@ -180,24 +207,28 @@ export default function WrappedStory({ month, onClose }) {
             onClose();
           }}
           aria-label="Schließen"
+          className="btn kal-story-close"
           style={{
-            background: 'rgba(255,255,255,0.18)',
             border: 'none',
             borderRadius: 999,
-            width: 34,
-            height: 34,
+            width: 44,
+            height: 44,
             color: 'inherit',
-            fontSize: 15,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             cursor: 'pointer',
           }}
         >
-          ✕
+          <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true" focusable="false">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
         </button>
       </div>
 
       {slides.length ? slides[Math.min(index, slides.length - 1)] : <Slide>Lade…</Slide>}
 
-      <div style={{ textAlign: 'center', padding: '0 0 22px', fontFamily: 'var(--font-mono)', fontSize: 12, opacity: 0.75 }}>
+      <div style={{ textAlign: 'center', padding: '0 0 22px', fontSize: 13, opacity: 0.8 }}>
         {last ? 'Tippen zum Schließen' : 'Tippen für mehr'}
       </div>
     </div>
