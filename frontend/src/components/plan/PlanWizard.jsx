@@ -286,7 +286,7 @@ export default function PlanWizard({ onSave, onRefine, onCancel, onUseTemplate, 
         <>
           <h3 style={headingStyle}>Was hast du zur Verfügung?</h3>
           <p style={subStyle}>Nur passende Übungen werden vorgeschlagen.</p>
-          <div className="neu-inset" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: 6, borderRadius: 24, marginBottom: 20 }}>
+          <div className="neu-inset" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, padding: 14, borderRadius: 26, marginBottom: 20 }}>
             {EQUIPMENT.map((item) => (
               <button
                 key={item.key}
