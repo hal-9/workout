@@ -32,6 +32,9 @@
   white-space: nowrap;
   cursor: default;
   touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .fx-peb:nth-child(2n) {
@@ -53,8 +56,8 @@
   box-shadow: var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim);
 }
 
+/* Füllung kommt vom Mesh darunter; ::after legt nur die Mulden-Schatten drauf. */
 .fx-peb::after {
-  background: var(--primary);
   box-shadow: inset 3px 3px 6px rgba(20, 6, 20, 0.35), inset -2px -2px 5px rgba(255, 255, 255, 0.18);
   opacity: 0;
 }
@@ -76,8 +79,74 @@
 }
 
 .fx-peb.is-done {
-  color: var(--on-primary);
+  color: #fff;
   cursor: pointer;
+}
+
+.fx-peb .mesh i {
+  filter: blur(7px);
+}
+
+/* Gerade erledigt: Verlaufsrand zeichnet sich einmal herum, dann füllt das Mesh. */
+@property --draw {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+.fx-peb-ring {
+  display: none;
+  position: absolute;
+  inset: 0;
+  padding: 2.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(from -90deg, var(--m2), var(--m3), var(--m4), var(--m1), var(--m2));
+  mask: conic-gradient(from -90deg, #000 calc(var(--draw) * 360deg), transparent 0),
+    linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: intersect, exclude;
+}
+
+.fx-peb.is-fresh .fx-peb-ring {
+  display: block;
+  animation: fx-ring-draw 700ms cubic-bezier(0.45, 0, 0.2, 1) forwards, fx-fadeout 250ms 1000ms forwards;
+}
+
+.fx-peb.is-fresh {
+  animation: fx-peb-ink 350ms 700ms both;
+}
+
+.fx-peb.is-fresh .mesh,
+.fx-peb.is-fresh::after {
+  animation: fx-fadeonly 350ms 700ms var(--ease) both;
+}
+
+@keyframes fx-ring-draw {
+  from { --draw: 0; }
+  to { --draw: 1; }
+}
+
+@keyframes fx-peb-ink {
+  from { color: var(--text); }
+}
+
+/* Langdruck auf offenen Satz */
+.fx-setmenu {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  z-index: 2;
+  transform: translateX(-50%);
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--bg);
+  box-shadow: var(--shadow-card);
+  color: var(--danger);
+  font: 600 14px/1 var(--font-display);
+  white-space: nowrap;
+  cursor: pointer;
+  animation: fx-fadeonly 160ms ease-out;
 }
 
 .fx-peb.is-done::before {
@@ -237,6 +306,18 @@
   .fx-peb::before,
   .fx-peb::after {
     transition: none;
+  }
+
+  .fx-peb.is-fresh,
+  .fx-peb.is-fresh .mesh,
+  .fx-peb.is-fresh::after,
+  .fx-peb .mesh i,
+  .fx-peb .mesh::after {
+    animation: none;
+  }
+
+  .fx-peb.is-fresh .fx-peb-ring {
+    display: none;
   }
 
   .fx-drum.is-nudge .fx-strip {

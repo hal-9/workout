@@ -792,6 +792,18 @@ export default function Heute() {
     });
   }
 
+  // Nur offene Sätze am Ende der Reihe — geloggte nimmt „Rückgängig" zurück.
+  function deleteOpenSet(exercise, index) {
+    setSetsByExercise((prev) => {
+      const rows = prev[exercise.id];
+      if (rows.length <= 1 || rows.slice(index).some((r) => r.logged)) return prev;
+      return {
+        ...prev,
+        [exercise.id]: rows.filter((_, i) => i !== index).map((r, i) => ({ ...r, set_number: i + 1 })),
+      };
+    });
+  }
+
   // Notiz verzögert speichern, damit ein Reload mitten im Training sie behält.
   function updateNote(value) {
     setNote(value);
@@ -1130,25 +1142,24 @@ export default function Heute() {
           </div>
           {(doneExerciseCount > 0 || sessionId) && (
             <div style={{ marginTop: 18, display: 'flex', gap: 12, alignItems: 'center' }}>
+              {/* Ein Segment pro Übung, erledigte grün — wie die Leiste im Fokus. */}
               <div
                 aria-hidden="true"
                 style={{
                   flex: 1,
-                  height: 6,
-                  borderRadius: 999,
-                  background: 'var(--bg)',
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${Math.max(mainExercises.length, 1)}, 1fr)`,
+                  gap: 6,
+                  padding: 5,
+                  borderRadius: 8,
                   boxShadow: 'var(--shadow-inset-sm)',
-                  overflow: 'hidden',
                 }}
               >
-                <div
-                  style={{
-                    width: `${mainExercises.length ? (doneExerciseCount / mainExercises.length) * 100 : 0}%`,
-                    height: '100%',
-                    borderRadius: 999,
-                    background: 'var(--primary)',
-                  }}
-                />
+                {mainExercises.map((ex) => {
+                  const rows = setsByExercise[ex.id] ?? [];
+                  const done = rows.length > 0 && rows.every((r) => r.logged);
+                  return <span key={ex.id} className={`fx-seg${done ? ' is-done' : ''}`} />;
+                })}
               </div>
               <div style={{ fontSize: 13, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
                 {doneExerciseCount} von {mainExercises.length} Übungen
@@ -1373,7 +1384,7 @@ export default function Heute() {
                     <div
                       role="group"
                       aria-label={`Anstrengung für ${ex.name}`}
-                      style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '0 8px 14px 36px' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 8px 14px 36px' }}
                     >
                       <span style={{ fontSize: 13, color: 'var(--muted)', marginRight: 4 }}>Anstrengung</span>
                       {RPE_VALUES.map((value) => {
@@ -1387,8 +1398,12 @@ export default function Heute() {
                             aria-label={`Anstrengung ${value} von 10`}
                             className="btn"
                             style={{
-                              width: 44,
-                              height: 44,
+                              // Eine Zeile: Kreise schrumpfen mit, statt umzubrechen.
+                              flex: '1 1 0',
+                              minWidth: 0,
+                              maxWidth: 44,
+                              aspectRatio: '1',
+                              padding: 0,
                               borderRadius: '50%',
                               border: 'none',
                               background: active ? 'var(--primary)' : 'var(--bg)',
@@ -1633,6 +1648,7 @@ export default function Heute() {
           bodyweightKg={isBandAssisted(focusExercise) ? bodyweightKg : null}
           onSaveBodyweight={saveBodyweight}
           onAddExtraSet={() => addExtraSet(focusExercise)}
+          onDeleteSet={(index) => deleteOpenSet(focusExercise, index)}
           onSwap={focusDisabled ? null : () => setSwapTarget(focusExercise)}
           onStartRestTimer={() => {
             unlockAudio();

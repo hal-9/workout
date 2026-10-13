@@ -142,6 +142,7 @@ export default function ExerciseFocus({
   bodyweightKg,
   onSaveBodyweight,
   onAddExtraSet,
+  onDeleteSet,
   onStartRestTimer,
   onOpenDetail,
   onSwap,
@@ -158,6 +159,25 @@ export default function ExerciseFocus({
   const [holdTimerState, setHoldTimerState] = useState(null);
   const [holdSecondsLeft, setHoldSecondsLeft] = useState(0);
   const closeTimeoutRef = useRef(null);
+  // Lange auf einen offenen Satz drücken → „Satz löschen"-Tooltip darüber.
+  const [setMenu, setSetMenu] = useState(null); // null | { index, x }
+  const pressRef = useRef(null);
+  const pebRowRef = useRef(null);
+  // Gerade erledigte Sätze: Rand zeichnet sich, dann füllt das Mesh (focus.css .is-fresh).
+  const [freshSets, setFreshSets] = useState([]);
+  const loggedRef = useRef(null);
+  const loggedKey = rows.map((r) => (r.logged ? r.set_number : '')).join(',');
+  useEffect(() => {
+    const logged = rows.filter((r) => r.logged).map((r) => r.set_number);
+    const prev = loggedRef.current;
+    loggedRef.current = { id: exercise.id, logged };
+    if (prev?.id !== exercise.id) return;
+    const added = logged.filter((n) => !prev.logged.includes(n));
+    if (!added.length) return;
+    setFreshSets((f) => [...f, ...added]);
+    setTimeout(() => setFreshSets((f) => f.filter((n) => !added.includes(n))), 1300);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loggedKey, exercise.id]);
   const pulseTimeoutRef = useRef(null);
   const editAreaRef = useRef(null);
   const touchStartRef = useRef(null);
@@ -345,7 +365,41 @@ export default function ExerciseFocus({
     return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [editing]);
 
+  useEffect(() => {
+    if (!setMenu) return;
+    function handlePointerDown(e) {
+      if (!e.target.closest('.fx-setmenu')) setSetMenu(null);
+    }
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [setMenu]);
+
   if (!viewRow) return null;
+
+  const canRemove = (i) => rows.length > 1 && rows.slice(i).every((r) => !r.logged);
+
+  function pressStart(e, i) {
+    if (!canRemove(i)) return;
+    const peb = e.currentTarget;
+    clearTimeout(pressRef.current?.timer);
+    pressRef.current = {
+      fired: false,
+      timer: setTimeout(() => {
+        pressRef.current.fired = true;
+        navigator.vibrate?.(10);
+        setSetMenu({ index: i, x: peb.offsetLeft + peb.offsetWidth / 2 });
+      }, 450),
+    };
+  }
+
+  function pressEnd() {
+    clearTimeout(pressRef.current?.timer);
+  }
+
+  function deleteSet(i) {
+    setSetMenu(null);
+    onDeleteSet(i);
+  }
 
   const targetParsed = parseTargetReps(exercise.target_reps);
 
@@ -446,7 +500,8 @@ export default function ExerciseFocus({
       <span style={hintStyle}>{holdPhase === 'prep' ? 'Gleich geht’s los' : 'Halten'}</span>
     </div>
   ) : (
-    <div>
+    // Gleiche Höhe wie die Bänder-Spalte (Trommel + „kg pro Band"), sonst sitzen die Zahlen versetzt.
+    <div style={isBanded ? { paddingBottom: 32 } : undefined}>
       <Drum
         value={Number(bigValue) || 0}
         step={1}
@@ -531,7 +586,7 @@ export default function ExerciseFocus({
         type="button"
         onClick={() => setEditing(editing === 'bandkg' ? null : 'bandkg')}
         aria-label="Nennwert pro Band ändern"
-        style={{ ...linkStyle, ...hintStyle, minHeight: 32, marginTop: 0, display: 'inline-block' }}
+        style={{ ...linkStyle, ...hintStyle, height: 32, marginTop: 0, display: 'inline-block' }}
       >
         {bandKg} kg pro Band
       </button>
@@ -628,9 +683,10 @@ export default function ExerciseFocus({
         </div>
 
         <div
+          ref={pebRowRef}
           role="group"
           aria-label="Sätze"
-          style={{ display: 'flex', gap: crowded ? 8 : 12, marginTop: 22 }}
+          style={{ position: 'relative', display: 'flex', gap: crowded ? 8 : 12, marginTop: 22 }}
         >
           {rows.map((row, i) => {
             const state = row.logged ? 'done' : i === activeIndex ? 'cur' : 'open';
@@ -641,6 +697,7 @@ export default function ExerciseFocus({
               state === 'done' ? 'is-done' : 'is-ghost',
               state === 'cur' ? 'is-cur' : '',
               row.logged && i === viewIndex && reviewing ? 'is-viewed' : '',
+              row.logged && freshSets.includes(row.set_number) ? 'is-fresh' : '',
             ]
               .filter(Boolean)
               .join(' ');
@@ -650,8 +707,17 @@ export default function ExerciseFocus({
                 type="button"
                 className={cls}
                 style={{ flex: '1 1 0', fontSize: crowded ? 13 : undefined }}
-                onClick={selectable ? () => selectDot(i) : undefined}
-                disabled={!selectable}
+                onClick={() => {
+                  // Klick nach dem Langdruck schluckt das Loslassen.
+                  if (pressRef.current?.fired) pressRef.current = null;
+                  else if (selectable) selectDot(i);
+                }}
+                onPointerDown={(e) => pressStart(e, i)}
+                onPointerUp={pressEnd}
+                onPointerLeave={pressEnd}
+                onPointerCancel={pressEnd}
+                onContextMenu={(e) => e.preventDefault()}
+                aria-disabled={!selectable && !canRemove(i)}
                 aria-pressed={i === viewIndex}
                 aria-label={`Satz ${row.set_number}${sideSuffix(row.set_number)}: ${
                   row.logged
@@ -659,6 +725,12 @@ export default function ExerciseFocus({
                     : `${state === 'cur' ? 'aktuell' : 'offen'}${last ? `, letztes Mal ${last}` : ''}`
                 }`}
               >
+                {row.logged && (
+                  <>
+                    <span className="mesh" aria-hidden="true"><i /><i /><i /><i /></span>
+                    <span className="fx-peb-ring" aria-hidden="true" />
+                  </>
+                )}
                 {row.logged ? (crowded && !isDurationType ? row.reps : doneLabelFor(row)) : last ?? row.set_number}
               </button>
             );
@@ -673,6 +745,16 @@ export default function ExerciseFocus({
           >
             <Icon name="plus" size={18} />
           </button>
+          {setMenu && (
+            <button
+              type="button"
+              className="fx-setmenu"
+              style={{ left: setMenu.x }}
+              onClick={() => deleteSet(setMenu.index)}
+            >
+              Satz {rows[setMenu.index]?.set_number} löschen
+            </button>
+          )}
         </div>
         {viewSide && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
