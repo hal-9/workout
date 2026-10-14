@@ -70,3 +70,17 @@ kino.tunikb.com {
     file_server
   }
 }
+
+songlog.tunikb.com {
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options nosniff
+    X-Frame-Options DENY
+    Referrer-Policy strict-origin-when-cross-origin
+    -Server
+  }
+  # Server-Sent Events on /api/events: flush immediately, no buffering.
+  reverse_proxy songlog:3000 {
+    flush_interval -1
+  }
+}
