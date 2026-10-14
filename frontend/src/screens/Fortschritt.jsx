@@ -1,8 +1,7 @@
-import { Fragment, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
-import StatsSection from '../components/StatsSection.jsx';
 import { addDays, mondayStart, toSqlUtc } from '../lib/dates.js';
 import { buildWeekRecap, groupSessionsByWeek } from '../lib/weekRecap.js';
 import {
@@ -11,17 +10,10 @@ import {
   formatPlanSince,
   exercisesBeyondHighlights,
 } from '../lib/exerciseProgress.js';
-import { getStoredLayout, mergeLayout, setStoredLayout } from '../lib/progressLayout.js';
 import ExerciseChart from '../components/ExerciseChart.jsx';
-import MaxTestsSection from '../components/MaxTestsSection.jsx';
-import ConsistencyHeatmap, { buildConsistencyHeatmap } from '../components/ConsistencyHeatmap.jsx';
 import RecoveryMap from '../components/RecoveryMap.jsx';
 import TrainingTree from '../components/TrainingTree.jsx';
-import WrappedStory, { monthLabel } from '../components/WrappedStory.jsx';
-import ProgressionProposals from '../components/ProgressionProposals.jsx';
-import ProgressLayoutEditor from '../components/ProgressLayoutEditor.jsx';
 import ProgressSummary, { deNum } from '../components/ProgressSummary.jsx';
-import { buildProgressSummary } from '../lib/progressSummary.js';
 import PageHeader from '../components/ui/PageHeader.jsx';
 import Button from '../components/ui/Button.jsx';
 import Card from '../components/ui/Card.jsx';
@@ -50,9 +42,7 @@ const LineIcon = ({ d, size = 18, style }) => (
   </svg>
 );
 const MORE_PATH = 'M5 12h.01M12 12h.01M19 12h.01';
-const SLIDERS_PATH = 'M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4';
 const FLAT_PATH = 'M4 12h16';
-const ALERT_PATH = 'M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17zM12 7.5v5.5M12 16.4v.2';
 
 // Trend als Icon + Wort; Farbe aus TREND_LABELS, der Pfeil-Glyph im Text fällt weg.
 const TrendBadge = ({ trend }) => {
@@ -81,22 +71,6 @@ const TrendBadge = ({ trend }) => {
   );
 };
 
-// Karten des eigenen Fortschritt-Tabs: Reihenfolge + Sichtbarkeit sind pro
-// User anpassbar (Anpassen-Modus), Titel dienen auch den eingeklappten Zeilen.
-const CARD_TITLES = {
-  exercises: 'Übungs-Fortschritt',
-  consistency: 'Konsistenz',
-  weeks: 'Trainingswochen',
-  tree: 'Trainingsbaum',
-  recovery: 'Erholung',
-  stats: 'Statistiken',
-  progression: 'Nächste Session',
-  maxtests: 'Max-Tests & Körpergewicht',
-  recent: 'Auswertungen',
-  wrapped: 'Monats-Rückblick',
-};
-const CARD_IDS = Object.keys(CARD_TITLES);
-
 const ExerciseProgressCard = ({ exercise }) => {
   const delta = formatProgressDelta(exercise.first_value, exercise.latest_value, exercise.metric_label);
 
@@ -119,7 +93,7 @@ const ExerciseProgressCard = ({ exercise }) => {
   );
 };
 
-// Kleine erhabene Pille (Freunde, Anpassen).
+// Kleine erhabene Pille (Freunde).
 const pillLinkStyle = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -136,102 +110,29 @@ const pillLinkStyle = {
   whiteSpace: 'nowrap',
 };
 
-// Status der KI-Auswertung als Icon statt Glyph.
-const EvaluationStatus = ({ status }) => {
-  if (status === 'ok') {
-    return (
-      <span role="img" aria-label="ausgewertet" style={{ display: 'inline-flex', color: 'var(--success)' }}>
-        <Icon name="check" size={16} />
-      </span>
-    );
-  }
-  if (status === 'pending') {
-    return (
-      <span role="img" aria-label="Auswertung läuft" style={{ display: 'inline-flex', color: 'var(--muted)' }}>
-        <Icon name="timer" size={16} />
-      </span>
-    );
-  }
-  if (status === 'failed') {
-    return (
-      <span role="img" aria-label="Auswertung fehlgeschlagen" style={{ display: 'inline-flex', color: 'var(--danger)' }}>
-        <LineIcon d={ALERT_PATH} size={16} />
-      </span>
-    );
-  }
-  return <span style={{ width: 16, textAlign: 'center', color: 'var(--muted)' }}>–</span>;
-};
-
-// Ausgeblendete Karte: drückbare, leise Zeile zum Wieder-Einblenden.
-const CollapsedCard = ({ title, onShow }) => (
-  <button
-    type="button"
-    onClick={onShow}
-    className="btn btn-secondary"
-    style={{
-      width: '100%',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: 8,
-      minHeight: 48,
-      padding: '0 16px',
-      marginBottom: 16,
-      border: 'none',
-      borderRadius: 20,
-      background: 'var(--bg)',
-      color: 'var(--muted)',
-      textAlign: 'left',
-      cursor: 'pointer',
-      fontSize: 15,
-    }}
-  >
-    <span>{title}</span>
-    <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--primary)', whiteSpace: 'nowrap' }}>Einblenden</span>
-  </button>
-);
-
 export default function Fortschritt() {
   const queryClient = useQueryClient();
   const { data: others } = useQuery({ queryKey: ['users'], queryFn: () => api.get('/users') });
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => api.get('/me'), retry: false });
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [showAllExercises, setShowAllExercises] = useState(false);
-  const [wrappedOpen, setWrappedOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [layout, setLayout] = useState(() => mergeLayout(CARD_IDS, getStoredLayout()));
   // Entfernte Freunde verschwinden aus der Liste — dann zurueck auf die eigene Ansicht.
   if (selectedUserId !== null && others && !others.some((u) => u.id === selectedUserId)) {
     setSelectedUserId(null);
   }
   const viewPartner = selectedUserId !== null;
 
-  const saveLayout = useMutation({
-    mutationFn: (next) => api.put('/me/progress-layout', next),
+  // Trainingsbaum ist optional und standardmäßig aus. Gespeichert im
+  // bestehenden progress_layout-Feld als { order: ['tree'], hidden: [] },
+  // damit die Wahl geräteübergreifend gilt. Alte Layouts (zehn Karten aus dem
+  // früheren Anpassen-Modus) zählen nicht als „an".
+  const savedLayout = me?.progress_layout;
+  const treeOn = savedLayout?.order?.length === 1 && savedLayout.order[0] === 'tree' && !savedLayout.hidden?.length;
+  const saveTree = useMutation({
+    mutationFn: (on) => api.put('/me/progress-layout', { order: ['tree'], hidden: on ? [] : ['tree'] }),
     onSuccess: (user) => queryClient.setQueryData(['me'], user),
   });
-
-  // Wie beim Theme: der Server ist die Quelle fuer das Geraet, das die Auswahl
-  // noch nicht kennt; lokal Geaendertes wird sofort gespeichert.
-  const serverLayout = me?.progress_layout ?? null;
-  useEffect(() => {
-    if (!serverLayout) return;
-    const merged = mergeLayout(CARD_IDS, serverLayout);
-    if (JSON.stringify(merged) === JSON.stringify(layout)) return;
-    setLayout(merged);
-    setStoredLayout(merged);
-  }, [serverLayout]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const applyLayout = (next) => {
-    setLayout(next);
-    setStoredLayout(next);
-    saveLayout.mutate(next);
-  };
-
-  const hiddenSet = new Set(layout.hidden);
-  const unhideCard = (id) =>
-    applyLayout({ order: layout.order, hidden: layout.hidden.filter((h) => h !== id) });
 
   const { data: ownProgress } = useQuery({
     queryKey: ['progress'],
@@ -244,13 +145,8 @@ export default function Fortschritt() {
     queryFn: () => api.get(`/partner/progress?user_id=${selectedUserId}`),
     enabled: viewPartner,
   });
-  const { data: recent } = useQuery({
-    queryKey: ['sessions-recent'],
-    queryFn: () => api.get('/sessions/recent'),
-    enabled: !viewPartner,
-  });
-
-  const recapFrom = mondayStart(3);
+  // Laufende Woche + vier volle Wochen davor.
+  const recapFrom = mondayStart(4);
   const recapTo = addDays(mondayStart(0), 7);
   const { data: recapRange } = useQuery({
     queryKey: ['sessions-recap', recapFrom.toISOString()],
@@ -266,15 +162,15 @@ export default function Fortschritt() {
     retry: false,
     enabled: !viewPartner,
   });
-  const { data: stats } = useQuery({
-    queryKey: ['stats'],
-    queryFn: () => api.get('/stats'),
-    retry: false,
-    enabled: !viewPartner,
-  });
   const { data: progression } = useQuery({
     queryKey: ['progression-proposals'],
     queryFn: () => api.get('/progression/proposals'),
+    retry: false,
+    enabled: !viewPartner,
+  });
+  const { data: summary, isError: summaryError } = useQuery({
+    queryKey: ['progress-summary'],
+    queryFn: () => api.get('/progress/summary'),
     retry: false,
     enabled: !viewPartner,
   });
@@ -282,17 +178,12 @@ export default function Fortschritt() {
     queryKey: ['stats-tree'],
     queryFn: () => api.get('/stats/tree'),
     retry: false,
-    enabled: !viewPartner,
+    enabled: !viewPartner && treeOn,
   });
-  const { data: wrappedLatest } = useQuery({
-    queryKey: ['wrapped-latest'],
-    queryFn: () => api.get('/wrapped/latest'),
-    retry: false,
-    enabled: !viewPartner,
-  });
-  const heatmapFrom = mondayStart(11);
+  // Erholungs-Karte braucht nur die letzten Tage.
+  const heatmapFrom = mondayStart(1);
   const { data: heatmapRange } = useQuery({
-    queryKey: ['sessions-heatmap'],
+    queryKey: ['sessions-recovery'],
     queryFn: () =>
       api.get(
         `/sessions?from=${encodeURIComponent(toSqlUtc(heatmapFrom))}&to=${encodeURIComponent(toSqlUtc(addDays(mondayStart(0), 7)))}`
@@ -308,17 +199,8 @@ export default function Fortschritt() {
 
   const weekRecap =
     plan && recapRange
-      ? buildWeekRecap(plan, groupSessionsByWeek(recapRange.sessions, 4))
+      ? buildWeekRecap(plan, groupSessionsByWeek(recapRange.sessions, 5))
       : null;
-
-  const heatmapData =
-    plan && heatmapRange ? buildConsistencyHeatmap(plan, heatmapRange.sessions, 12) : null;
-
-  const summaryItems = buildProgressSummary({
-    weekRecap,
-    exercises,
-    proposals: progression?.proposals,
-  });
 
   const handleExportJson = async () => {
     const data = await api.get('/export');
@@ -385,121 +267,6 @@ export default function Fortschritt() {
       )}
     </div>
   );
-
-  // Falsy = Karte hat gerade nichts zu zeigen und taucht auch eingeklappt nicht auf.
-  const cardNodes = {
-    tree: treeData && <TrainingTree weeks={treeData.weeks} />,
-    progression: progression?.proposals?.length > 0 && (
-      <ProgressionProposals proposals={progression.proposals} deload={progression.deload} />
-    ),
-    recovery: heatmapRange && <RecoveryMap sessions={heatmapRange.sessions} />,
-    consistency: heatmapData && (
-      <Card>
-        <h3 style={sectionHeading}>Konsistenz</h3>
-        <p style={contextLine}>Trainingstage pro Woche, letzte 12 Wochen</p>
-        <ConsistencyHeatmap data={heatmapData} />
-      </Card>
-    ),
-    maxtests: <MaxTestsSection />,
-    weeks: weekRecap && weekRecap.weeks.length > 0 && (
-      <Card>
-        <h3 style={sectionHeading}>Trainingswochen</h3>
-        <p style={contextLine}>
-          Ø {deNum(weekRecap.averageDone)} von {weekRecap.total}
-          {weekRecap.streak > 0 && ` · Serie: ${weekRecap.streak} Woche${weekRecap.streak === 1 ? '' : 'n'}`}
-        </p>
-        {weekRecap.weeks.map((w) => (
-          <div key={w.weekLabel} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <div style={{ width: 52, fontSize: 13, color: 'var(--muted)' }}>{w.weekLabel}</div>
-            <div style={{ flex: 1, display: 'flex', gap: 4 }}>
-              {Array.from({ length: w.total }).map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    flex: 1,
-                    height: 10,
-                    borderRadius: 5,
-                    background: i < w.done ? 'var(--primary)' : 'var(--bg)',
-                    boxShadow: i < w.done ? 'none' : 'var(--shadow-raised)',
-                  }}
-                />
-              ))}
-            </div>
-            <div style={{ width: 36, fontSize: 14, textAlign: 'right' }}>
-              {w.done}/{w.total}
-            </div>
-          </div>
-        ))}
-      </Card>
-    ),
-    stats: stats && <StatsSection stats={stats} />,
-    exercises: exerciseSection,
-    wrapped: wrappedLatest?.available && (
-      <button
-        type="button"
-        onClick={() => setWrappedOpen(true)}
-        className="btn btn-secondary"
-        style={{
-          width: '100%',
-          background: 'var(--bg)',
-          border: 'none',
-          borderRadius: 20,
-          minHeight: 56,
-          padding: '0 16px',
-          marginBottom: 16,
-          color: 'var(--text)',
-          fontSize: 15,
-          fontWeight: 600,
-          textAlign: 'left',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-        }}
-      >
-        <Icon name="gift" size={20} style={{ color: 'var(--primary)' }} />
-        <span style={{ flex: 1 }}>Rückblick {monthLabel(wrappedLatest.month)}</span>
-        <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--muted)' }}>Ansehen</span>
-        <Icon name="chevronRight" size={18} style={{ color: 'var(--muted)' }} />
-      </button>
-    ),
-    recent: (
-      <Card>
-        <h3 style={sectionHeading}>Auswertungen</h3>
-        {(recent?.sessions ?? []).length === 0 && (
-          <p style={{ color: 'var(--muted)', fontSize: 14, margin: '4px 0 0' }}>Noch keine abgeschlossenen Workouts.</p>
-        )}
-        <div className="px-rows" style={{ marginTop: 6 }}>
-          {(recent?.sessions ?? []).map((s) => (
-            <Link
-              key={s.session_id}
-              to={`/session/${s.session_id}/auswertung`}
-              className="px-row"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                minHeight: 48,
-                color: 'var(--text)',
-                textDecoration: 'none',
-                fontSize: 15,
-              }}
-            >
-              <span style={{ flex: 1, minWidth: 0 }}>{s.day_name}</span>
-              <span style={{ fontSize: 14, color: 'var(--muted)' }}>
-                {new Date(s.finished_at.replace(' ', 'T') + 'Z').toLocaleDateString('de-DE', {
-                  day: '2-digit',
-                  month: '2-digit',
-                })}
-              </span>
-              <EvaluationStatus status={s.evaluation_status} />
-              <Icon name="chevronRight" size={16} style={{ color: 'var(--muted)' }} />
-            </Link>
-          ))}
-        </div>
-      </Card>
-    ),
-  };
 
   return (
     <div className="wrap">
@@ -594,53 +361,32 @@ export default function Fortschritt() {
           <Icon name="plus" size={16} />
           Freunde
         </Link>
-        {!viewPartner && (
-          <button
-            type="button"
-            onClick={() => setEditMode((m) => !m)}
-            aria-pressed={editMode}
-            className="btn btn-secondary"
-            style={{
-              ...pillLinkStyle,
-              marginLeft: 'auto',
-              border: 'none',
-              cursor: 'pointer',
-              color: editMode ? 'var(--primary)' : 'var(--text)',
-              boxShadow: editMode ? 'var(--shadow-selected)' : undefined,
-            }}
-          >
-            {editMode ? <Icon name="check" size={16} /> : <LineIcon d={SLIDERS_PATH} size={16} />}
-            {editMode ? 'Fertig' : 'Anpassen'}
-          </button>
-        )}
       </div>
 
-      {!viewPartner && editMode && (
-        <ProgressLayoutEditor
-          cards={layout.order.map((id) => ({ id, title: CARD_TITLES[id] }))}
-          hidden={layout.hidden}
-          onChange={applyLayout}
-        />
+      {!viewPartner && (
+        <>
+          <ProgressSummary
+            weekRecap={weekRecap}
+            summary={summary}
+            summaryError={summaryError}
+            proposals={progression?.proposals ?? (progression === undefined ? null : [])}
+          />
+          {heatmapRange && <RecoveryMap sessions={heatmapRange.sessions} />}
+          {treeOn && treeData && <TrainingTree weeks={treeData.weeks} />}
+          <Button
+            variant="secondary"
+            fullWidth
+            ariaPressed={treeOn}
+            onClick={() => saveTree.mutate(!treeOn)}
+            disabled={saveTree.isPending}
+            style={{ marginBottom: 16 }}
+          >
+            {treeOn ? 'Trainingsbaum ausblenden' : 'Trainingsbaum anzeigen'}
+          </Button>
+        </>
       )}
 
-      {!viewPartner && !editMode && <ProgressSummary items={summaryItems} weeks={weekRecap?.weeks} />}
-
-      {!viewPartner &&
-        !editMode &&
-        layout.order.map((id) => {
-          const node = cardNodes[id];
-          if (!node) return null;
-          if (hiddenSet.has(id)) {
-            return <CollapsedCard key={id} title={CARD_TITLES[id]} onShow={() => unhideCard(id)} />;
-          }
-          return <Fragment key={id}>{node}</Fragment>;
-        })}
-
-      {viewPartner && cardNodes.exercises}
-
-      {wrappedOpen && wrappedLatest?.month && (
-        <WrappedStory month={wrappedLatest.month} onClose={() => setWrappedOpen(false)} />
-      )}
+      {viewPartner && exerciseSection}
     </div>
   );
 }

@@ -11,6 +11,7 @@
     "./progression": "./progression.js",
     "./nextTargets": "./nextTargets.js",
     "./equipment": "./equipment.js",
+    "./progressAnswers": "./progressAnswers.js",
     "./muscles": "./muscles.js",
     "./setTypes": "./setTypes.js",
     "./themes": "./themes.js",

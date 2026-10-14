@@ -355,6 +355,28 @@ export default function Kalender() {
               </ul>
             )}
 
+            {summary?.summary?.exercises?.length > 0 && (
+              <Link
+                to={`/session/${detail.session_id}/auswertung`}
+                className="btn btn-secondary"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: 44,
+                  marginTop: 18,
+                  borderRadius: 999,
+                  background: 'var(--bg)',
+                  color: 'var(--text)',
+                  textDecoration: 'none',
+                  fontSize: 15,
+                  fontWeight: 600,
+                }}
+              >
+                Auswertung ansehen
+              </Link>
+            )}
+
             {isCurrentWeek && !confirmReset && (
               <Button
                 variant="secondary"

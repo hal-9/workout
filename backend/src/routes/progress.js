@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../auth.js';
-import { buildProgressForUser } from '../progress.js';
+import { buildProgressForUser, buildProgressSummaryForUser } from '../progress.js';
 
 export function progressRouter(db) {
   const router = Router();
@@ -12,6 +12,14 @@ export function progressRouter(db) {
       return res.status(404).json({ error: 'no active plan' });
     }
     res.json(progress);
+  });
+
+  router.get('/progress/summary', (req, res) => {
+    const summary = buildProgressSummaryForUser(db, req.user.id);
+    if (!summary) {
+      return res.status(404).json({ error: 'no active plan' });
+    }
+    res.json(summary);
   });
 
   return router;

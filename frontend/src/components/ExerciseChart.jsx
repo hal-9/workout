@@ -16,7 +16,7 @@ const formatChartDate = (date) => {
   return `${day}.${month}`;
 };
 
-// Gemeinsame Diagramm-Optik (auch für StatsSection): Achsen/Raster aus Tokens, Tooltip als erhabenes Kärtchen.
+// Diagramm-Optik: Achsen/Raster aus Tokens, Tooltip als erhabenes Kärtchen.
 export const axisProps = {
   stroke: 'var(--line)',
   tick: { fill: 'var(--muted)', fontSize: 12 },

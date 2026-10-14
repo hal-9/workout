@@ -14,7 +14,8 @@ import Button from './ui/Button.jsx';
 import Icon from './ui/Icon.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 
-export default function ProgressionProposals({ proposals = [], deload }) {
+// `bare`: ohne eigene Karte und Überschrift — eingebettet in „Was ist mein nächster Schritt?".
+export default function ProgressionProposals({ proposals = [], deload, bare = false }) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [openWhy, setOpenWhy] = useState(null);
@@ -57,12 +58,17 @@ export default function ProgressionProposals({ proposals = [], deload }) {
 
   if (!proposals.length && !deload) return null;
 
+  const Wrap = bare ? 'div' : Card;
   return (
-    <Card>
-      <h3 style={{ margin: '0 0 4px', fontSize: 16 }}>Empfehlungen</h3>
-      <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 12px' }}>
-        Vorschläge für den Plan — nichts ändert sich, bis du übernimmst.
-      </p>
+    <Wrap>
+      {!bare && (
+        <>
+          <h3 style={{ margin: '0 0 4px', fontSize: 16 }}>Empfehlungen</h3>
+          <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 12px' }}>
+            Vorschläge für den Plan — nichts ändert sich, bis du übernimmst.
+          </p>
+        </>
+      )}
       {deload && (
         <p style={{ fontSize: 12, color: 'var(--accent)', margin: '0 0 12px' }}>
           Deload-Woche — Gewichte etwas zurücknehmen.
@@ -71,7 +77,10 @@ export default function ProgressionProposals({ proposals = [], deload }) {
       {proposals.map((p) => {
         const whyOpen = openWhy === p.exercise_id;
         return (
-          <div key={p.exercise_id} style={{ padding: '12px 0', borderBottom: '1px solid var(--line)' }}>
+          <div
+            key={p.exercise_id}
+            style={{ padding: bare ? '8px 0 0' : '12px 0', borderBottom: bare ? 'none' : '1px solid var(--line)' }}
+          >
             <div style={{ fontSize: 12, color: 'var(--muted)' }}>{p.name}</div>
             <div style={{ fontWeight: 600, fontSize: 15, marginTop: 2 }}>{proposalHeadline(p)}</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--primary)', marginTop: 4 }}>
@@ -152,6 +161,6 @@ export default function ProgressionProposals({ proposals = [], deload }) {
           </div>
         );
       })}
-    </Card>
+    </Wrap>
   );
 }
