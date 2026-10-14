@@ -8,6 +8,7 @@ import Header from './components/Header.jsx';
 import OfflineIndicator from './components/OfflineIndicator.jsx';
 import LoadingScreen from './components/ui/LoadingScreen.jsx';
 import { hideSplash } from './lib/splash.js';
+import { setQueueUser } from './offlineQueue.js';
 import Login from './screens/Login.jsx';
 import Register from './screens/Register.jsx';
 import Onboarding from './screens/Onboarding.jsx';
@@ -36,7 +37,11 @@ function useMe() {
   // Kaltstart ohne Netz: die letzte bekannte Anmeldung zählt. Bei 401 nicht —
   // dann hat der Server widersprochen und der Cache ist ohnehin geräumt.
   const cached = isOfflineError(query.error) ? cacheGet('me') : null;
-  return { ...query, data: query.data ?? cached, isError: query.isError && !cached };
+  const data = query.data ?? cached;
+  // Im Render statt im Effect: Kinder-Effects (OfflineIndicator-Sync) laufen
+  // vor denen des Elternteils und müssen den Account schon kennen.
+  setQueueUser(data?.id);
+  return { ...query, data, isError: query.isError && !cached };
 }
 
 function AuthGuard({ children }) {

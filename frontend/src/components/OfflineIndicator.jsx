@@ -1,37 +1,29 @@
 import { useEffect, useState } from 'react';
-import { api } from '../api.js';
-import { getQueuedSets, replayQueue } from '../offlineQueue.js';
-
-async function postSet(sessionId, payload) {
-  return api.post(`/sessions/${sessionId}/sets`, payload);
-}
-
-async function deleteSet(sessionId, payload) {
-  return api.delete(`/sessions/${sessionId}/sets`, payload);
-}
-
-async function postFinish(sessionId, payload) {
-  return api.post(`/sessions/${sessionId}/finish`, payload);
-}
+import { discardFailedEntries, getFailedEntries, getQueuedSets, syncQueue } from '../offlineQueue.js';
 
 export default function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pending, setPending] = useState(0);
+  const [failed, setFailed] = useState(0);
   // „Synchronisiert" kurz zeigen, damit der Wechsel sichtbar ist und nicht
   // nur das Verschwinden der Leiste.
   const [justSynced, setJustSynced] = useState(false);
 
   async function refreshPending() {
     const entries = await getQueuedSets();
+    const rejected = await getFailedEntries();
     setPending(entries.length);
-    return entries.length;
+    setFailed(rejected.length);
+    return { pending: entries.length, failed: rejected.length };
   }
 
   async function sync() {
     const before = await refreshPending();
-    await replayQueue({ postSet, deleteSet, postFinish });
+    await syncQueue();
     const after = await refreshPending();
-    if (before > 0 && after === 0) {
+    // „Synchronisiert" nur, wenn nichts abgelehnt wurde — eine leere
+    // Warteschlange allein heißt nicht, dass alles angekommen ist.
+    if (before.pending > 0 && after.pending === 0 && after.failed === before.failed) {
       setJustSynced(true);
       setTimeout(() => setJustSynced(false), 2500);
     }
@@ -55,6 +47,45 @@ export default function OfflineIndicator() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  if (failed > 0) {
+    return (
+      <div
+        role="alert"
+        style={{
+          position: 'fixed',
+          top: 'calc(64px + env(safe-area-inset-top))',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 50,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          maxWidth: 'calc(100vw - 32px)',
+          background: 'var(--bg)',
+          boxShadow: 'var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim)',
+          color: 'var(--danger)',
+          borderRadius: 999,
+          padding: '4px 4px 4px 16px',
+          fontSize: 13,
+          fontWeight: 500,
+        }}
+      >
+        {failed === 1 ? '1 Änderung' : `${failed} Änderungen`} nicht gespeichert
+        <button
+          type="button"
+          onClick={async () => {
+            await discardFailedEntries();
+            refreshPending();
+          }}
+          className="btn btn-secondary"
+          style={{ minHeight: 36, padding: '0 12px', border: 'none', borderRadius: 999, fontSize: 13, cursor: 'pointer' }}
+        >
+          Verwerfen
+        </button>
+      </div>
+    );
+  }
 
   if (isOnline && pending === 0 && !justSynced) return null;
 

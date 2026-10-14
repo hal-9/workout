@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
-import { cancelQueuedSet, enqueueDelete, enqueueFinish, enqueueSet } from '../offlineQueue.js';
+import { cancelQueuedSet, enqueueDelete, enqueueFinish, enqueueSet, getQueuedSets, syncQueue } from '../offlineQueue.js';
 import { parseUtc, mondayStart } from '../lib/dates.js';
 import { compareExercise, parseTargetReps } from '../lib/exerciseCompare.js';
 import { isCooldownExercise, splitPhases } from '../lib/cooldown.js';
@@ -238,7 +238,9 @@ export default function Heute() {
   useEffect(() => {
     setsRef.current = setsByExercise;
   }, [setsByExercise]);
-  useEffect(() => () => Object.values(persistTimersRef.current).forEach(clearTimeout), []);
+  // Verlassen des Screens speichert ausstehende Satz-Änderungen sofort,
+  // statt sie mit dem Timer zu verwerfen.
+  useEffect(() => () => flushPendingEdits(), []); // eslint-disable-line react-hooks/exhaustive-deps
   const replacedExerciseById = new Map(replaced.map((r) => [r.exercise.id, r.exercise]));
   const [note, setNote] = useState('');
   const [noteOpen, setNoteOpen] = useState(false);
@@ -444,17 +446,18 @@ export default function Heute() {
 
       try {
         await api.post(`/sessions/${sid}/sets`, payload);
+        // Ältere Offline-Version desselben Satzes darf das nicht überschreiben.
+        await cancelQueuedSet(sid, setKey);
       } catch (err) {
         if (err.status) throw err;
-        await cancelQueuedSet(sid, setKey);
         await enqueueSet(sid, payload);
       }
     } else {
       try {
         await api.delete(`/sessions/${sid}/sets`, setKey);
+        await cancelQueuedSet(sid, setKey);
       } catch (err) {
         if (err.status) throw err;
-        await cancelQueuedSet(sid, setKey);
         await enqueueDelete(sid, setKey);
       }
     }
@@ -515,21 +518,29 @@ export default function Heute() {
   // Gleicher Offline-Fallback wie beim Loggen (Queue statt Verlust).
   function schedulePersist(exercise, index) {
     const key = `${exercise.id}:${index}`;
-    clearTimeout(persistTimersRef.current[key]);
-    persistTimersRef.current[key] = setTimeout(async () => {
+    clearTimeout(persistTimersRef.current[key]?.timer);
+    const run = async () => {
       delete persistTimersRef.current[key];
       const row = setsRef.current[exercise.id]?.[index];
       if (!row?.logged || !sessionId) return;
       const payload = buildSetPayload(exercise, row);
       try {
         await api.post(`/sessions/${sessionId}/sets`, payload);
-      } catch (err) {
-        if (err.status) return;
-        const setKey = { exercise_id: exercise.id, set_number: row.set_number };
-        await cancelQueuedSet(sessionId, setKey);
+        await cancelQueuedSet(sessionId, { exercise_id: exercise.id, set_number: row.set_number });
+      } catch {
+        // Offline oder abgelehnt: in die Warteschlange. Der Sync wiederholt
+        // Netzfehler und zeigt Ablehnungen an, statt sie still zu verlieren.
         await enqueueSet(sessionId, payload);
       }
-    }, 600);
+    };
+    persistTimersRef.current[key] = { timer: setTimeout(run, 600), run };
+  }
+
+  // Alle entprellten Änderungen jetzt speichern (Abschluss, Verlassen).
+  function flushPendingEdits() {
+    const pending = Object.values(persistTimersRef.current);
+    for (const { timer } of pending) clearTimeout(timer);
+    return Promise.all(pending.map(({ run }) => run()));
   }
 
   // `resolve` bekommt den aktuellen Wert aus dem State-Update selbst, damit
@@ -725,6 +736,15 @@ export default function Heute() {
     setFinishPending(true);
     setFinishError(null);
     try {
+      // Erst alle Satz-Änderungen zum Server, dann „fertig". Bleibt für diese
+      // Session etwas offen (offline), reiht sich der Abschluss dahinter ein.
+      await flushPendingEdits();
+      await syncQueue();
+      if ((await getQueuedSets()).some((e) => e.sessionId === sessionId)) {
+        await enqueueFinish(sessionId, { note: note.trim() || null });
+        setFinishError('Offline gespeichert — Sync beim nächsten Online-Status.');
+        return;
+      }
       const res = await api.post(`/sessions/${sessionId}/finish`, { note: note.trim() || null });
       queryClient.invalidateQueries({ queryKey: ['history'] });
       queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
