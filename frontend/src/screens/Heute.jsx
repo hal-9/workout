@@ -2,7 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
-import { cancelQueuedSet, enqueueDelete, enqueueFinish, enqueueSet, getQueuedSets, syncQueue } from '../offlineQueue.js';
+import {
+  cancelQueuedSet,
+  enqueueDelete,
+  enqueueFinish,
+  enqueueSet,
+  getQueuedSets,
+  mergeQueuedSets,
+  syncQueue,
+} from '../offlineQueue.js';
 import { parseUtc, mondayStart } from '../lib/dates.js';
 import { compareExercise, parseTargetReps } from '../lib/exerciseCompare.js';
 import { isCooldownExercise, splitPhases } from '../lib/cooldown.js';
@@ -265,8 +273,10 @@ export default function Heute() {
   const nextOpenEntry = projection.days.find((e) => e.projectedIdx != null);
   const isRestToday = !projection.todayEntry && !projection.trainedToday && Boolean(nextOpenEntry);
 
+  // `recent` enthält offline den gecachten Stand — sonst fände ein Kaltstart
+  // ohne Netz die laufende Session nie.
   function freshActiveSession() {
-    const active = queryClient.getQueryData(['sessions-recent'])?.active;
+    const active = recent?.active;
     if (!active) return null;
     if (Date.now() - parseUtc(active.started_at).getTime() > 24 * 3600 * 1000) return null;
     return active;
@@ -292,9 +302,19 @@ export default function Heute() {
       const resumed = active?.day_key === dayKey ? active : null;
       const replacedList = Array.isArray(resumed?.adaptations?.replaced) ? resumed.adaptations.replaced : [];
       const extraIds = replacedList.map((r) => r.exercise?.id).filter(Boolean);
-      const historyRes = await api.get(
-        `/history?day_key=${encodeURIComponent(dayKey)}${extraIds.length ? `&exercise_ids=${encodeURIComponent(extraIds.join(','))}` : ''}`
-      );
+      // Historie ist Anreicherung, keine Voraussetzung: offline der letzte
+      // bekannte Stand des Tages, sonst ohne Vorbelegung weiter.
+      let historyRes = null;
+      try {
+        historyRes = await api.get(
+          `/history?day_key=${encodeURIComponent(dayKey)}${extraIds.length ? `&exercise_ids=${encodeURIComponent(extraIds.join(','))}` : ''}`
+        );
+        cacheSet(`history:${dayKey}`, historyRes);
+      } catch (err) {
+        historyRes = isOfflineError(err) ? cacheGet(`history:${dayKey}`) : null;
+      }
+      // Offline geloggte, noch nicht gesendete Sätze gehören zur Session.
+      const queued = resumed ? await getQueuedSets().catch(() => []) : [];
       if (cancelled) return;
       setHistoryRes(historyRes);
 
@@ -302,7 +322,7 @@ export default function Heute() {
       sessionPromiseRef.current = null;
 
       const resumedByExercise = {};
-      for (const log of resumed?.set_logs ?? []) {
+      for (const log of mergeQueuedSets(resumed?.set_logs, queued, resumed?.session_id)) {
         resumedByExercise[log.exercise_id] = resumedByExercise[log.exercise_id] || [];
         resumedByExercise[log.exercise_id].push(log);
       }
@@ -341,6 +361,8 @@ export default function Heute() {
         .post('/sessions', { day_key: dayKey })
         .then((res) => {
           setSessionId(res.session_id);
+          // Neu laden, damit der Offline-Cache die laufende Session kennt.
+          queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
           return res.session_id;
         })
         .catch((err) => {
@@ -448,6 +470,8 @@ export default function Heute() {
         await api.post(`/sessions/${sid}/sets`, payload);
         // Ältere Offline-Version desselben Satzes darf das nicht überschreiben.
         await cancelQueuedSet(sid, setKey);
+        // Offline-Cache der laufenden Session aktuell halten (Kaltstart ohne Netz).
+        queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
       } catch (err) {
         if (err.status) throw err;
         await enqueueSet(sid, payload);
@@ -456,6 +480,7 @@ export default function Heute() {
       try {
         await api.delete(`/sessions/${sid}/sets`, setKey);
         await cancelQueuedSet(sid, setKey);
+        queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
       } catch (err) {
         if (err.status) throw err;
         await enqueueDelete(sid, setKey);
@@ -527,6 +552,7 @@ export default function Heute() {
       try {
         await api.post(`/sessions/${sessionId}/sets`, payload);
         await cancelQueuedSet(sessionId, { exercise_id: exercise.id, set_number: row.set_number });
+        queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
       } catch {
         // Offline oder abgelehnt: in die Warteschlange. Der Sync wiederholt
         // Netzfehler und zeigt Ablehnungen an, statt sie still zu verlieren.

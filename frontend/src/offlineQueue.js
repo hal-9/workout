@@ -147,3 +147,19 @@ export function syncQueue(handlers = defaultHandlers) {
   chain = chain.then(() => replayWith(idbStore, handlers, currentUserId)).catch(() => {});
   return chain;
 }
+
+/**
+ * Offline geloggte Sätze in den zuletzt bekannten Server-Stand einer Session
+ * einrechnen (Kaltstart ohne Netz): Upserts ersetzen/ergänzen, Löschungen
+ * entfernen. Abgelehnte Einträge zählen nicht.
+ */
+export function mergeQueuedSets(setLogs = [], entries = [], sessionId) {
+  const byKey = new Map(setLogs.map((log) => [`${log.exercise_id}:${log.set_number}`, log]));
+  for (const entry of entries) {
+    if (entry.sessionId !== sessionId || entry.failed || entry.operation === 'finish') continue;
+    const key = `${entry.payload.exercise_id}:${entry.payload.set_number}`;
+    if (entry.operation === 'delete') byKey.delete(key);
+    else byKey.set(key, { ...byKey.get(key), ...entry.payload });
+  }
+  return [...byKey.values()];
+}
