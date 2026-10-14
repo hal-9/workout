@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY backend/package.json backend/
 COPY shared/package.json shared/
-COPY shared/*.js shared/
+COPY shared/*.js shared/*.json shared/
 
 RUN npm ci --omit=dev --workspace=backend --workspace=shared
 
