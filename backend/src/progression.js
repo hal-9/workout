@@ -28,8 +28,12 @@ function activePlanRow(db, userId) {
     .get(userId);
 }
 
-// Letzte beendete Sessions mit Sätzen, älteste zuerst.
-function recentSessions(db, userId, planId) {
+// Letzte beendete Sessions mit Sätzen, älteste zuerst — über alle Plan-
+// Versionen (Übungs-Id ist stabil), damit ein Plan-Edit oder ein übernommener
+// Vorschlag die Serie nicht zurücksetzt. Ob eine Session zum aktuellen Ziel
+// passt, entscheidet `sessionQualifies` gegen den aktuellen Plan. Leichte
+// Versionen zählen nicht.
+function recentSessions(db, userId) {
   const rows = db
     .prepare(
       `SELECT s.id AS session_id, s.finished_at,
@@ -37,10 +41,11 @@ function recentSessions(db, userId, planId) {
               sl.set_type, sl.superset_group
        FROM sessions s
        JOIN set_logs sl ON sl.session_id = s.id
-       WHERE s.user_id = ? AND s.plan_id = ? AND s.status = 'finished'
-       ORDER BY s.finished_at ASC, sl.set_number ASC`
+       WHERE s.user_id = ? AND s.status = 'finished'
+         AND COALESCE(json_extract(s.adaptations_json, '$.light'), 0) = 0
+       ORDER BY s.finished_at ASC, s.id ASC, sl.set_number ASC`
     )
-    .all(userId, planId);
+    .all(userId);
 
   const sessions = new Map();
   for (const row of rows) {
@@ -86,7 +91,7 @@ export function buildProposalsForUser(db, userId) {
     return null;
   }
 
-  const sessions = recentSessions(db, userId, row.id);
+  const sessions = recentSessions(db, userId);
   const planStartMs = Date.parse(`${row.created_at.replace(' ', 'T')}Z`);
 
   const today = localDay();
@@ -116,7 +121,7 @@ export function snoozeProposalsForUser(db, userId, exerciseIds) {
 
   const plan = JSON.parse(row.json_payload);
   const open = new Set(
-    evaluatePlan(plan, recentSessions(db, userId, row.id), unavailableSet(db, userId)).map((p) => p.exercise_id)
+    evaluatePlan(plan, recentSessions(db, userId), unavailableSet(db, userId)).map((p) => p.exercise_id)
   );
   const matching = exerciseIds.filter((id) => open.has(id));
   if (!matching.length) return { error: 'no matching proposals' };
@@ -143,7 +148,7 @@ export function applyProposalsForUser(db, userId, exerciseIds) {
   if (!row) return { error: 'no active plan' };
 
   const plan = JSON.parse(row.json_payload);
-  const sessions = recentSessions(db, userId, row.id);
+  const sessions = recentSessions(db, userId);
   const all = evaluatePlan(plan, sessions, unavailableSet(db, userId));
 
   const wanted = new Set(exerciseIds);
@@ -178,7 +183,7 @@ export function markUnavailableForUser(db, userId, exerciseId) {
 
   const plan = JSON.parse(row.json_payload);
   const unavailable = unavailableSet(db, userId);
-  const proposal = evaluatePlan(plan, recentSessions(db, userId, row.id), unavailable).find(
+  const proposal = evaluatePlan(plan, recentSessions(db, userId), unavailable).find(
     (p) => p.exercise_id === exerciseId && p.field === 'default_weight_kg'
   );
   if (!proposal) return { error: 'no matching proposals' };
