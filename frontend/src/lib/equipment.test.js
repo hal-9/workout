@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { DEFAULT_WEIGHT_STEP, equipmentLabel, splitExerciseName, stepForExercise } from './equipment.js';
 
 describe('stepForExercise', () => {
-  it('uses 1 kg for dumbbells', () => {
-    expect(stepForExercise({ equipment: 'kurzhantel' })).toBe(1);
+  it('uses 2.5 kg for dumbbells', () => {
+    expect(stepForExercise({ equipment: 'kurzhantel' })).toBe(2.5);
   });
 
   it('uses 5 kg for machines', () => {

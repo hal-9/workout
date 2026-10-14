@@ -1,21 +1,6 @@
-import { findLibraryEntry } from 'shared/library';
+import { equipmentOf } from 'shared/equipment';
 
-// Gewichtsschritt nach Equipment: Kurzhanteln gehen in 1-kg-Paaren, Maschinen
-// haben meist 5-kg-Platten. Ohne Bibliothekstreffer bleibt es bei 2.5.
-export const DEFAULT_WEIGHT_STEP = 2.5;
-
-const STEP_BY_EQUIPMENT = {
-  kurzhantel: 1,
-  langhantel: 2.5,
-  kabelzug: 2.5,
-  maschine: 5,
-  kettlebell: 4,
-};
-
-export function stepForExercise(exercise) {
-  const equipment = exercise?.equipment ?? findLibraryEntry(exercise)?.equipment;
-  return STEP_BY_EQUIPMENT[equipment] ?? DEFAULT_WEIGHT_STEP;
-}
+export { DEFAULT_WEIGHT_STEP, weightStep as stepForExercise } from 'shared/equipment';
 
 const LABEL_BY_EQUIPMENT = {
   koerpergewicht: 'Körpergewicht',
@@ -30,8 +15,7 @@ const LABEL_BY_EQUIPMENT = {
 };
 
 export function equipmentLabel(exercise) {
-  const equipment = exercise?.equipment ?? findLibraryEntry(exercise)?.equipment;
-  return LABEL_BY_EQUIPMENT[equipment] ?? null;
+  return LABEL_BY_EQUIPMENT[equipmentOf(exercise)] ?? null;
 }
 
 // „Goblet Squat (Kettlebell)" → Titel + Variante. Viele Planübungen tragen das

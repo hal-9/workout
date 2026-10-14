@@ -9,6 +9,7 @@ import Button from './ui/Button.jsx';
 import { getTheme, setTheme } from '../lib/theme.js';
 import { isSoundEnabled, setSoundEnabled, unlockAudio } from '../lib/workoutSounds.js';
 import PushSettingsDialog from './PushSettingsDialog.jsx';
+import UnavailableWeightsDialog from './UnavailableWeightsDialog.jsx';
 
 const ICON_BUTTON = {
   width: 44,
@@ -79,6 +80,14 @@ function BellIcon() {
   );
 }
 
+function WeightIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 7v10M3 9.5v5M18 7v10M21 9.5v5M6 12h12" />
+    </svg>
+  );
+}
+
 function LogoutIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -128,6 +137,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [pushOpen, setPushOpen] = useState(false);
+  const [weightsOpen, setWeightsOpen] = useState(false);
   const [theme, setLocalTheme] = useState(getTheme);
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
 
@@ -316,6 +326,19 @@ export default function Header() {
                 Mitteilungen
               </button>
 
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setWeightsOpen(true);
+                }}
+                style={MENU_ROW}
+              >
+                <WeightIcon />
+                Fehlende Gewichte
+              </button>
+
               <div style={{ height: 1, background: 'var(--line)', margin: '6px 10px' }} />
 
               <div style={{ padding: '4px 12px 10px' }}>
@@ -390,6 +413,7 @@ export default function Header() {
       )}
 
       <PushSettingsDialog open={pushOpen} onClose={() => setPushOpen(false)} />
+      <UnavailableWeightsDialog open={weightsOpen} onClose={() => setWeightsOpen(false)} />
 
       <Dialog open={confirmLogout} onClose={() => setConfirmLogout(false)} title="Abmelden?">
         <p style={{ margin: '0 0 18px', fontSize: 14, color: 'var(--muted)' }}>

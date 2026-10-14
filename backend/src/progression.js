@@ -1,4 +1,5 @@
-import { applyProposals, deloadWeek, evaluatePlan } from 'shared/progression';
+import { applyProposals, deloadWeek, evaluatePlan, unavailableKey } from 'shared/progression';
+import { equipmentKey } from 'shared/equipment';
 
 const HISTORY_LIMIT = 8; // reicht für after_success bis 8
 const TZ = 'Europe/Berlin'; // Wochengrenze wie im Scheduler
@@ -65,6 +66,15 @@ function recentSessions(db, userId, planId) {
   return [...sessions.values()].slice(-HISTORY_LIMIT);
 }
 
+function unavailableSet(db, userId) {
+  return new Set(
+    db
+      .prepare('SELECT equipment, weight_kg FROM unavailable_weights WHERE user_id = ?')
+      .all(userId)
+      .map((r) => `${r.equipment}|${r.weight_kg}`)
+  );
+}
+
 export function buildProposalsForUser(db, userId) {
   const row = activePlanRow(db, userId);
   if (!row) return null;
@@ -91,7 +101,7 @@ export function buildProposalsForUser(db, userId) {
   return {
     plan_id: row.id,
     plan_name: plan.name,
-    proposals: evaluatePlan(plan, sessions).filter((p) => !snoozed.has(p.exercise_id)),
+    proposals: evaluatePlan(plan, sessions, unavailableSet(db, userId)).filter((p) => !snoozed.has(p.exercise_id)),
     deload: deloadWeek(plan, Number.isNaN(planStartMs) ? null : planStartMs, Date.now()),
   };
 }
@@ -105,7 +115,9 @@ export function snoozeProposalsForUser(db, userId, exerciseIds) {
   if (!row) return { error: 'no active plan' };
 
   const plan = JSON.parse(row.json_payload);
-  const open = new Set(evaluatePlan(plan, recentSessions(db, userId, row.id)).map((p) => p.exercise_id));
+  const open = new Set(
+    evaluatePlan(plan, recentSessions(db, userId, row.id), unavailableSet(db, userId)).map((p) => p.exercise_id)
+  );
   const matching = exerciseIds.filter((id) => open.has(id));
   if (!matching.length) return { error: 'no matching proposals' };
 
@@ -132,7 +144,7 @@ export function applyProposalsForUser(db, userId, exerciseIds) {
 
   const plan = JSON.parse(row.json_payload);
   const sessions = recentSessions(db, userId, row.id);
-  const all = evaluatePlan(plan, sessions);
+  const all = evaluatePlan(plan, sessions, unavailableSet(db, userId));
 
   const wanted = new Set(exerciseIds);
   const applied = all.filter((proposal) => wanted.has(proposal.exercise_id));
@@ -153,4 +165,42 @@ export function applyProposalsForUser(db, userId, exerciseIds) {
   })();
 
   return { plan_id: planId, applied };
+}
+
+/**
+ * „Hab ich nicht": das vorgeschlagene Gewicht der Übung gibt es nicht. Der
+ * Server nimmt das Gewicht aus dem eigenen Vorschlag — der Client schickt nur
+ * die Übung. Danach schlägt die Progression eine Wiederholung mehr vor.
+ */
+export function markUnavailableForUser(db, userId, exerciseId) {
+  const row = activePlanRow(db, userId);
+  if (!row) return { error: 'no active plan' };
+
+  const plan = JSON.parse(row.json_payload);
+  const unavailable = unavailableSet(db, userId);
+  const proposal = evaluatePlan(plan, recentSessions(db, userId, row.id), unavailable).find(
+    (p) => p.exercise_id === exerciseId && p.field === 'default_weight_kg'
+  );
+  if (!proposal) return { error: 'no matching proposals' };
+
+  const exercise = plan.days.flatMap((d) => d.exercises).find((e) => e.id === exerciseId);
+  const equipment = equipmentKey(exercise);
+  db.prepare('INSERT OR IGNORE INTO unavailable_weights (user_id, equipment, weight_kg) VALUES (?, ?, ?)').run(
+    userId,
+    equipment,
+    proposal.to
+  );
+  return { equipment, weight_kg: proposal.to };
+}
+
+export function listUnavailableForUser(db, userId) {
+  return db
+    .prepare('SELECT equipment, weight_kg FROM unavailable_weights WHERE user_id = ? ORDER BY equipment, weight_kg')
+    .all(userId);
+}
+
+export function removeUnavailableForUser(db, userId, equipment, weightKg) {
+  return db
+    .prepare('DELETE FROM unavailable_weights WHERE user_id = ? AND equipment = ? AND weight_kg = ?')
+    .run(userId, equipment, weightKg).changes;
 }

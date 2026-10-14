@@ -30,16 +30,10 @@ export function nextTargets(lastSets = [], exerciseNow, exerciseThen) {
   const repsNow = parseTargetReps(exerciseNow.target_reps);
   const repsThen = parseTargetReps(exerciseThen.target_reps);
   if (repsNow && repsThen && repsNow.max > repsThen.max) {
-    // +1 Wdh. im schwächsten Satz (bei Gleichstand der frühere) — bei
-    // einseitigen Übungen je Seite, die Seiten bleiben unabhängig.
-    const groups = exerciseNow.unilateral
-      ? [rows.filter((r) => r.set_number % 2 === 1), rows.filter((r) => r.set_number % 2 === 0)]
-      : [rows];
-    for (const group of groups) {
-      const withReps = group.filter((r) => r.reps != null);
-      if (!withReps.length) continue;
-      const lowest = withReps.reduce((a, b) => (Number(b.reps) < Number(a.reps) ? b : a));
-      lowest.reps = Number(lowest.reps) + 1;
+    // Höherer Zielbereich: jeder Satz unter dem neuen oberen Ende bekommt
+    // eine Wiederholung mehr. Pro Zeile — einseitige Seiten bleiben getrennt.
+    for (const row of rows) {
+      if (row.reps != null && Number(row.reps) < repsNow.max) row.reps = Number(row.reps) + 1;
     }
     return rows;
   }

@@ -10,6 +10,7 @@
     "./records": "./records.js",
     "./progression": "./progression.js",
     "./nextTargets": "./nextTargets.js",
+    "./equipment": "./equipment.js",
     "./muscles": "./muscles.js",
     "./setTypes": "./setTypes.js",
     "./themes": "./themes.js",

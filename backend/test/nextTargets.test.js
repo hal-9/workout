@@ -29,17 +29,17 @@ describe('nextTargets', () => {
     expect(nextTargets([row(1, 15)], now, rudern)[0]).toMatchObject({ weight_kg: 7.5, reps: 15 });
   });
 
-  it('höherer Wdh.-Bereich: +1 im schwächsten Satz, bei Gleichstand im früheren', () => {
+  it('höherer Wdh.-Bereich: +1 Wdh. in jedem Satz unter dem neuen oberen Ende', () => {
     const now = { ...rudern, target_reps: '8-16' };
-    expect(nextTargets([row(1, 15), row(2, 15), row(3, 15)], now, rudern).map((r) => r.reps)).toEqual([16, 15, 15]);
-    expect(nextTargets([row(1, 15), row(2, 13), row(3, 13)], now, rudern).map((r) => r.reps)).toEqual([15, 14, 13]);
+    expect(nextTargets([row(1, 15), row(2, 15), row(3, 15)], now, rudern).map((r) => r.reps)).toEqual([16, 16, 16]);
+    expect(nextTargets([row(1, 16), row(2, 13)], now, rudern).map((r) => r.reps)).toEqual([16, 14]);
   });
 
-  it('einseitig: +1 je Seite, Seiten bleiben unabhängig', () => {
+  it('einseitig: Seiten bleiben unabhängig', () => {
     const then = { ...rudern, unilateral: true };
     const now = { ...then, target_reps: '8-16' };
     const last = [row(1, 12), row(2, 10), row(3, 12), row(4, 11)];
-    expect(nextTargets(last, now, then).map((r) => r.reps)).toEqual([13, 11, 12, 11]);
+    expect(nextTargets(last, now, then).map((r) => r.reps)).toEqual([13, 11, 13, 12]);
   });
 
   it('längere Zieldauer hebt kürzere Sätze an', () => {

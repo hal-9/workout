@@ -1,10 +1,12 @@
 import { isCooldown, parseTargetReps } from './exerciseProgress.js';
 import { workingSets } from './setTypes.js';
+import { equipmentKey, weightStep } from './equipment.js';
 
 // Voreinstellungen je Übungstyp. Cardio ist absichtlich aus: Intervalle werden
-// vom Nutzer vorgegeben, nicht automatisch hochgeschraubt.
+// vom Nutzer vorgegeben, nicht automatisch hochgeschraubt. Der Gewichtsschritt
+// kommt vom Gerät (`weightStep`), nicht aus einer festen Zahl.
 const TYPE_DEFAULTS = {
-  wt: { type: 'weight', increment: 2.5, after_success: 2 },
+  wt: { type: 'weight', increment: null, after_success: 2 },
   bw: { type: 'reps', increment: 2, after_success: 2 },
   time: { type: 'duration', increment: 10, after_success: 2 },
   cardio: null,
@@ -18,7 +20,8 @@ export function progressionConfig(exercise) {
   if (!exercise || isCooldown(exercise)) return null;
   if (exercise.progression === null) return null;
 
-  const base = TYPE_DEFAULTS[exercise.type] ?? null;
+  const defaults = TYPE_DEFAULTS[exercise.type] ?? null;
+  const base = defaults?.type === 'weight' ? { ...defaults, increment: weightStep(exercise) } : defaults;
   if (!exercise.progression) return base;
 
   const merged = { ...(base ?? {}), ...exercise.progression };
@@ -74,11 +77,24 @@ export function nextTargetReps(targetReps, increment) {
   return min === max ? String(min) : `${min}-${max}`;
 }
 
-function buildProposal(exercise, config) {
+// Gewicht, das jemand als „nicht vorhanden" markiert hat: 'kurzhantel|12.5'.
+export function unavailableKey(exercise, kg) {
+  return `${equipmentKey(exercise)}|${roundKg(Number(kg))}`;
+}
+
+function buildProposal(exercise, config, unavailable) {
   if (config.type === 'weight') {
     const from = Number(exercise.default_weight_kg) || 0;
     const to = roundKg(from + config.increment);
-    return { field: 'default_weight_kg', from, to, unit: 'kg' };
+    if (!unavailable.has(unavailableKey(exercise, to))) {
+      return { field: 'default_weight_kg', from, to, unit: 'kg' };
+    }
+    // Nächstes Gewicht gibt es nicht: mit dem gleichen Gewicht eine
+    // Wiederholung mehr — nie ein größerer Sprung, nie ein erfundenes Gewicht.
+    const reps = parseTargetReps(exercise.target_reps);
+    if (!reps) return null;
+    const next = reps.min === reps.max ? String(reps.max + 1) : `${reps.min}-${reps.max + 1}`;
+    return { field: 'target_reps', from: exercise.target_reps, to: next, unit: 'Wdh.', unavailable_kg: to };
   }
 
   if (config.type === 'duration') {
@@ -107,6 +123,10 @@ export function proposalRationale(exercise, config, proposal) {
     return `${streakLabel}: Zieldauer erreicht · +${config.increment} s empfohlen`;
   }
 
+  if (proposal?.unavailable_kg != null) {
+    return `${streakLabel}: ${String(proposal.unavailable_kg).replace('.', ',')} kg nicht vorhanden · eine Wdh. mehr`;
+  }
+
   if (proposal?.field === 'target_reps') {
     return `${streakLabel}: Wiederholungen am oberen Ende · Bereich erhöhen`;
   }
@@ -118,7 +138,7 @@ export function proposalRationale(exercise, config, proposal) {
  * Prüft eine Übung gegen ihre letzten Sessions (älteste zuerst) und liefert
  * einen Vorschlag, wenn `after_success` Sessions in Folge das Ziel erreicht haben.
  */
-export function evaluateExercise(exercise, sessionsOldestFirst = []) {
+export function evaluateExercise(exercise, sessionsOldestFirst = [], unavailable = new Set()) {
   const config = progressionConfig(exercise);
   if (!config) return null;
 
@@ -128,7 +148,7 @@ export function evaluateExercise(exercise, sessionsOldestFirst = []) {
   const streak = withSets.slice(-config.after_success);
   if (!streak.every((s) => sessionQualifies(exercise, config, s.sets))) return null;
 
-  const change = buildProposal(exercise, config);
+  const change = buildProposal(exercise, config, unavailable);
   if (!change || change.to === change.from) return null;
 
   const planned = plannedSets(exercise);
@@ -159,7 +179,7 @@ export function evaluateExercise(exercise, sessionsOldestFirst = []) {
  * Vorschläge für alle Übungen eines Plans.
  * `setsByExerciseBySession`: Array von Maps (älteste Session zuerst).
  */
-export function evaluatePlan(plan, sessionsOldestFirst = []) {
+export function evaluatePlan(plan, sessionsOldestFirst = [], unavailable = new Set()) {
   const proposals = [];
   for (const day of plan?.days ?? []) {
     for (const exercise of day.exercises ?? []) {
@@ -170,7 +190,7 @@ export function evaluatePlan(plan, sessionsOldestFirst = []) {
           sets: session.setsByExercise?.get(exercise.id) ?? [],
         }))
         .filter((s) => s.sets.length);
-      const proposal = evaluateExercise(exercise, perExercise);
+      const proposal = evaluateExercise(exercise, perExercise, unavailable);
       if (proposal) proposals.push(proposal);
     }
   }

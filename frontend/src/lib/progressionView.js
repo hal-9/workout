@@ -37,7 +37,12 @@ const HEADLINES = {
 
 /** Handlungsaussage statt Feldname — steht als Titel über dem Vorschlag. */
 export function proposalHeadline(proposal) {
+  if (proposal?.unavailable_kg != null) return 'Eine Wiederholung mehr';
   return HEADLINES[proposal?.field] ?? 'Anpassung empfohlen';
+}
+
+function formatKg(kg) {
+  return `${String(Math.round(Number(kg) * 100) / 100).replace('.', ',')} kg`;
 }
 
 function evidenceSets(proposal) {
@@ -75,6 +80,12 @@ export function proposalWhy(proposal) {
     return `Du hast ${sessionsLabel} ${setsLabel} die Zieldauer von ${formatProposalValue(proposal, 'from')} gehalten.`;
   }
 
+  if (proposal?.unavailable_kg != null) {
+    return `Du hast ${sessionsLabel} ${setsLabel} am oberen Ende geschafft. ${formatKg(
+      proposal.unavailable_kg
+    )} hast du nicht — deshalb mit gleichem Gewicht weiter.`;
+  }
+
   if (proposal?.field === 'target_reps') {
     return `Du hast ${sessionsLabel} ${setsLabel} am oberen Ende des Zielbereichs (${formatProposalValue(
       proposal,
@@ -89,10 +100,13 @@ export function proposalWhy(proposal) {
 export function proposalEffect(proposal) {
   const to = formatProposalValue(proposal, 'to');
   if (proposal?.field === 'default_weight_kg') {
-    return `Übernehmen setzt das Plan-Gewicht auf ${to}. Der Wiederholungsbereich bleibt unverändert.`;
+    return `Beim nächsten Mal mit ${to} — die Wiederholungen starten am unteren Ende des Zielbereichs.`;
   }
   if (proposal?.field === 'target_seconds') {
     return `Übernehmen setzt die Zieldauer auf ${to}.`;
+  }
+  if (proposal?.unavailable_kg != null) {
+    return `Beim nächsten Mal eine Wiederholung mehr pro Satz, Zielbereich ${to} Wdh. Das Gewicht bleibt.`;
   }
   if (proposal?.field === 'target_reps') {
     return `Übernehmen setzt den Zielbereich auf ${to} Wdh. Das Gewicht bleibt unverändert.`;

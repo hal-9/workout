@@ -106,7 +106,7 @@ describe('proposalWhy', () => {
 
 describe('proposalEffect', () => {
   it('sagt, was Übernehmen ändert', () => {
-    expect(proposalEffect(weightProposal)).toContain('Plan-Gewicht auf 10 kg');
+    expect(proposalEffect(weightProposal)).toContain('Beim nächsten Mal mit 10 kg');
     expect(proposalEffect({ field: 'target_reps', to: '10-14' })).toContain('Zielbereich auf 10-14 Wdh.');
     expect(proposalEffect({ field: 'target_seconds', to: 40 })).toContain('Zieldauer auf 40 Sek');
   });

@@ -20,6 +20,7 @@ import { cacheGet, cacheSet, isOfflineError } from '../lib/offlineCache.js';
 import { clearResumeState, loadResumeState, saveResumeState } from '../lib/workoutResume.js';
 import { applyWeekOrder, clearWeekOrder, hasWeekOrder, swapWorkout } from '../lib/weekOrder.js';
 import { lightenExercise, lightWeight } from '../lib/lightMode.js';
+import { stepForExercise } from '../lib/equipment.js';
 import { buildSetPayload } from '../components/SetRow.jsx';
 import { DEFAULT_BAND_KG, bodyweightAt, isBandAssisted } from 'shared/bandAssist';
 import ExerciseListCard, { buildCardSubline } from '../components/ExerciseListCard.jsx';
@@ -61,7 +62,7 @@ function buildInitialSets(exercise, prefillSets, resumedSets, light = false) {
   const applyLight = light && !isCooldownExercise(exercise);
   const baseWeight = exercise.default_weight_kg ?? '';
   const defaultWeight =
-    applyLight && exercise.type === 'wt' && baseWeight !== '' ? lightWeight(baseWeight) : baseWeight;
+    applyLight && exercise.type === 'wt' && baseWeight !== '' ? lightWeight(baseWeight, stepForExercise(exercise)) : baseWeight;
   const plannedSets = plannedSetCount(
     applyLight ? { ...exercise, sets: Math.max(1, (exercise.sets ?? 1) - 1) } : exercise
   );
@@ -72,7 +73,7 @@ function buildInitialSets(exercise, prefillSets, resumedSets, light = false) {
     const isResumed = resumedSets?.some((s) => s.set_number === i);
     let weight = fromSource?.weight_kg ?? defaultWeight;
     if (applyLight && !isResumed && exercise.type === 'wt' && fromSource?.weight_kg != null) {
-      weight = lightWeight(fromSource.weight_kg);
+      weight = lightWeight(fromSource.weight_kg, stepForExercise(exercise));
     }
     rows.push({
       set_number: i,

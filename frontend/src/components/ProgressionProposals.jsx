@@ -43,7 +43,17 @@ export default function ProgressionProposals({ proposals = [], deload }) {
     onError: () => showToast('Verschieben fehlgeschlagen', 'error'),
   });
 
-  const busy = applyMutation.isPending || snoozeMutation.isPending;
+  const unavailableMutation = useMutation({
+    mutationFn: (exerciseId) => api.post('/progression/unavailable', { exercise_id: exerciseId }),
+    onSuccess: (res) => {
+      refresh();
+      queryClient.invalidateQueries({ queryKey: ['unavailable-weights'] });
+      showToast(`${String(res.weight_kg).replace('.', ',')} kg gemerkt — stattdessen eine Wiederholung mehr`);
+    },
+    onError: () => showToast('Speichern fehlgeschlagen', 'error'),
+  });
+
+  const busy = applyMutation.isPending || snoozeMutation.isPending || unavailableMutation.isPending;
 
   if (!proposals.length && !deload) return null;
 
@@ -128,6 +138,16 @@ export default function ProgressionProposals({ proposals = [], deload }) {
               >
                 Nächste Woche nochmal
               </Button>
+              {p.field === 'default_weight_kg' && (
+                <Button
+                  variant="ghost"
+                  onClick={() => unavailableMutation.mutate(p.exercise_id)}
+                  disabled={busy}
+                  style={{ padding: '8px 12px', fontSize: 13, minHeight: 36 }}
+                >
+                  Hab ich nicht
+                </Button>
+              )}
             </div>
           </div>
         );

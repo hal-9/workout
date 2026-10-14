@@ -84,7 +84,8 @@ describe('Wrapped (Monats-Rückblick)', () => {
       tonnage_kg: 1440,
       tonnage_prev_kg: 640,
       top_pr: { name: 'Bankdrücken', kind: 'weight', value: 45, previous: 40 },
-      top_zone: { zone: 'brust', label: 'Brust' },
+      // Bibliothek ist im Backend geladen (über shared/equipment): Teilzone wie in der 3D-Karte.
+      top_zone: { zone: 'brust_mitte', label: 'Mittlere Brust' },
     });
   });
 
