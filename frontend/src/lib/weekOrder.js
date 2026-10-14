@@ -2,7 +2,7 @@ import { localDateKey } from './dates.js';
 import { WEEKDAYS } from './schedule.js';
 
 // Workout-Tausch für die aktuelle Woche: der gewählte Tag rückt in der Sequenz
-// vor den ersten offenen Tag. Persistiert lokal (wie weightOverrides) und
+// vor den ersten offenen Tag. Persistiert lokal und
 // verfällt automatisch mit Wochenwechsel.
 const STORAGE_KEY = 'weekOrder';
 

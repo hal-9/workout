@@ -1,4 +1,4 @@
-// Geräte-Filter des Übungs-Tauschs — gerätelokal (localStorage), wie weightOverrides.
+// Geräte-Filter des Übungs-Tauschs — gerätelokal (localStorage).
 // Wer eine Woche im Hotel nur mit Körpergewicht trainiert, will den Filter nicht
 // bei jeder Übung neu setzen.
 const STORAGE_KEY = 'swapEquipment';

@@ -9,6 +9,7 @@
     "./duration": "./duration.js",
     "./records": "./records.js",
     "./progression": "./progression.js",
+    "./nextTargets": "./nextTargets.js",
     "./muscles": "./muscles.js",
     "./setTypes": "./setTypes.js",
     "./themes": "./themes.js",

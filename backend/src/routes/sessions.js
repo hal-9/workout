@@ -551,10 +551,6 @@ export function sessionsRouter(db) {
           `INSERT INTO evaluations (session_id, model, status) VALUES (?, ?, 'pending')`
         ).run(session.id, 'gemini-2.5-flash');
       }
-
-      // Coach-Tipps gelten genau für die nächste Session mit der Übung — die ist jetzt vorbei.
-      const clearHint = db.prepare('DELETE FROM coach_hints WHERE user_id = ? AND exercise_id = ?');
-      for (const exerciseId of new Set(logs.map((l) => l.exercise_id))) clearHint.run(req.user.id, exerciseId);
     })();
 
     if (logs.length > 0) {

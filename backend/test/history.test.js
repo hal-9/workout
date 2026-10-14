@@ -134,4 +134,65 @@ describe('history', () => {
       { exercise_id: 'pu', set_number: 1, reps: 10, weight_kg: null, duration_s: null, band_count: null, band_kg: null },
     ]);
   });
+
+  describe('targets (Vorgabe fürs nächste Workout)', () => {
+    const rowPlan = (weight, reps = '8-15') => ({
+      schema_version: 1,
+      name: 'Rudern',
+      days: [
+        {
+          key: 'pull',
+          name: 'Pull',
+          focus: 'Rücken',
+          exercises: [
+            { id: 'row', name: 'Rudern', muscle: 'Rücken', type: 'wt', sets: 2, target_reps: reps, target_seconds: null, default_weight_kg: weight, cue: 'c', video_query: 'q' },
+          ],
+        },
+      ],
+    });
+
+    async function workout(sets, adaptations) {
+      const s = await request(app).post('/api/sessions').set('Cookie', cookie).send({ day_key: 'pull' });
+      const id = s.body.session_id;
+      if (adaptations) await request(app).post(`/api/sessions/${id}/adaptations`).set('Cookie', cookie).send(adaptations);
+      for (const [i, [reps, kg]] of sets.entries()) {
+        await request(app)
+          .post(`/api/sessions/${id}/sets`)
+          .set('Cookie', cookie)
+          .send({ exercise_id: 'row', set_number: i + 1, reps, weight_kg: kg, duration_s: null });
+      }
+      await request(app).post(`/api/sessions/${id}/finish`).set('Cookie', cookie);
+    }
+
+    const pairs = (res) => res.body.targets.row.map((r) => [r.reps, r.weight_kg]);
+
+    it('15 Wdh. mit 10 kg werden beim nächsten Mal 15 mit 10 kg — nicht Plan, nicht mehr Gewicht', async () => {
+      await request(app).post('/api/plan').set('Cookie', cookie).send(rowPlan(10));
+      await workout([[15, 10], [13, 10]]);
+      const res = await request(app).get('/api/history?day_key=pull').set('Cookie', cookie);
+      expect(pairs(res)).toEqual([[15, 10], [13, 10]]);
+    });
+
+    it('übernommener Gewichtsschritt gilt genau einmal, danach zählt wieder das Geloggte', async () => {
+      await request(app).post('/api/plan').set('Cookie', cookie).send(rowPlan(10));
+      await workout([[15, 10], [15, 10]]);
+      await request(app).post('/api/plan').set('Cookie', cookie).send(rowPlan(12.5));
+
+      let res = await request(app).get('/api/history?day_key=pull').set('Cookie', cookie);
+      expect(pairs(res)).toEqual([[8, 12.5], [8, 12.5]]);
+      expect(res.body.prefill.row.map((r) => r.weight_kg)).toEqual([10, 10]);
+
+      await workout([[9, 12.5], [8, 12.5]]);
+      res = await request(app).get('/api/history?day_key=pull').set('Cookie', cookie);
+      expect(pairs(res)).toEqual([[9, 12.5], [8, 12.5]]);
+    });
+
+    it('leichte Version wird nicht zur normalen Vorgabe', async () => {
+      await request(app).post('/api/plan').set('Cookie', cookie).send(rowPlan(10));
+      await workout([[15, 10], [15, 10]]);
+      await workout([[12, 7.5]], { light: true });
+      const res = await request(app).get('/api/history?day_key=pull').set('Cookie', cookie);
+      expect(pairs(res)).toEqual([[15, 10], [15, 10]]);
+    });
+  });
 });

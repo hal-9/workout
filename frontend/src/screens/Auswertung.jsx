@@ -5,10 +5,8 @@ import ReactMarkdown from 'react-markdown';
 import { api } from '../api.js';
 import { formatDuration } from 'shared/duration';
 import { formatProposalChange, proposalReason } from '../lib/progressionView.js';
-import { clearOverride } from '../lib/weightOverrides.js';
 import { shareCard, shareCardColors } from '../lib/shareCard.js';
 import CoachSummary from '../components/CoachSummary.jsx';
-import { hintKey } from '../lib/coachSummary.js';
 import Button from '../components/ui/Button.jsx';
 import Card from '../components/ui/Card.jsx';
 import Icon from '../components/ui/Icon.jsx';
@@ -37,22 +35,6 @@ export default function Auswertung() {
   const [selectedIds, setSelectedIds] = useState(null);
   const [applyState, setApplyState] = useState({ status: 'idle', error: null, count: 0 });
   const [sharing, setSharing] = useState(false);
-  const [hintStates, setHintStates] = useState({});
-
-  // Coach-Empfehlung → Zielwert für die nächste Session mit der Übung.
-  async function applyHint(rec) {
-    const key = hintKey(rec);
-    setHintStates((prev) => ({ ...prev, [key]: 'saving' }));
-    try {
-      await api.post('/coach/hints', {
-        session_id: Number(id),
-        hints: [{ exercise_id: rec.exercise_id, field: rec.field, value: rec.value }],
-      });
-      setHintStates((prev) => ({ ...prev, [key]: 'done' }));
-    } catch {
-      setHintStates((prev) => ({ ...prev, [key]: 'error' }));
-    }
-  }
 
   // Share-Card gibt es nur direkt nach dem Finish — new_records entstehen
   // ausschließlich zur Finish-Zeit und kommen über den Navigation-State mit.
@@ -156,8 +138,6 @@ export default function Auswertung() {
     setApplyState({ status: 'saving', error: null, count: 0 });
     try {
       const res = await api.post('/progression/apply', { exercise_ids: exerciseIds });
-      // Lokale Gewichts-Overrides sind jetzt überholt — der Plan führt.
-      for (const applied of res.applied ?? []) clearOverride(applied.exercise_id);
       queryClient.invalidateQueries({ queryKey: ['plan'] });
       queryClient.invalidateQueries({ queryKey: ['progression-proposals'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
@@ -207,7 +187,7 @@ export default function Auswertung() {
       {hasEvaluation && evaluation?.status === 'ok' && (
         <div style={{ marginBottom: 28 }}>
           {evaluation.summary ? (
-            <CoachSummary summary={evaluation.summary} hintStates={hintStates} onApply={applyHint} />
+            <CoachSummary summary={evaluation.summary} />
           ) : (
             // Auswertungen vor der strukturierten Version liegen nur als Markdown vor.
             <div className="kal-prose">

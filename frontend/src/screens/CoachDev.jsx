@@ -1,6 +1,4 @@
-import { useState } from 'react';
 import CoachSummary from '../components/CoachSummary.jsx';
-import { hintKey } from '../lib/coachSummary.js';
 
 // Nur DEV: Coach-Auswertung mit Beispieldaten ansehen, ohne echte Gemini-Antwort.
 const FIXTURE = {
@@ -22,16 +20,10 @@ const FIXTURE = {
 };
 
 export default function CoachDev() {
-  const [hintStates, setHintStates] = useState({});
-  function apply(rec) {
-    const key = hintKey(rec);
-    setHintStates((prev) => ({ ...prev, [key]: 'saving' }));
-    setTimeout(() => setHintStates((prev) => ({ ...prev, [key]: 'done' })), 600);
-  }
   return (
     <div className="wrap">
       <h2>Auswertung</h2>
-      <CoachSummary summary={FIXTURE} hintStates={hintStates} onApply={apply} />
+      <CoachSummary summary={FIXTURE} />
     </div>
   );
 }

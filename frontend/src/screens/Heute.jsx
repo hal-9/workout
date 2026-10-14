@@ -14,9 +14,7 @@ import ExerciseDetailSheet from '../components/ExerciseDetailSheet.jsx';
 import MuscleModal from '../components/MuscleModal.jsx';
 import { formatDuration, toInputValue } from 'shared/duration';
 import { WEEKDAYS, WEEKDAY_LABELS, projectWeek, weekProgress, todayWeekday } from '../lib/schedule.js';
-import { getOverride, setOverride } from '../lib/weightOverrides.js';
-import { applyBigNumber, plannedSetCount, withCoachHint } from '../lib/setRows.js';
-import { describeHint } from '../lib/coachSummary.js';
+import { applyBigNumber, plannedSetCount } from '../lib/setRows.js';
 import { estimateWorkoutSeconds, formatEstimate } from '../lib/workoutEstimate.js';
 import { cacheGet, cacheSet, isOfflineError } from '../lib/offlineCache.js';
 import { clearResumeState, loadResumeState, saveResumeState } from '../lib/workoutResume.js';
@@ -50,12 +48,18 @@ import {
 import { playRestEnd, playTick, unlockAudio } from '../lib/workoutSounds.js';
 import { timerPushWanted } from '../lib/push.js';
 
-function buildInitialSets(exercise, prefillSets, resumedSets, light = false, hint = null) {
+// Vorgabe fürs Workout aus /history: `targets` (letztes Mal, ggf. mit
+// übernommenem Plan-Schritt), ältere Server liefern nur `prefill`.
+function targetSetsFor(historyRes, exerciseId) {
+  return historyRes?.targets?.[exerciseId] ?? historyRes?.prefill?.[exerciseId];
+}
+
+function buildInitialSets(exercise, prefillSets, resumedSets, light = false) {
   const source = resumedSets?.length ? resumedSets : prefillSets;
   // Leichte Version: −1 Satz, −10 % Gewicht — Prefill-Länge zählt dann nicht mehr,
   // sonst würde der gestrichene Satz über die Historie wieder auftauchen.
   const applyLight = light && !isCooldownExercise(exercise);
-  const baseWeight = getOverride(exercise.id) ?? exercise.default_weight_kg ?? '';
+  const baseWeight = exercise.default_weight_kg ?? '';
   const defaultWeight =
     applyLight && exercise.type === 'wt' && baseWeight !== '' ? lightWeight(baseWeight) : baseWeight;
   const plannedSets = plannedSetCount(
@@ -70,27 +74,21 @@ function buildInitialSets(exercise, prefillSets, resumedSets, light = false, hin
     if (applyLight && !isResumed && exercise.type === 'wt' && fromSource?.weight_kg != null) {
       weight = lightWeight(fromSource.weight_kg);
     }
-    rows.push(
-      // Übernommener Coach-Tipp schlägt Historie und Plan-Vorgabe — nur für offene Sätze.
-      withCoachHint(
-        {
-          set_number: i,
-          reps: fromSource?.reps ?? '',
-          weight_kg: weight,
-          duration: toInputValue(
-            fromSource?.duration_s ?? (isCooldownExercise(exercise) ? exercise.target_seconds : null),
-            exercise.type
-          ),
-          set_type: fromSource?.set_type ?? 'working',
-          superset_group: fromSource?.superset_group ?? null,
-          // Bänder: letzter Stand aus der Historie, sonst 0 — das Ziel ist ohne.
-          band_count: fromSource?.band_count ?? '',
-          band_kg: fromSource?.band_kg ?? '',
-          logged: Boolean(isResumed),
-        },
-        hint
-      )
-    );
+    rows.push({
+      set_number: i,
+      reps: fromSource?.reps ?? '',
+      weight_kg: weight,
+      duration: toInputValue(
+        fromSource?.duration_s ?? (isCooldownExercise(exercise) ? exercise.target_seconds : null),
+        exercise.type
+      ),
+      set_type: fromSource?.set_type ?? 'working',
+      superset_group: fromSource?.superset_group ?? null,
+      // Bänder: letzter Stand aus der Historie, sonst 0 — das Ziel ist ohne.
+      band_count: fromSource?.band_count ?? '',
+      band_kg: fromSource?.band_kg ?? '',
+      logged: Boolean(isResumed),
+    });
   }
   return rows;
 }
@@ -314,7 +312,7 @@ export default function Heute() {
       const day = applyReplacements(plan.days.find((d) => d.key === dayKey), replacedList);
       const initial = {};
       for (const ex of day.exercises) {
-        initial[ex.id] = buildInitialSets(ex, historyRes.prefill[ex.id], resumedByExercise[ex.id], light, historyRes.hints?.[ex.id]);
+        initial[ex.id] = buildInitialSets(ex, targetSetsFor(historyRes, ex.id), resumedByExercise[ex.id], light);
       }
       setSetsByExercise(initial);
       setReplaced(replacedList);
@@ -506,7 +504,7 @@ export default function Heute() {
     const dayPlan = plan?.days?.find((d) => d.key === dayKey);
     setSetsByExercise(
       Object.fromEntries(
-        (dayPlan?.exercises ?? []).map((ex) => [ex.id, buildInitialSets(ex, historyRes?.prefill?.[ex.id], null, false, historyRes?.hints?.[ex.id])])
+        (dayPlan?.exercises ?? []).map((ex) => [ex.id, buildInitialSets(ex, targetSetsFor(historyRes, ex.id), null, false)])
       )
     );
     queryClient.invalidateQueries({ queryKey: ['sessions-recent'] });
@@ -535,15 +533,10 @@ export default function Heute() {
 
   // `resolve` bekommt den aktuellen Wert aus dem State-Update selbst, damit
   // schnelle Stepper-Taps nicht auf einem veralteten Render-Wert rechnen.
-  // Das Override landet im localStorage — derselbe Wert doppelt geschrieben
-  // (StrictMode ruft den Updater zweimal) ändert nichts.
   function updateWeight(exercise, index, resolve) {
     setSetsByExercise((prev) => {
       const current = Number(prev[exercise.id]?.[index]?.weight_kg) || 0;
       const next = Math.max(0, Math.round(resolve(current) * 10) / 10);
-      if (exercise.type === 'wt' && next && next !== Number(exercise.default_weight_kg)) {
-        setOverride(exercise.id, next);
-      }
       return {
         ...prev,
         [exercise.id]: prev[exercise.id].map((s, i) => (i === index ? { ...s, weight_kg: next } : s)),
@@ -609,17 +602,15 @@ export default function Heute() {
     const next = [...replaced.filter((r) => r.original_id !== originalId), { original_id: originalId, exercise: replacement }];
 
     let prefill = null;
-    let hint = null;
     try {
       const res = await api.get(
         `/history?day_key=${encodeURIComponent(dayKey)}&exercise_ids=${encodeURIComponent(replacement.id)}`
       );
-      prefill = res?.prefill?.[replacement.id] ?? null;
-      hint = res?.hints?.[replacement.id] ?? null;
+      prefill = targetSetsFor(res, replacement.id) ?? null;
     } catch {
       /* ohne Prefill weiter */
     }
-    setSetsByExercise((prev) => ({ ...prev, [replacement.id]: buildInitialSets(replacement, prefill, null, lightMode, hint) }));
+    setSetsByExercise((prev) => ({ ...prev, [replacement.id]: buildInitialSets(replacement, prefill, null, lightMode) }));
     setReplaced(next);
     setSwapTarget(null);
     if (focusExerciseId === current.id) setFocusExerciseId(replacement.id);
@@ -636,7 +627,7 @@ export default function Heute() {
       setSetsByExercise((prev) =>
         prev[original.id]
           ? prev
-          : { ...prev, [original.id]: buildInitialSets(original, historyRes?.prefill?.[original.id], null, lightMode, historyRes?.hints?.[original.id]) }
+          : { ...prev, [original.id]: buildInitialSets(original, targetSetsFor(historyRes, original.id), null, lightMode) }
       );
     }
     setReplaced(next);
@@ -711,7 +702,7 @@ export default function Heute() {
     setSetsByExercise((prev) => {
       const out = {};
       for (const ex of dayPlan?.exercises ?? []) {
-        const fresh = buildInitialSets(ex, historyRes?.prefill?.[ex.id], null, next, historyRes?.hints?.[ex.id]);
+        const fresh = buildInitialSets(ex, targetSetsFor(historyRes, ex.id), null, next);
         const byNumber = new Map(fresh.map((r) => [r.set_number, r]));
         for (const r of prev[ex.id] ?? []) {
           if (r.logged) byNumber.set(r.set_number, r);
@@ -1366,8 +1357,7 @@ export default function Heute() {
               const prefillSets = historyRes?.prefill?.[ex.id];
               const compare = compareExercise(ex, rows, prefillSets);
               const fromName = replacedNames.get(ex.id);
-              const coachHint = allLogged ? null : describeHint(historyRes?.hints?.[ex.id]);
-              const subline = [coachHint, fromName && `statt ${fromName}`, buildCardSubline(ex, rows, compare)]
+              const subline = [fromName && `statt ${fromName}`, buildCardSubline(ex, rows, compare)]
                 .filter(Boolean)
                 .join(' · ');
               return (
