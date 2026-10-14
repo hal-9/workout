@@ -471,6 +471,12 @@ main {
   animation: wordmark-drift 3.5s ease-in-out infinite alternate;
 }
 
+/* Wie bei LiLief-Einkauf/-Kino: App-Name dünner hinter der Marke. */
+.wordmark em {
+  font-style: normal;
+  font-weight: 500;
+}
+
 @keyframes wordmark-drift {
   0% { background-position: 0 0, 0% 30%, 60% 100%, 100% 0%, 0 0; }
   50% { background-position: 30px 20px, 70% 80%, 10% 20%, 40% 90%, 0 0; }

@@ -225,7 +225,7 @@ export default function Header() {
               className="wordmark"
               style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.035em', lineHeight: 1.1 }}
             >
-              LiLief
+              LiLief<em>-Workout</em>
             </strong>
           </Link>
 

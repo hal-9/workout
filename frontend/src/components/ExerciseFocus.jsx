@@ -18,7 +18,7 @@ import '../styles/focus.css';
 
 const HOLD_PREP_SECONDS = 3;
 
-const DRUM_STEP_PX = 46;
+const DRUM_STEP_PX = 40;
 const DRUM_MAX_FLICK_STEPS = 8;
 const DRUM_HINT_KEY = 'focusDrumHintSeen';
 
@@ -780,14 +780,14 @@ export default function ExerciseFocus({
           style={{
             // Wächst in den freien Platz bis zu den Buttons, Zahlen bleiben mittig.
             flex: '1 1 auto',
-            minHeight: 168,
+            minHeight: 132,
             maxHeight: 340,
             display: 'grid',
             gridTemplateColumns: sideCell ? '1fr 1fr' : '1fr',
             alignItems: 'center',
             marginTop: 16,
             borderRadius: 26,
-            padding: '18px 0',
+            padding: '10px 0',
             textAlign: 'center',
           }}
         >
@@ -968,12 +968,15 @@ function RestPanel({ timerState, seconds, nextLabel, onChange, onSkip }) {
           <p style={{ margin: 0, fontSize: 15, fontWeight: 500, color: 'var(--muted)' }}>{paused ? 'Angehalten' : 'Pause'}</p>
           <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--muted)' }}>{nextLabel}</p>
         </div>
-        <button type="button" onClick={() => onChange(extendRestTimer(timerState, 15))} className="btn btn-secondary" style={{ ...pillStyle, flex: 'none', height: 48 }}>
-          +15 s
-        </button>
-        <button type="button" onClick={onSkip} className="btn btn-secondary" style={{ ...pillStyle, flex: 'none', height: 48 }}>
-          Weiter
-        </button>
+        {/* Nebeneinander statt gestapelt: spart Höhe, damit Fokus ohne Scrollen passt. */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button type="button" onClick={() => onChange(extendRestTimer(timerState, 15))} className="btn btn-secondary" style={{ ...pillStyle, padding: 0, height: 48 }}>
+            +15 s
+          </button>
+          <button type="button" onClick={onSkip} className="btn btn-secondary" style={{ ...pillStyle, padding: 0, height: 48 }}>
+            Weiter
+          </button>
+        </div>
       </div>
     </div>
   );
