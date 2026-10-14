@@ -13,6 +13,7 @@ import {
 import ExerciseChart from '../components/ExerciseChart.jsx';
 import RecoveryMap from '../components/RecoveryMap.jsx';
 import TrainingTree from '../components/TrainingTree.jsx';
+import WrappedStory, { monthLabel } from '../components/WrappedStory.jsx';
 import ProgressSummary, { deNum } from '../components/ProgressSummary.jsx';
 import PageHeader from '../components/ui/PageHeader.jsx';
 import Button from '../components/ui/Button.jsx';
@@ -117,6 +118,7 @@ export default function Fortschritt() {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [showAllExercises, setShowAllExercises] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [wrappedOpen, setWrappedOpen] = useState(false);
   // Entfernte Freunde verschwinden aus der Liste — dann zurueck auf die eigene Ansicht.
   if (selectedUserId !== null && others && !others.some((u) => u.id === selectedUserId)) {
     setSelectedUserId(null);
@@ -179,6 +181,12 @@ export default function Fortschritt() {
     queryFn: () => api.get('/stats/tree'),
     retry: false,
     enabled: !viewPartner && treeOn,
+  });
+  const { data: wrappedLatest } = useQuery({
+    queryKey: ['wrapped-latest'],
+    queryFn: () => api.get('/wrapped/latest'),
+    retry: false,
+    enabled: !viewPartner,
   });
   // Erholungs-Karte braucht nur die letzten Tage.
   const heatmapFrom = mondayStart(1);
@@ -372,6 +380,35 @@ export default function Fortschritt() {
             proposals={progression?.proposals ?? (progression === undefined ? null : [])}
           />
           {heatmapRange && <RecoveryMap sessions={heatmapRange.sessions} />}
+          {wrappedLatest?.available && (
+            <button
+              type="button"
+              onClick={() => setWrappedOpen(true)}
+              className="btn btn-secondary"
+              style={{
+                width: '100%',
+                background: 'var(--bg)',
+                border: 'none',
+                borderRadius: 20,
+                minHeight: 56,
+                padding: '0 16px',
+                marginBottom: 16,
+                color: 'var(--text)',
+                fontSize: 15,
+                fontWeight: 600,
+                textAlign: 'left',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              <Icon name="gift" size={20} style={{ color: 'var(--primary)' }} />
+              <span style={{ flex: 1 }}>Rückblick {monthLabel(wrappedLatest.month)}</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--muted)' }}>Ansehen</span>
+              <Icon name="chevronRight" size={18} style={{ color: 'var(--muted)' }} />
+            </button>
+          )}
           {treeOn && treeData && <TrainingTree weeks={treeData.weeks} />}
           <Button
             variant="secondary"
@@ -387,6 +424,10 @@ export default function Fortschritt() {
       )}
 
       {viewPartner && exerciseSection}
+
+      {wrappedOpen && wrappedLatest?.month && (
+        <WrappedStory month={wrappedLatest.month} onClose={() => setWrappedOpen(false)} />
+      )}
     </div>
   );
 }
