@@ -16,7 +16,7 @@ const WEEKDAY_NAMES = {
 
 const dayLetter = (index) => String.fromCharCode(65 + index);
 
-// Kleiner eingelassener Kiesel mit dem Tagesbuchstaben — gleiche Form wie der Haken auf „Heute".
+// Kleiner erhabener Kreis mit dem Tagesbuchstaben — gleiche Form wie der Haken auf „Heute".
 export function DayPebble({ children, active = false }) {
   return (
     <span
@@ -27,9 +27,9 @@ export function DayPebble({ children, active = false }) {
         flexShrink: 0,
         display: 'grid',
         placeItems: 'center',
-        borderRadius: '52% 48% 50% 50% / 58% 55% 45% 42%',
+        borderRadius: '50%',
         background: 'var(--bg)',
-        boxShadow: 'var(--shadow-inset-sm)',
+        boxShadow: 'var(--shadow-raised)',
         color: active ? 'var(--primary)' : 'var(--text)',
         fontSize: 15,
         fontWeight: 700,
@@ -72,7 +72,7 @@ export default function PlanOverview({ plan, onEdit, onNewPlan }) {
 
       {/* Wochenstreifen: Wochentag + Buchstabe des Trainingstags; Name steht in den Karten darunter. */}
       <div
-        className="neu-inset"
+        className="neu-raised"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
@@ -127,7 +127,7 @@ export default function PlanOverview({ plan, onEdit, onNewPlan }) {
                 border: 'none',
                 borderRadius: 16,
                 background: 'var(--bg)',
-                boxShadow: isOpen ? 'var(--shadow-inset-sm)' : 'var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim)',
+                boxShadow: isOpen ? 'var(--shadow-selected)' : 'var(--shadow-raised)',
                 color: 'var(--text)',
                 cursor: 'pointer',
               }}

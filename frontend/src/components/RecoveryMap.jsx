@@ -111,7 +111,7 @@ export default function RecoveryMap({ sessions }) {
               borderRadius: 16,
               overflow: 'hidden',
               background: 'var(--bg)',
-              boxShadow: 'var(--shadow-inset)',
+              boxShadow: 'var(--shadow-card)',
             }}
           >
             <Suspense

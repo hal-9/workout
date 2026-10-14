@@ -58,7 +58,7 @@ export default function MaxTestsSection() {
         style={{
           display: 'flex',
           background: 'var(--bg)',
-          boxShadow: 'var(--shadow-inset-sm)',
+          boxShadow: 'var(--shadow-raised)',
           borderRadius: 16,
           padding: '10px 0',
           marginBottom: 16,

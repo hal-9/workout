@@ -123,7 +123,7 @@ export default function PushSettingsDialog({ open, onClose }) {
                 borderRadius: 999,
                 flexShrink: 0,
                 background: enabled ? 'var(--primary)' : 'var(--bg)',
-                boxShadow: 'var(--shadow-inset-sm)',
+                boxShadow: 'var(--shadow-raised)',
               }}
               className="ui-knob"
             >
@@ -148,7 +148,7 @@ export default function PushSettingsDialog({ open, onClose }) {
               borderRadius: 24,
               padding: '4px 14px',
               background: 'var(--bg)',
-              boxShadow: 'var(--shadow-inset)',
+              boxShadow: 'var(--shadow-card)',
               opacity: enabled ? 1 : 0.6,
             }}
           >

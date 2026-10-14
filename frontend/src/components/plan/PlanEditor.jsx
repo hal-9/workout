@@ -17,7 +17,7 @@ const inputStyle = {
   minHeight: 44,
   background: 'var(--bg)',
   border: 'none',
-  boxShadow: 'var(--shadow-inset-sm)',
+  boxShadow: 'var(--shadow-raised)',
   color: 'var(--text)',
   borderRadius: 14,
   padding: '10px 14px',
@@ -118,7 +118,7 @@ export default function PlanEditor({
       </div>
 
       {recoverable && !isDirty && (
-        <div className="neu-inset" style={{ borderRadius: 20, padding: 16, marginBottom: 16 }}>
+        <div className="neu-raised" style={{ borderRadius: 20, padding: 16, marginBottom: 16 }}>
           <div style={{ fontSize: 14, lineHeight: 1.45, marginBottom: 12 }}>
             Nicht gespeicherter Entwurf von {new Date(recoverable.saved_at).toLocaleString('de-DE')}.
           </div>

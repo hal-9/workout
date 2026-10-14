@@ -229,7 +229,7 @@ export default function Auswertung() {
       {applyState.status === 'done' && (
         <div
           role="status"
-          className="neu-inset"
+          className="neu-raised"
           style={{
             display: 'flex',
             gap: 10,

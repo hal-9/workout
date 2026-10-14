@@ -5,7 +5,7 @@ import Button from '../ui/Button.jsx';
 import Card from '../ui/Card.jsx';
 import Icon from '../ui/Icon.jsx';
 
-// Ausrüstungs-Chips: Behälter eingelassen, gewählt erhaben in --text, sonst flach gedämpft.
+// Ausrüstungs-Chips: alle erhaben, gewählt mit Primär-Ring.
 const chipStyle = (active) => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -13,8 +13,8 @@ const chipStyle = (active) => ({
   minHeight: 44,
   background: 'var(--bg)',
   border: 'none',
-  boxShadow: active ? 'var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim)' : 'none',
-  color: active ? 'var(--text)' : 'var(--muted)',
+  boxShadow: active ? 'var(--shadow-selected)' : 'var(--shadow-raised)',
+  color: active ? 'var(--primary)' : 'var(--text)',
   borderRadius: 999,
   padding: '8px 14px',
   fontSize: 14,
@@ -27,7 +27,7 @@ const fieldStyle = {
   minHeight: 44,
   background: 'var(--bg)',
   border: 'none',
-  boxShadow: 'var(--shadow-inset-sm)',
+  boxShadow: 'var(--shadow-raised)',
   color: 'var(--text)',
   borderRadius: 14,
   padding: '10px 14px',
@@ -93,7 +93,7 @@ export default function PlanPromptExport() {
       </select>
 
       <span style={labelStyle}>Ausrüstung</span>
-      <div className="neu-inset" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: 6, borderRadius: 24 }}>
+      <div className="neu-raised" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: 6, borderRadius: 24 }}>
         {EQUIPMENT.map((item) => (
           <button
             key={item.key}
@@ -182,7 +182,7 @@ export default function PlanPromptExport() {
             marginTop: 8,
             background: 'var(--bg)',
             border: 'none',
-            boxShadow: 'var(--shadow-inset-sm)',
+            boxShadow: 'var(--shadow-raised)',
             color: 'var(--text)',
             borderRadius: 14,
             padding: '12px 14px',

@@ -22,7 +22,7 @@ const daysBadgeStyle = {
   fontWeight: 500,
   color: 'var(--muted)',
   background: 'var(--bg)',
-  boxShadow: 'var(--shadow-inset-sm)',
+  boxShadow: 'var(--shadow-raised)',
   padding: '5px 10px',
   borderRadius: 999,
   whiteSpace: 'nowrap',

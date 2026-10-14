@@ -17,15 +17,15 @@ const legendDotStyle = (color) => ({
   transform: 'translateY(1px)',
 });
 
-// Segment: Mulde als Schiene, gewählte Seite erhaben.
+// Segment: Schiene erhaben, gewählte Seite mit Primär-Ring.
 const viewBtnStyle = (active) => ({
   flex: 1,
   minHeight: 44,
   border: 'none',
   borderRadius: 999,
   background: 'var(--bg)',
-  boxShadow: active ? 'var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim)' : 'none',
-  color: active ? 'var(--text)' : 'var(--muted)',
+  boxShadow: active ? 'var(--shadow-selected)' : 'none',
+  color: active ? 'var(--primary)' : 'var(--muted)',
   fontSize: 14,
   fontWeight: active ? 600 : 500,
   cursor: 'pointer',
@@ -123,7 +123,7 @@ export default function MuscleModal({ exercise, onClose }) {
             margin: '16px 0 12px',
             borderRadius: 999,
             background: 'var(--bg)',
-            boxShadow: 'var(--shadow-inset-sm)',
+            boxShadow: 'var(--shadow-raised)',
           }}
         >
           <button type="button" className="btn" aria-pressed={view === 'front'} onClick={() => setView('front')} style={viewBtnStyle(view === 'front')}>
@@ -142,7 +142,7 @@ export default function MuscleModal({ exercise, onClose }) {
             borderRadius: 24,
             overflow: 'hidden',
             background: 'var(--bg)',
-            boxShadow: 'var(--shadow-inset)',
+            boxShadow: 'var(--shadow-card)',
           }}
         >
           <Suspense

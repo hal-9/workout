@@ -9,7 +9,7 @@ export default function Skeleton({ width = '100%', height = 16, style }) {
         height,
         borderRadius: 10,
         background: 'var(--bg)',
-        boxShadow: 'var(--shadow-inset-sm)',
+        boxShadow: 'var(--shadow-raised)',
         ...style,
       }}
     />

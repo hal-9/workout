@@ -7,7 +7,7 @@
   padding: 10px 14px;
   border-radius: 24px;
   background: var(--bg);
-  box-shadow: var(--shadow-inset);
+  box-shadow: var(--shadow-card), inset 1px 1px 0 var(--neu-rim);
 }
 
 .kal-tray > li + li {

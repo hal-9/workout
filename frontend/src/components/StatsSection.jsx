@@ -66,7 +66,7 @@ export default function StatsSection({ stats }) {
                     height: 10,
                     borderRadius: 5,
                     background: 'var(--bg)',
-                    boxShadow: 'var(--shadow-inset-sm)',
+                    boxShadow: 'var(--shadow-raised)',
                     overflow: 'hidden',
                   }}
                 >

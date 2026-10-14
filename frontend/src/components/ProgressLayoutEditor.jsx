@@ -48,7 +48,7 @@ export default function ProgressLayoutEditor({ cards, hidden, onChange }) {
     <div
       style={{
         background: 'var(--bg)',
-        boxShadow: 'var(--shadow-inset)',
+        boxShadow: 'var(--shadow-card)',
         borderRadius: 24,
         padding: '4px 8px',
         marginBottom: 16,

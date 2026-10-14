@@ -3,14 +3,14 @@ import { formatDuration } from 'shared/duration';
 import { libraryEntries, libraryGroups, searchLibrary } from '../../lib/exerciseLibrary.js';
 import Icon from '../ui/Icon.jsx';
 
-// Gewählt = erhaben in --text, sonst flach gedämpft — der Behälter ist eingelassen.
+// Alle erhaben, gewählt mit Primär-Ring.
 const chipStyle = (active) => ({
   flex: '0 0 auto',
   minHeight: 44,
   background: 'var(--bg)',
   border: 'none',
-  boxShadow: active ? 'var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim)' : 'none',
-  color: active ? 'var(--text)' : 'var(--muted)',
+  boxShadow: active ? 'var(--shadow-selected)' : 'var(--shadow-raised)',
+  color: active ? 'var(--primary)' : 'var(--text)',
   borderRadius: 999,
   padding: '8px 14px',
   fontSize: 14,
@@ -68,7 +68,7 @@ export default function ExerciseLibraryPicker({ onPick, onClose, usedNames = new
           minHeight: 44,
           background: 'var(--bg)',
           border: 'none',
-          boxShadow: 'var(--shadow-inset-sm)',
+          boxShadow: 'var(--shadow-raised)',
           color: 'var(--text)',
           borderRadius: 14,
           padding: '10px 14px',
@@ -77,10 +77,7 @@ export default function ExerciseLibraryPicker({ onPick, onClose, usedNames = new
         }}
       />
 
-      <div
-        className="neu-inset"
-        style={{ display: 'flex', gap: 4, overflowX: 'auto', margin: '12px 0', padding: 4, borderRadius: 999 }}
-      >
+      <div className="chip-rail" style={{ marginBlock: 0 }}>
         <button type="button" onClick={() => setGroup(null)} aria-pressed={group === null} className="btn" style={chipStyle(group === null)}>
           Alle
         </button>

@@ -16,7 +16,7 @@ function WeekStrip({ weeks }) {
             height: 18,
             borderRadius: 3,
             background: 'var(--bg)',
-            boxShadow: 'var(--shadow-inset-sm)',
+            boxShadow: 'var(--shadow-raised)',
             display: 'flex',
             alignItems: 'flex-end',
             overflow: 'hidden',

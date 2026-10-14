@@ -59,7 +59,7 @@ export default function ExerciseListCard({ exercise, rows, subline, onOpen, inde
           style={{
             width: 24,
             height: 22,
-            borderRadius: '52% 48% 50% 50% / 58% 55% 45% 42%',
+            borderRadius: '50%',
             background: 'var(--primary)',
             color: 'var(--on-primary)',
             display: 'grid',

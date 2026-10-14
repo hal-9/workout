@@ -1,6 +1,7 @@
 /* ---- Theme: „Therme" in Malve ----
    Ein Material (Malvenstein), zwei Modi. Neumorphismus nach Rolle:
-   erhaben = drückbar, eingelassen = Wert/Eingabe/erledigt, flach = Text.
+   Alles liegt erhaben; eingedrückt nur, solange der Finger drauf ist.
+   Gewählt = erhaben + Primär-Ring, flach = Text.
    Die Mesh-Farben (--m*) tragen nur Wortmarke und Hauptbuttons. */
 
 :root {
@@ -27,8 +28,11 @@
   --neu-rim: rgba(255, 255, 255, 0.7);
   --shadow-card: -6px -6px 14px var(--neu-hi), 6px 6px 14px var(--neu-lo);
   --shadow-raised-sm: -3px -3px 7px var(--neu-hi), 3px 3px 7px var(--neu-lo);
-  --shadow-inset: inset 4px 4px 9px var(--neu-lo), inset -4px -4px 9px var(--neu-hi);
-  --shadow-inset-sm: inset 2px 2px 5px var(--neu-lo), inset -2px -2px 5px var(--neu-hi);
+  --shadow-raised: var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim);
+  --shadow-selected: var(--shadow-raised-sm), inset 0 0 0 1.75px var(--primary);
+  /* Nur für :active — nie als Ruhezustand. */
+  --shadow-press: inset 4px 4px 9px var(--neu-lo), inset -4px -4px 9px var(--neu-hi);
+  --shadow-press-sm: inset 2px 2px 5px var(--neu-lo), inset -2px -2px 5px var(--neu-hi);
   --glass: var(--bg);
   --glass-border: transparent;
   --focus-bg: var(--bg);
@@ -309,12 +313,15 @@ main {
   }
 }
 
-/* ---- Chip-Karussell (Filterleiste in Sheets) ---- */
+/* ---- Chip-Karussell (Filterleiste in Sheets) ----
+   Scroll-Container schneiden Schatten ab: 12px Luft innen, außen wieder abgezogen. */
 
 .chip-rail {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
+  padding: 12px;
+  margin: -12px;
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
@@ -338,11 +345,6 @@ main {
   box-shadow: var(--shadow-card), inset 1px 1px 0 var(--neu-rim);
 }
 
-.neu-inset {
-  background: var(--bg);
-  box-shadow: var(--shadow-inset);
-}
-
 /* Drückbar: Feedback schon beim Aufsetzen des Fingers (:active), nicht erst beim Loslassen. */
 .btn {
   position: relative;
@@ -363,7 +365,7 @@ main {
 }
 
 .btn-secondary:active:not(:disabled) {
-  box-shadow: var(--shadow-inset-sm);
+  box-shadow: var(--shadow-press-sm);
 }
 
 /* ---- Mesh: driftender, körniger Verlauf (Hauptbuttons) ---- */

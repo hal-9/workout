@@ -97,10 +97,9 @@ function buildInitialSets(exercise, prefillSets, resumedSets, light = false, hin
 
 const RPE_VALUES = [6, 7, 8, 9, 10];
 
-// Therme-Bausteine: leicht unregelmäßige Kiesel, erhabene Rundknöpfe.
-const PEBBLE_RADII = ['52% 48% 50% 50% / 58% 55% 45% 42%', '48% 52% 46% 54% / 52% 58% 42% 48%'];
-const PEBBLE_INSET = 'inset 1px 1px 2px var(--neu-lo), inset -1px -1px 2px var(--neu-hi)';
-const RAISED_SM = 'var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim)';
+// Winzige Punkte brauchen einen kleineren Schatten als --shadow-raised.
+const DOT_RAISED = '-1px -1px 2px var(--neu-hi), 1px 1px 2px var(--neu-lo)';
+const RAISED_SM = 'var(--shadow-raised)';
 const ROUND_ICON_BTN = {
   flexShrink: 0,
   width: 44,
@@ -1031,7 +1030,7 @@ export default function Heute() {
               role="img"
               aria-label={`${progress.done} von ${progress.total} Workouts diese Woche erledigt`}
               title="Workouts diese Woche"
-              className="neu-inset"
+              className="neu-raised"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1049,11 +1048,11 @@ export default function Heute() {
                     <span
                       key={d.key}
                       style={{
-                        width: 9,
+                        width: 8,
                         height: 8,
-                        borderRadius: PEBBLE_RADII[i % 2],
+                        borderRadius: '50%',
                         background: filled ? 'var(--primary)' : 'var(--bg)',
-                        boxShadow: filled ? 'none' : PEBBLE_INSET,
+                        boxShadow: filled ? 'none' : DOT_RAISED,
                       }}
                     />
                   );
@@ -1152,7 +1151,7 @@ export default function Heute() {
                   gap: 6,
                   padding: 5,
                   borderRadius: 8,
-                  boxShadow: 'var(--shadow-inset-sm)',
+                  boxShadow: 'var(--shadow-raised)',
                 }}
               >
                 {mainExercises.map((ex) => {
@@ -1302,7 +1301,7 @@ export default function Heute() {
 
       {lightMode && (
       <div
-        className="neu-inset"
+        className="neu-raised"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -1407,7 +1406,7 @@ export default function Heute() {
                               borderRadius: '50%',
                               border: 'none',
                               background: active ? 'var(--primary)' : 'var(--bg)',
-                              boxShadow: active ? 'var(--shadow-inset-sm)' : RAISED_SM,
+                              boxShadow: RAISED_SM,
                               color: active ? 'var(--on-primary)' : 'var(--text)',
                               fontSize: 14,
                               fontWeight: 600,
@@ -1478,14 +1477,13 @@ export default function Heute() {
                           aria-hidden="true"
                           style={{
                             width: 22,
-                            height: 20,
-                            marginTop: 1,
-                            borderRadius: PEBBLE_RADII[0],
+                            height: 22,
+                            borderRadius: '50%',
                             display: 'grid',
                             placeItems: 'center',
                             flexShrink: 0,
                             background: done ? 'var(--primary)' : 'var(--bg)',
-                            boxShadow: done ? 'none' : 'var(--shadow-inset-sm)',
+                            boxShadow: done ? 'none' : 'var(--shadow-raised)',
                             color: 'var(--on-primary)',
                           }}
                         >
@@ -1533,7 +1531,7 @@ export default function Heute() {
               rows={2}
               maxLength={1000}
               placeholder="Notiz zur Session (optional) — z. B. Schlaf, Schmerzen, Tagesform"
-              className="neu-inset"
+              className="neu-raised"
               style={{
                 display: 'block',
                 width: '100%',
@@ -1604,7 +1602,7 @@ export default function Heute() {
               placeItems: 'center',
               flexShrink: 0,
               background: 'var(--bg)',
-              boxShadow: 'var(--shadow-inset-sm)',
+              boxShadow: 'var(--shadow-raised)',
               color: 'var(--primary)',
             }}
           >
@@ -1697,8 +1695,8 @@ export default function Heute() {
                   textAlign: 'left',
                   background: 'var(--bg)',
                   border: 'none',
-                  // Gewählt = eingedrückt, alle anderen erhaben (drückbar).
-                  boxShadow: selected ? 'var(--shadow-inset-sm)' : RAISED_SM,
+                  // Alle erhaben, gewählt mit Primär-Ring.
+                  boxShadow: selected ? 'var(--shadow-selected)' : RAISED_SM,
                   borderRadius: 16,
                   padding: '12px 14px',
                   minHeight: 44,

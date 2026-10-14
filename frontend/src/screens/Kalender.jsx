@@ -99,7 +99,7 @@ export default function Kalender() {
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em' }}>Kalender</h1>
           {progress.total > 0 && (
             <div
-              className="neu-inset"
+              className="neu-raised"
               style={{
                 borderRadius: 999,
                 padding: '8px 12px',
@@ -184,7 +184,7 @@ export default function Kalender() {
                   margin: '6px -4px',
                   padding: '8px 8px',
                   borderRadius: 16,
-                  boxShadow: 'var(--shadow-inset-sm)',
+                  boxShadow: 'var(--shadow-raised)',
                 }),
               }}
             >
@@ -247,7 +247,7 @@ export default function Kalender() {
                         padding: '7px 12px 7px 9px',
                         borderRadius: 999,
                         background: 'var(--bg)',
-                        boxShadow: 'var(--shadow-inset-sm)',
+                        boxShadow: 'var(--shadow-raised)',
                         color: 'var(--text)',
                         fontSize: 13,
                         fontWeight: 500,

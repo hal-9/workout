@@ -12,7 +12,7 @@ const inputStyle = {
   minHeight: 44,
   background: 'var(--bg)',
   border: 'none',
-  boxShadow: 'var(--shadow-inset-sm)',
+  boxShadow: 'var(--shadow-raised)',
   color: 'var(--text)',
   borderRadius: 14,
   padding: '10px 14px',

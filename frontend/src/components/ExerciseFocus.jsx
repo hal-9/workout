@@ -388,7 +388,7 @@ export default function ExerciseFocus({
         pressRef.current.fired = true;
         navigator.vibrate?.(10);
         setSetMenu({ index: i, x: peb.offsetLeft + peb.offsetWidth / 2 });
-      }, 450),
+      }, 400),
     };
   }
 
@@ -628,7 +628,7 @@ export default function ExerciseFocus({
             padding: 5,
             marginTop: 6,
             borderRadius: 8,
-            boxShadow: 'var(--shadow-inset-sm)',
+            boxShadow: 'var(--shadow-raised)',
           }}
         >
           {segments.map((status, i) => (
@@ -686,7 +686,8 @@ export default function ExerciseFocus({
           ref={pebRowRef}
           role="group"
           aria-label="Sätze"
-          style={{ position: 'relative', display: 'flex', gap: crowded ? 8 : 12, marginTop: 22 }}
+          // iOS: sonst startet der Langdruck eine Textauswahl statt des Lösch-Tooltips.
+          style={{ position: 'relative', display: 'flex', gap: crowded ? 8 : 12, marginTop: 22, WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
         >
           {rows.map((row, i) => {
             const state = row.logged ? 'done' : i === activeIndex ? 'cur' : 'open';
@@ -762,7 +763,7 @@ export default function ExerciseFocus({
               style={{
                 padding: '6px 16px',
                 borderRadius: 999,
-                boxShadow: 'var(--shadow-inset-sm)',
+                boxShadow: 'var(--shadow-raised)',
                 fontSize: 14,
                 fontWeight: 600,
                 color: reviewing ? 'var(--success)' : 'var(--primary)',
@@ -775,7 +776,7 @@ export default function ExerciseFocus({
 
         <div
           ref={editAreaRef}
-          className="neu-inset fx-well"
+          className="neu-raised fx-well"
           style={{
             // Wächst in den freien Platz bis zu den Buttons, Zahlen bleiben mittig.
             flex: '1 1 auto',
@@ -930,7 +931,7 @@ function BodyweightPrompt({ onSave }) {
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && save()}
-        style={{ width: 64, padding: '8px 10px', borderRadius: 12, border: 'none', background: 'var(--bg)', boxShadow: 'var(--shadow-inset-sm)', color: 'var(--text)', fontSize: 15, textAlign: 'center' }}
+        style={{ width: 64, padding: '8px 10px', borderRadius: 12, border: 'none', background: 'var(--bg)', boxShadow: 'var(--shadow-raised)', color: 'var(--text)', fontSize: 15, textAlign: 'center' }}
       />
       <button type="button" onClick={save} disabled={!(kg > 0) || saving} style={{ ...linkStyle, minHeight: 44, fontWeight: 600 }}>
         Speichern
@@ -939,7 +940,7 @@ function BodyweightPrompt({ onSave }) {
   );
 }
 
-// Pause als Becken: eingelassene Mulde, der Ring läuft ab. Antippen hält an
+// Pause als Becken: erhabener Knopf, der Ring läuft ab. Antippen hält an
 // bzw. setzt fort; daneben +15 s und Weiter.
 function RestPanel({ timerState, seconds, nextLabel, onChange, onSkip }) {
   const left = seconds ?? remainingSeconds(timerState);

@@ -78,12 +78,12 @@ export default function BottomNav() {
             to={tab.to}
             aria-current={undefined}
             style={({ isActive }) => ({
-              // Aktiver Tab ist als Ganzes eingelassen — Icon und Label in einer Mulde.
+              // Aktiver Tab liegt als Ganzes erhaben — Icon und Label auf einem Knopf.
               margin: '0 6px',
               background: 'none',
               border: 'none',
               borderRadius: 18,
-              boxShadow: isActive ? 'var(--shadow-inset-sm)' : 'none',
+              boxShadow: isActive ? 'var(--shadow-raised)' : 'none',
               transition: 'box-shadow 200ms var(--ease)',
               color: isActive ? 'var(--primary)' : 'var(--muted)',
               display: 'flex',

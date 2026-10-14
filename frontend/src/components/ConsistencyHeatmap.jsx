@@ -49,7 +49,7 @@ export default function ConsistencyHeatmap({ data }) {
               minWidth: 6,
               borderRadius: 6,
               background: 'var(--bg)',
-              boxShadow: 'var(--shadow-inset-sm)',
+              boxShadow: 'var(--shadow-raised)',
               display: 'flex',
               alignItems: 'flex-end',
               overflow: 'hidden',

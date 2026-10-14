@@ -40,7 +40,7 @@ export default function CoachSummary({ summary, hintStates = {}, onApply }) {
         <p style={{ margin: '10px 0 0', fontSize: 16, lineHeight: 1.55, maxWidth: '65ch' }}>{verdict}</p>
         {note_reply && (
           <p
-            className="neu-inset"
+            className="neu-raised"
             style={{
               margin: '14px 0 0',
               borderRadius: 14,
@@ -75,7 +75,7 @@ export default function CoachSummary({ summary, hintStates = {}, onApply }) {
                       height: 28,
                       borderRadius: 10,
                       background: 'var(--bg)',
-                      boxShadow: 'var(--shadow-inset-sm)',
+                      boxShadow: 'var(--shadow-raised)',
                       color: view.color,
                       display: 'flex',
                       alignItems: 'center',

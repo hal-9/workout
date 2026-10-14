@@ -40,7 +40,7 @@ export const tooltipProps = {
 // Mulde, in der ein Diagramm liegt.
 export const chartWellStyle = {
   background: 'var(--bg)',
-  boxShadow: 'var(--shadow-inset-sm)',
+  boxShadow: 'var(--shadow-raised)',
   borderRadius: 14,
   padding: '12px 8px 6px 0',
 };

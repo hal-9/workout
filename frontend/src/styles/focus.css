@@ -15,7 +15,8 @@
   color: var(--primary);
 }
 
-/* Kiesel: erhaben (::before) = offen, eingelassen + gefüllt (::after) = erledigt */
+/* Satz-Pillen: immer erhaben (::before); erledigt legt Mesh + Lichtkante (::after) drauf.
+   Eingedrückt nur beim Antippen. */
 .fx-peb {
   position: relative;
   isolation: isolate;
@@ -26,7 +27,7 @@
   padding: 0 4px;
   border: 0;
   background: none;
-  border-radius: 52% 48% 50% 50% / 58% 55% 45% 42%;
+  border-radius: 999px;
   font: 600 15px/1 var(--font-display);
   color: var(--muted);
   white-space: nowrap;
@@ -35,10 +36,6 @@
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
-}
-
-.fx-peb:nth-child(2n) {
-  border-radius: 48% 52% 46% 54% / 52% 58% 42% 48%;
 }
 
 .fx-peb::before,
@@ -53,13 +50,21 @@
 }
 
 .fx-peb::before {
-  box-shadow: var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim);
+  box-shadow: var(--shadow-raised);
 }
 
-/* Füllung kommt vom Mesh darunter; ::after legt nur die Mulden-Schatten drauf. */
+/* Füllung kommt vom Mesh darunter; ::after legt die Lichtkante wie beim Hauptbutton drauf. */
 .fx-peb::after {
-  box-shadow: inset 3px 3px 6px rgba(20, 6, 20, 0.35), inset -2px -2px 5px rgba(255, 255, 255, 0.18);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.3), inset -1px -1px 0 rgba(20, 6, 40, 0.25);
   opacity: 0;
+}
+
+.fx-peb.is-cur:active::before {
+  box-shadow: var(--shadow-press-sm), inset 0 0 0 1.75px var(--primary);
+}
+
+.fx-peb.is-done:active::after {
+  box-shadow: inset 3px 3px 6px rgba(20, 6, 40, 0.5), inset -2px -2px 5px rgba(255, 255, 255, 0.18);
 }
 
 .fx-peb.is-ghost {
@@ -149,15 +154,11 @@
   animation: fx-fadeonly 160ms ease-out;
 }
 
-.fx-peb.is-done::before {
-  opacity: 0;
-}
-
 .fx-peb.is-done::after {
   opacity: 1;
 }
 
-/* Angesehener erledigter Satz: Ring um den Kiesel */
+/* Angesehener erledigter Satz: Ring um die Pille */
 .fx-peb.is-viewed {
   outline: 2px solid var(--text);
   outline-offset: 3px;
@@ -284,7 +285,7 @@
   border: 0;
   padding: 0;
   background: var(--bg);
-  box-shadow: var(--shadow-inset);
+  box-shadow: var(--shadow-card), inset 1px 1px 0 var(--neu-rim);
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -341,7 +342,7 @@
 
 /* Wertemulde: ein Hauch vom Hauptbutton-Mesh, ruhend, mit Korn —
    hebt die Zahlen ab, ohne mit dem Button darunter zu konkurrieren. */
-.neu-inset.fx-well {
+.neu-raised.fx-well {
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -364,7 +365,7 @@
   pointer-events: none;
 }
 
-[data-theme='dark'] .neu-inset.fx-well {
+[data-theme='dark'] .neu-raised.fx-well {
   background:
     radial-gradient(70% 90% at 12% 10%, color-mix(in srgb, var(--m2) 22%, transparent), transparent 70%),
     radial-gradient(60% 80% at 92% 95%, color-mix(in srgb, var(--m3) 18%, transparent), transparent 70%),
@@ -379,7 +380,7 @@
 }
 
 .fx-peb.fx-peb-add:active::before {
-  box-shadow: var(--shadow-inset-sm);
+  box-shadow: var(--shadow-press-sm);
 }
 
 /* Satz / Ziel / Letztes Mal als ruhige Liste unter der Mulde. */

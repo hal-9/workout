@@ -16,7 +16,7 @@ export const fieldInputStyle = {
   width: '100%',
   minHeight: 44,
   background: 'var(--bg)',
-  boxShadow: 'var(--shadow-inset-sm)',
+  boxShadow: 'var(--shadow-raised)',
   border: 'none',
   color: 'var(--text)',
   borderRadius: 14,

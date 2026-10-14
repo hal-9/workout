@@ -18,7 +18,7 @@ const inputStyle = {
   minHeight: 44,
   background: 'var(--bg)',
   border: 'none',
-  boxShadow: 'var(--shadow-inset-sm)',
+  boxShadow: 'var(--shadow-raised)',
   color: 'var(--text)',
   borderRadius: 14,
   padding: '10px 14px',
@@ -248,11 +248,11 @@ export default function DayEditor({
             type="button"
             onClick={() => setLibraryOpen((open) => !open)}
             aria-expanded={libraryOpen}
-            className={libraryOpen ? 'btn' : 'btn btn-secondary'}
+            className="btn btn-secondary"
             style={{
               ...smallBtnStyle,
               flex: '1 1 100%',
-              boxShadow: libraryOpen ? 'var(--shadow-inset-sm)' : undefined,
+              boxShadow: libraryOpen ? 'var(--shadow-selected)' : undefined,
               color: libraryOpen ? 'var(--primary)' : 'var(--text)',
             }}
           >

@@ -16,13 +16,13 @@ const RATING_COLOR = {
   partial: 'var(--muted)',
 };
 
-// Filter-Chips in einer Mulde: gewählt = erhaben mit Textfarbe, sonst gedämpft.
+// Filter-Chips: alle erhaben, gewählt mit Primär-Ring.
 const chipStyle = (active) => ({
   flex: '0 0 auto',
   background: 'var(--bg)',
   border: 'none',
-  boxShadow: active ? 'var(--shadow-raised-sm), inset 1px 1px 0 var(--neu-rim)' : 'none',
-  color: active ? 'var(--text)' : 'var(--muted)',
+  boxShadow: active ? 'var(--shadow-selected)' : 'var(--shadow-raised)',
+  color: active ? 'var(--primary)' : 'var(--text)',
   fontWeight: active ? 600 : 500,
   borderRadius: 999,
   padding: '0 14px',
@@ -176,14 +176,7 @@ export default function ExerciseSwapSheet({
           className="chip-rail"
           role="group"
           aria-label="Gerät filtern"
-          style={{
-            marginTop: 12,
-            padding: 5,
-            gap: 4,
-            borderRadius: 999,
-            background: 'var(--bg)',
-            boxShadow: 'var(--shadow-inset-sm)',
-          }}
+          style={{ marginTop: 0 }}
         >
           <button
             type="button"
@@ -208,7 +201,8 @@ export default function ExerciseSwapSheet({
           ))}
         </div>
 
-        <div style={{ marginTop: 16, overflowY: 'auto', overscrollBehavior: 'contain', flex: 1, minHeight: 0, padding: '2px 2px 4px' }}>
+        {/* Luft für den Karten-Schatten der Liste, außen wieder abgezogen. */}
+        <div style={{ margin: '-4px -20px -14px', overflowY: 'auto', overscrollBehavior: 'contain', flex: 1, minHeight: 0, padding: 20 }}>
           {visible.length === 0 && (
             <p style={{ color: 'var(--muted)', fontSize: 14, margin: '8px 0' }}>
               {equipment.size ? 'Keine passende Alternative mit diesem Gerät. Filter lockern?' : 'Nichts gefunden.'}

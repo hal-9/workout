@@ -420,7 +420,7 @@ export default function Fortschritt() {
                     height: 10,
                     borderRadius: 5,
                     background: i < w.done ? 'var(--primary)' : 'var(--bg)',
-                    boxShadow: i < w.done ? 'none' : 'var(--shadow-inset-sm)',
+                    boxShadow: i < w.done ? 'none' : 'var(--shadow-raised)',
                   }}
                 />
               ))}
@@ -518,7 +518,7 @@ export default function Fortschritt() {
                 display: 'grid',
                 placeItems: 'center',
                 color: exportOpen ? 'var(--primary)' : 'var(--text)',
-                boxShadow: exportOpen ? 'var(--shadow-inset-sm)' : undefined,
+                boxShadow: exportOpen ? 'var(--shadow-selected)' : undefined,
               }}
             >
               <LineIcon d={MORE_PATH} size={20} style={{ strokeWidth: 2.6 }} />
@@ -535,7 +535,7 @@ export default function Fortschritt() {
             gap: 8,
             alignItems: 'center',
             background: 'var(--bg)',
-            boxShadow: 'var(--shadow-inset)',
+            boxShadow: 'var(--shadow-card)',
             borderRadius: 24,
             padding: '10px 10px 10px 16px',
             marginBottom: 16,
@@ -567,26 +567,28 @@ export default function Fortschritt() {
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <div className="px-seg" style={{ minWidth: 0 }}>
-          <button
-            type="button"
-            className="px-seg-opt"
-            aria-pressed={!viewPartner}
-            onClick={() => setSelectedUserId(null)}
-          >
-            Ich
-          </button>
-          {(others ?? []).map((u) => (
+        <div className="px-seg-scroll">
+          <div className="px-seg">
             <button
-              key={u.id}
               type="button"
               className="px-seg-opt"
-              aria-pressed={selectedUserId === u.id}
-              onClick={() => setSelectedUserId(u.id)}
+              aria-pressed={!viewPartner}
+              onClick={() => setSelectedUserId(null)}
             >
-              {u.name}
+              Ich
             </button>
-          ))}
+            {(others ?? []).map((u) => (
+              <button
+                key={u.id}
+                type="button"
+                className="px-seg-opt"
+                aria-pressed={selectedUserId === u.id}
+                onClick={() => setSelectedUserId(u.id)}
+              >
+                {u.name}
+              </button>
+            ))}
+          </div>
         </div>
         <Link to="/freunde" className="btn btn-secondary" aria-label="Freunde hinzufügen" style={pillLinkStyle}>
           <Icon name="plus" size={16} />
@@ -604,7 +606,7 @@ export default function Fortschritt() {
               border: 'none',
               cursor: 'pointer',
               color: editMode ? 'var(--primary)' : 'var(--text)',
-              boxShadow: editMode ? 'var(--shadow-inset-sm)' : undefined,
+              boxShadow: editMode ? 'var(--shadow-selected)' : undefined,
             }}
           >
             {editMode ? <Icon name="check" size={16} /> : <LineIcon d={SLIDERS_PATH} size={16} />}

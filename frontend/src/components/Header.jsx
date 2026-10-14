@@ -102,7 +102,7 @@ function Switch({ on }) {
         display: 'flex',
         justifyContent: on ? 'flex-end' : 'flex-start',
         background: on ? 'var(--primary)' : 'var(--bg)',
-        boxShadow: on ? 'none' : 'var(--shadow-inset-sm)',
+        boxShadow: on ? 'none' : 'var(--shadow-raised)',
         transition: 'background 160ms ease',
       }}
     >
@@ -330,7 +330,7 @@ export default function Header() {
                     gap: 4,
                     padding: 4,
                     background: 'var(--bg)',
-                    boxShadow: 'var(--shadow-inset-sm)',
+                    boxShadow: 'var(--shadow-raised)',
                     borderRadius: 14,
                   }}
                 >
