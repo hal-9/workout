@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../auth.js';
 import { detectNewRecords } from 'shared/records';
-import { runEvaluation } from '../evaluation.js';
+import { MODEL, runEvaluation } from '../evaluation.js';
 import { notifyFriendsOfFinish } from '../push.js';
 import { exerciseSchema } from 'shared';
 import { parseAdaptations, sessionExerciseMeta } from '../sessionExercises.js';
@@ -549,7 +549,7 @@ export function sessionsRouter(db) {
       if (logs.length > 0) {
         db.prepare(
           `INSERT INTO evaluations (session_id, model, status) VALUES (?, ?, 'pending')`
-        ).run(session.id, 'gemini-2.5-flash');
+        ).run(session.id, MODEL);
       }
     })();
 

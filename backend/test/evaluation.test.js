@@ -132,7 +132,7 @@ describe('evaluation', () => {
     expect(summary.recommendations[1]).toEqual({ text: 'Pausen auf 90 s halten.' });
 
     const config = generateContentMock.mock.calls[0][0].config;
-    expect(config.thinkingConfig).toEqual({ thinkingBudget: 0 });
+    expect(config.thinkingConfig).toBeUndefined();
     expect(config.responseMimeType).toBe('application/json');
     expect(config.responseSchema.type).toBe('OBJECT');
 

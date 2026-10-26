@@ -5,10 +5,9 @@ import { bestsForExercise, detectNewRecords, sessionMetrics } from 'shared/recor
 import { parseAdaptations, sessionExerciseMeta } from './sessionExercises.js';
 import { previousSessionsForRecords } from './sessionHistory.js';
 
-const MODEL = 'gemini-2.5-flash';
-// Gemini 2.5 denkt standardmäßig mit — Denk-Tokens zählen gegen maxOutputTokens.
-// Ohne thinkingBudget: 0 war der sichtbare Text bei 600 Tokens regelmäßig abgeschnitten.
-// Die Vergleiche sind vorgerechnet (vs_last, best_before, new_record), Denken bringt wenig.
+export const MODEL = 'gemini-3.5-flash-lite';
+// Denk-Tokens zählen gegen maxOutputTokens. 3.5 Flash-Lite denkt standardmäßig nur minimal —
+// reicht, die Vergleiche sind vorgerechnet (vs_last, best_before, new_record).
 const MAX_OUTPUT_TOKENS = 2000;
 const TIMEOUT_MS = 30000;
 
@@ -368,7 +367,6 @@ export async function runEvaluation(db, sessionId) {
         config: {
           systemInstruction: SYSTEM_PROMPT,
           maxOutputTokens: MAX_OUTPUT_TOKENS,
-          thinkingConfig: { thinkingBudget: 0 },
           responseMimeType: 'application/json',
           responseSchema: RESPONSE_SCHEMA,
         },
